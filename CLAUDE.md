@@ -59,6 +59,6 @@ Intent executions: `CampaignExecution` (winning customers), `LawsuitExecution`
 2. Write `XxxExecution` in `packages/engine/src/execution/` and map it in `ExecutionManager.ts`.
 3. Put any numbers in `packages/engine-lib/src/configuration/Config.ts`.
 4. Add a test in `tests/`, a control in `src/client/hud/ControlPanel.ts`, and
-   check `npm run balance` still gives varied winners and unicorns around day 500–750.
+   check `npm run balance` still gives varied winners and unicorns around day 350–700.
 
 Engine changes must include tests.

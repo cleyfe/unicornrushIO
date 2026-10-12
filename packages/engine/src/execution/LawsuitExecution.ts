@@ -71,7 +71,7 @@ export class LawsuitExecution implements Execution {
     d.cash -= damages;
     p.cash += damages;
     game.news(
-      `⚖️ ${d.name} lost the lawsuit: ${lost} customer buildings walk away and it pays ${money(damages)} in damages to ${p.name}.`,
+      `⚖️ ${d.name} lost the lawsuit: ${lost} streets of customers walk away and it pays ${money(damages)} in damages to ${p.name}.`,
       'bad',
     );
   }

@@ -157,14 +157,22 @@ export class GameImpl {
 
   /** Push needed to win one area from `target` (NEUTRAL or a company id). */
   tileCost(attacker: Company, target: number, tile: number): number {
-    const d = this.map.demand[tile];
+    // Wealthier customers are worth more, and harder to win.
+    const w = CONFIG.wealth[this.map.wealth[tile]];
+    const d = this.map.demand[tile] * (0.5 + 0.5 * w.spend);
     if (target === NEUTRAL) return CONFIG.sales.neutralTileCost * d;
     const def = this.companies[target];
-    let mult = Math.max(0.3, this.coverage(def)) * CONFIG.prices[def.price].loyalty;
+    // Price matters a lot to budget customers and little to luxury ones,
+    // who also stick with premium brands and distrust cheap ones.
+    const sens = w.priceSensitivity;
+    let loyalty = 1 + (CONFIG.prices[def.price].loyalty - 1) * sens;
+    if (def.price === 'high') loyalty *= w.prestige;
+    if (def.price === 'low') loyalty /= w.prestige;
+    let mult = Math.max(0.3, this.coverage(def)) * loyalty;
     const ar = CONFIG.prices[attacker.price].revenue;
     const dr = CONFIG.prices[def.price].revenue;
-    if (ar < dr) mult *= 0.75;
-    if (ar > dr) mult *= 1.25;
+    if (ar < dr) mult *= 1 - 0.25 * sens;
+    if (ar > dr) mult *= 1 + 0.25 * sens;
     return CONFIG.sales.rivalTileCost * d * mult;
   }
 
@@ -220,6 +228,7 @@ export class GameImpl {
       const oc = this.companies[old];
       oc.tiles--;
       oc.customers -= d;
+      oc.spend -= this.map.spend[tile];
       oc.border.delete(tile);
     }
     this.owner[tile] = newOwner;
@@ -227,6 +236,7 @@ export class GameImpl {
       const nc = this.companies[newOwner];
       nc.tiles++;
       nc.customers += d;
+      nc.spend += this.map.spend[tile];
     }
     this.refreshBorder(tile);
     for (const n of neighbors4(this.map, tile, this.nb2)) this.refreshBorder(n);
@@ -278,7 +288,8 @@ export class GameImpl {
       const x = this.rng.int(8, w - 8);
       const y = this.rng.int(6, h - 6);
       const i = y * w + x;
-      if (this.map.isWater[i] || this.map.demand[i] > 2) continue;
+      // Start in the suburbs, not downtown.
+      if (this.map.isWater[i] || this.map.demand[i] > CONFIG.map.customersPerStreet * 1.6) continue;
       if (spots.some(([sx, sy]) => (sx - x) * (sx - x) + (sy - y) * (sy - y) < minDist * minDist)) continue;
       spots.push([x, y]);
     }
@@ -314,6 +325,7 @@ function newCompany(id: number, s: CompanySpec): Company {
     push: 0,
     tiles: 0,
     customers: 0,
+    spend: 0,
     border: new Set(),
     pnl: emptyPnl(),
     avgProfit: 0,

@@ -1,53 +1,53 @@
-import { NEUTRAL, Terrain, WATER } from '@unicornrush/engine-api/game/GameMap';
-import { buildingKind } from '@unicornrush/engine-lib/game/GameMap';
+import { Terrain, Wealth, WATER } from '@unicornrush/engine-api/game/GameMap';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { nearestStreet } from '@unicornrush/engine-lib/game/GameMap';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 
 type RGB = [number, number, number];
 
-const CELL = 8; // pixels per tile
-const STREET = 4; // pixels of street between blocks
+const CELL = 8; // map pixels per tile
 const RES = 2; // canvas pixels per map pixel, so zooming in stays sharp
 
-const ASPHALT = '#16191e';
-const LANE = '#5a5236';
-const SIDEWALK = '#3a3f48';
+const ASPHALT = '#2a2e35';
+const LANE = '#6b6340';
 const RIVER = '#1d4e72';
 const RIVER_LIGHT = '#2a6590';
-const PARK = '#2d5a37';
-const TREE = '#3f7d4c';
-const BRIDGE = '#545a64';
+const RAIL = '#9aa0a8';
 const COURT_GOLD: RGB = [241, 196, 15];
 
-// Untapped buildings are drawn in muted colours.
-const NEUTRAL_COLOR: Record<'house' | 'shop' | 'tower', RGB> = {
-  house: [104, 96, 86],
-  shop: [92, 99, 110],
-  tower: [112, 121, 136],
+/** Curb colour of each wealth level: the legend players read the map by. */
+export const WEALTH_COLORS: Record<Wealth, string> = {
+  [Wealth.Budget]: '#a1887f',
+  [Wealth.Middle]: '#90a4ae',
+  [Wealth.Upscale]: '#4db6ac',
+  [Wealth.Luxury]: '#ffca28',
 };
 
 const css = ([r, g, b]: RGB) => `rgb(${r | 0},${g | 0},${b | 0})`;
 const scale = ([r, g, b]: RGB, k: number): RGB => [Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k)];
 const lift = ([r, g, b]: RGB, k: number): RGB => [r + (255 - r) * k, g + (255 - g) * k, b + (255 - b) * k];
 
+/** Small deterministic hash for visual variety. */
+const hash = (a: number, b: number) => ((a * 73856093) ^ (b * 19349663)) >>> 0;
+
 /**
- * Draws the market as a city seen from above: blocks of houses, shops and
- * towers separated by streets. Each building takes its owner's colour.
+ * Draws the city from above. Streets are the territory: owned streets are
+ * painted in the company's colour. Blocks are scenery that shows each
+ * neighbourhood's wealth, from row houses to villas with pools.
  */
 export class MapRenderer {
   readonly canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private background: HTMLCanvasElement;
   private drawnKey = '';
-  private readonly bs: number;
   private readonly w: number;
   private readonly h: number;
 
   constructor(private game: GameImpl) {
-    const { width, height, blockSize } = game.map;
-    this.bs = blockSize;
+    const { width, height } = game.map;
+    this.w = width * CELL;
+    this.h = height * CELL;
     this.canvas = document.createElement('canvas');
-    this.w = this.px(width - 1) + CELL;
-    this.h = this.py(height - 1) + CELL;
     this.canvas.width = this.w * RES;
     this.canvas.height = this.h * RES;
     this.canvas.className = 'map';
@@ -57,18 +57,11 @@ export class MapRenderer {
     this.background = this.drawBackground();
   }
 
-  /** Left pixel of tile column x (streets add a gap after every block). */
-  private px(x: number): number {
-    return x * CELL + Math.floor(x / this.bs) * STREET;
-  }
+  // ---------- static city ----------
 
-  private py(y: number): number {
-    return y * CELL + Math.floor(y / this.bs) * STREET;
-  }
-
-  /** Streets, river, bridges and parks: everything that never changes. */
   private drawBackground(): HTMLCanvasElement {
-    const { width: w, height: h, terrain } = this.game.map;
+    const map = this.game.map;
+    const { width: w, height: h, terrain, wealth, streetEvery: se } = map;
     const bg = document.createElement('canvas');
     bg.width = this.w * RES;
     bg.height = this.h * RES;
@@ -77,72 +70,208 @@ export class MapRenderer {
     ctx.fillStyle = ASPHALT;
     ctx.fillRect(0, 0, this.w, this.h);
 
-    // Dashed lane markings down the middle of every street.
-    ctx.fillStyle = LANE;
-    for (let bx = 1; bx < w / this.bs; bx++) {
-      const x = this.px(bx * this.bs) - STREET + 1;
-      for (let y = 0; y < this.h; y += 8) ctx.fillRect(x, y, 1, 4);
-    }
-    for (let by = 1; by < h / this.bs; by++) {
-      const y = this.py(by * this.bs) - STREET + 1;
-      for (let x = 0; x < this.w; x += 8) ctx.fillRect(x, y, 4, 1);
-    }
-
-    // Sidewalk under every block, so blocks read clearly against the streets.
-    ctx.fillStyle = SIDEWALK;
-    for (let by = 0; by < h / this.bs; by++) {
-      for (let bx = 0; bx < w / this.bs; bx++) {
-        const x0 = this.px(bx * this.bs);
-        const y0 = this.py(by * this.bs);
-        ctx.fillRect(x0, y0, this.bs * CELL, this.bs * CELL);
+    // Blocks.
+    for (let by = 0; by * se + se < h; by++) {
+      for (let bx = 0; bx * se + se < w; bx++) {
+        const x0 = (bx * se + 1) * CELL;
+        const y0 = (by * se + 1) * CELL;
+        const size = (se - 1) * CELL;
+        const cx = bx * se + 2;
+        const cy = by * se + 2;
+        const t = terrain[cy * w + cx];
+        if (t === Terrain.Park) this.drawPark(ctx, x0, y0, size, bx, by);
+        else if (t === Terrain.Block) this.drawBlock(ctx, x0, y0, size, wealth[cy * w + cx], this.blockDensity(bx, by), bx, by);
       }
     }
 
-    // River, parks and bridges fill the streets between them too, so they read as one shape.
-    const fills: Record<number, string> = { [Terrain.River]: RIVER, [Terrain.Park]: PARK, [Terrain.Bridge]: BRIDGE };
+    // Riverbank where the river cuts through part of a block.
+    ctx.fillStyle = '#44573c';
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (terrain[y * w + x] !== Terrain.Block) continue;
+        const cx = Math.floor(x / se) * se + 2;
+        const cy = Math.floor(y / se) * se + 2;
+        if (terrain[cy * w + cx] !== Terrain.Block) ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+      }
+    }
+
+    // River over everything it covers; bridges on top.
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const t = terrain[y * w + x];
-        if (t === Terrain.Lot) continue;
-        const same = (dx: number, dy: number) => {
-          const nx = x + dx;
-          const ny = y + dy;
-          if (nx >= w || ny >= h) return false;
-          const n = terrain[ny * w + nx];
-          // Bridges and river merge so the water flows under the bridge.
-          return n === t || (t !== Terrain.Park && n !== Terrain.Lot && n !== Terrain.Park);
-        };
-        const x0 = this.px(x);
-        const y0 = this.py(y);
-        const x1 = same(1, 0) ? this.px(x + 1) : x0 + CELL;
-        const y1 = same(0, 1) ? this.py(y + 1) : y0 + CELL;
-        ctx.fillStyle = t === Terrain.Bridge ? RIVER : fills[t];
-        ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
-        if (t === Terrain.River && (x * 7 + y * 13) % 11 === 0) {
+        if (t !== Terrain.River && t !== Terrain.Bridge) continue;
+        ctx.fillStyle = RIVER;
+        ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+        if (t === Terrain.River && hash(x, y) % 9 === 0) {
           ctx.fillStyle = RIVER_LIGHT;
-          ctx.fillRect(x0 + 1, y0 + 3, 4, 1);
+          ctx.fillRect(x * CELL + 1, y * CELL + 3, 5, 1);
         }
-        if (t === Terrain.Park && (x * 5 + y * 3) % 4 === 0) {
-          ctx.fillStyle = TREE;
-          ctx.beginPath();
-          ctx.arc(x0 + 4, y0 + 4, 3, 0, Math.PI * 2);
-          ctx.fill();
+        if (t === Terrain.Bridge) {
+          ctx.fillStyle = ASPHALT;
+          ctx.fillRect(x * CELL + 1, y * CELL, CELL - 2, CELL);
+          ctx.fillStyle = RAIL;
+          ctx.fillRect(x * CELL, y * CELL, 1, CELL);
+          ctx.fillRect(x * CELL + CELL - 1, y * CELL, 1, CELL);
         }
       }
     }
-    // Bridge decks on top of the water, extended across the street gaps.
+
+    // Lane markings and wealth-coloured curbs along every street.
+    const curb = (nx: number, ny: number) => {
+      const t = terrain[ny * w + nx];
+      return t === Terrain.Block || t === Terrain.Park;
+    };
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        if (terrain[y * w + x] !== Terrain.Bridge) continue;
-        const x0 = this.px(x);
-        const y0 = this.py(y);
-        const below = y + 1 < h && terrain[(y + 1) * w + x] === Terrain.Bridge;
-        ctx.fillStyle = BRIDGE;
-        ctx.fillRect(x0, y0, CELL, below ? this.py(y + 1) - y0 : CELL);
+        const i = y * w + x;
+        if (terrain[i] !== Terrain.Street) continue;
+        const px = x * CELL;
+        const py = y * CELL;
+        const horizontal = y % se === 0;
+        const vertical = x % se === 0;
+        ctx.fillStyle = LANE;
+        if (horizontal && !vertical) ctx.fillRect(px + 1, py + 3.5, 4, 1);
+        if (vertical && !horizontal) ctx.fillRect(px + 3.5, py + 1, 1, 4);
+        ctx.fillStyle = WEALTH_COLORS[wealth[i] as Wealth];
+        if (y > 0 && curb(x, y - 1)) ctx.fillRect(px, py, CELL, 1);
+        if (y < h - 1 && curb(x, y + 1)) ctx.fillRect(px, py + CELL - 1, CELL, 1);
+        if (x > 0 && curb(x - 1, y)) ctx.fillRect(px, py, 1, CELL);
+        if (x < w - 1 && curb(x + 1, y)) ctx.fillRect(px + CELL - 1, py, 1, CELL);
       }
     }
     return bg;
   }
+
+  /** How dense a block's surroundings are, relative to a suburb (1 = suburb). */
+  private blockDensity(bx: number, by: number): number {
+    const { width: w, demand, wealth, streetEvery: se } = this.game.map;
+    const i = by * se * w + bx * se + 2;
+    const tier = CONFIG.wealth[wealth[i]];
+    return demand[i] / (CONFIG.map.customersPerStreet * tier.density);
+  }
+
+  private drawPark(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, bx: number, by: number): void {
+    ctx.fillStyle = '#2f6b3b';
+    ctx.fillRect(x, y, size, size);
+    ctx.fillStyle = '#c9b98f';
+    ctx.fillRect(x, y + size / 2 - 1, size, 2); // footpath
+    for (let k = 0; k < 7; k++) {
+      const r = hash(bx * 7 + k, by);
+      this.tree(ctx, x + 3 + (r % (size - 6)), y + 3 + ((r >> 8) % (size - 6)), 2 + (r % 2));
+    }
+  }
+
+  private drawBlock(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    size: number,
+    tier: number,
+    density: number,
+    bx: number,
+    by: number,
+  ): void {
+    const r = hash(bx, by);
+    if (density > 2.1) {
+      // Downtown: glass towers on a plaza.
+      ctx.fillStyle = '#3a3f48';
+      ctx.fillRect(x, y, size, size);
+      if (density > 2.8) {
+        this.tower(ctx, x + 3, y + 3, size - 7, r);
+      } else {
+        const s = size / 2 - 3;
+        for (let k = 0; k < 4; k++) {
+          this.tower(ctx, x + 2 + (k % 2) * (size / 2), y + 2 + Math.floor(k / 2) * (size / 2), s, r + k);
+        }
+      }
+      return;
+    }
+    switch (tier) {
+      case Wealth.Budget: {
+        // Packed row houses.
+        ctx.fillStyle = '#3d3a36';
+        ctx.fillRect(x, y, size, size);
+        for (let row = 0; row < 4; row++) {
+          for (let col = 0; col < 4; col++) {
+            const v = 0.85 + (hash(bx * 4 + col, by * 4 + row) % 30) / 100;
+            const roof: RGB = scale([134, 98, 78], v);
+            ctx.fillStyle = css(roof);
+            ctx.fillRect(x + col * 8 + 1, y + row * 8 + 1, 6, 6);
+            ctx.fillStyle = css(scale(roof, 0.75));
+            ctx.fillRect(x + col * 8 + 1, y + row * 8 + 1, 6, 3);
+          }
+        }
+        return;
+      }
+      case Wealth.Middle: {
+        // Family homes with small gardens.
+        ctx.fillStyle = '#4b5e3f';
+        ctx.fillRect(x, y, size, size);
+        for (let k = 0; k < 4; k++) {
+          const hx = x + 3 + (k % 2) * 16;
+          const hy = y + 3 + Math.floor(k / 2) * 16;
+          ctx.fillStyle = '#b8a07c';
+          ctx.fillRect(hx, hy, 10, 9);
+          ctx.fillStyle = '#8e7a5c';
+          ctx.fillRect(hx, hy + 4, 10, 1); // roof ridge
+        }
+        return;
+      }
+      case Wealth.Upscale: {
+        // Townhouses and tree-lined gardens.
+        ctx.fillStyle = '#3f6b45';
+        ctx.fillRect(x, y, size, size);
+        ctx.fillStyle = '#8b90a6';
+        ctx.fillRect(x + 2, y + 3, size - 4, 8);
+        ctx.fillRect(x + 2, y + size - 11, size - 4, 8);
+        ctx.fillStyle = '#6d7289';
+        for (let k = 1; k < 4; k++) {
+          ctx.fillRect(x + 2 + k * 7, y + 3, 1, 8);
+          ctx.fillRect(x + 2 + k * 7, y + size - 11, 1, 8);
+        }
+        for (let k = 0; k < 3; k++) this.tree(ctx, x + 6 + k * 10, y + size / 2, 2);
+        return;
+      }
+      default: {
+        // Luxury: a villa with a pool, lawn and hedges.
+        ctx.fillStyle = '#3c7a46';
+        ctx.fillRect(x, y, size, size);
+        ctx.strokeStyle = '#2b5e34';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 0.5, y + 0.5, size - 1, size - 1);
+        const flip = r % 2 === 0;
+        ctx.fillStyle = '#ece6d8';
+        ctx.fillRect(flip ? x + 3 : x + 11, y + 4, 18, 12);
+        ctx.fillStyle = '#cfc6b3';
+        ctx.fillRect(flip ? x + 3 : x + 11, y + 9, 18, 1);
+        ctx.fillStyle = '#4fc3f7';
+        ctx.fillRect(flip ? x + 18 : x + 4, y + 20, 9, 6);
+        this.tree(ctx, flip ? x + 7 : x + 25, y + 24, 3);
+        this.tree(ctx, flip ? x + 27 : x + 5, y + 6, 2);
+      }
+    }
+  }
+
+  private tree(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
+    ctx.fillStyle = '#4f9a5c';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  private tower(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, seed: number): void {
+    const glass: RGB = seed % 2 ? [104, 128, 160] : [128, 150, 178];
+    ctx.fillStyle = css(scale(glass, 0.6));
+    ctx.fillRect(x + 1, y + 1, s, s); // shadow
+    ctx.fillStyle = css(glass);
+    ctx.fillRect(x, y, s, s);
+    ctx.fillStyle = css(lift(glass, 0.35));
+    for (let k = 3; k < s - 1; k += 3) ctx.fillRect(x + k, y + 1, 1, s - 2);
+    ctx.fillStyle = '#d9e3ee';
+    ctx.fillRect(x + s / 2 - 1, y + s / 2 - 1, 2, 2); // rooftop unit
+  }
+
+  // ---------- ownership ----------
 
   draw(): void {
     const g = this.game;
@@ -155,82 +284,65 @@ export class MapRenderer {
 
     const ctx = this.ctx;
     ctx.drawImage(this.background, 0, 0, this.w, this.h);
-    const { width: w, demand, terrain } = g.map;
+    const w = g.map.width;
+    this.tintBlocks();
     for (let i = 0; i < g.owner.length; i++) {
       const o = g.owner[i];
-      if (o === WATER) continue;
-      const t = terrain[i];
-      const x0 = this.px(i % w);
-      const y0 = this.py((i / w) | 0);
-      if (t === Terrain.Bridge) {
-        // Owned bridges get a coloured stripe; the deck stays grey.
-        if (o >= 0) {
-          ctx.fillStyle = css(g.companies[o].color);
-          ctx.fillRect(x0 + 3, y0, 2, CELL);
-        }
-        continue;
-      }
-      const kind = buildingKind(demand[i]);
-      let body: RGB;
-      if (o === NEUTRAL) {
-        // A little variety between neighbouring buildings.
-        body = scale(NEUTRAL_COLOR[kind], 0.9 + ((i * 2654435761) >>> 28) / 60);
-      } else {
-        const base = g.companies[o].color;
-        body = scale(base, kind === 'house' ? 0.7 : kind === 'shop' ? 0.85 : 1);
-      }
-      this.drawBuilding(x0, y0, kind, body);
-
-      if (o >= 0 && g.companies[o].border.has(i)) {
-        // Your own border glows; rivals' borders are outlined darker.
-        const edge = inCourt.has(o) ? COURT_GOLD : o === 0 ? lift(g.companies[o].color, 0.6) : scale(g.companies[o].color, 0.45);
-        ctx.strokeStyle = css(edge);
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x0 + 0.5, y0 + 0.5, CELL - 1, CELL - 1);
-      }
+      if (o < 0 || o === WATER) continue;
+      const c = g.companies[o];
+      const x = (i % w) * CELL;
+      const y = ((i / w) | 0) * CELL;
+      let fill: RGB = scale(c.color, 0.8);
+      if (c.border.has(i)) fill = inCourt.has(o) ? COURT_GOLD : o === 0 ? lift(c.color, 0.45) : c.color;
+      ctx.fillStyle = css(fill);
+      // Leave the curb visible so the street's wealth still shows.
+      ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
     }
   }
 
-  private drawBuilding(x: number, y: number, kind: 'house' | 'shop' | 'tower', body: RGB): void {
+  /** A block whose streets mostly belong to one company is tinted its colour. */
+  private tintBlocks(): void {
+    const g = this.game;
+    const { width: w, height: h, streetEvery: se, terrain } = g.map;
     const ctx = this.ctx;
-    ctx.fillStyle = css(body);
-    ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
-    if (kind === 'house') {
-      // Pitched roof: darker top half.
-      ctx.fillStyle = css(scale(body, 0.7));
-      ctx.fillRect(x + 1, y + 1, CELL - 2, 3);
-    } else if (kind === 'shop') {
-      // Striped awning along the front.
-      ctx.fillStyle = css(lift(body, 0.45));
-      ctx.fillRect(x + 1, y + CELL - 3, 2, 2);
-      ctx.fillRect(x + 4, y + CELL - 3, 2, 2);
-    } else {
-      // Tower: dark frame with a lit rooftop unit.
-      ctx.fillStyle = css(scale(body, 0.6));
-      ctx.fillRect(x + 1, y + 1, CELL - 2, 1);
-      ctx.fillRect(x + 1, y + 1, 1, CELL - 2);
-      ctx.fillStyle = css(lift(body, 0.5));
-      ctx.fillRect(x + 3, y + 3, 2, 2);
+    const counts = new Map<number, number>();
+    ctx.globalAlpha = 0.32;
+    for (let by = 0; by * se + se < h; by++) {
+      for (let bx = 0; bx * se + se < w; bx++) {
+        counts.clear();
+        let total = 0;
+        const add = (x: number, y: number) => {
+          const i = y * w + x;
+          if (terrain[i] !== Terrain.Street && terrain[i] !== Terrain.Bridge) return;
+          total++;
+          const o = g.owner[i];
+          if (o >= 0) counts.set(o, (counts.get(o) ?? 0) + 1);
+        };
+        for (let k = 0; k <= se; k++) {
+          add(bx * se + k, by * se);
+          add(bx * se + k, (by + 1) * se);
+          if (k > 0 && k < se) {
+            add(bx * se, by * se + k);
+            add((bx + 1) * se, by * se + k);
+          }
+        }
+        for (const [o, n] of counts) {
+          if (n < total * 0.6) continue;
+          ctx.fillStyle = css(g.companies[o].color);
+          ctx.fillRect((bx * se + 1) * CELL, (by * se + 1) * CELL, (se - 1) * CELL, (se - 1) * CELL);
+        }
+      }
     }
+    ctx.globalAlpha = 1;
   }
 
-  /** Converts a mouse event to a tile index (nearest building), or -1 outside the map. */
+  /** Converts a mouse event to the nearest street tile, or -1 outside the map. */
   tileAt(ev: MouseEvent): number {
+    const map = this.game.map;
     const rect = this.canvas.getBoundingClientRect();
-    const px = ((ev.clientX - rect.left) / rect.width) * this.w;
-    const py = ((ev.clientY - rect.top) / rect.height) * this.h;
-    const x = this.axisTile(px, this.game.map.width);
-    const y = this.axisTile(py, this.game.map.height);
-    if (x < 0 || y < 0) return -1;
-    return y * this.game.map.width + x;
-  }
-
-  private axisTile(p: number, count: number): number {
-    if (p < 0) return -1;
-    const span = this.bs * CELL + STREET;
-    const block = Math.floor(p / span);
-    const within = Math.min(this.bs - 1, Math.floor((p - block * span) / CELL));
-    const t = block * this.bs + within;
-    return t < count ? t : -1;
+    const x = Math.floor(((ev.clientX - rect.left) / rect.width) * map.width);
+    const y = Math.floor(((ev.clientY - rect.top) / rect.height) * map.height);
+    if (x < 0 || y < 0 || x >= map.width || y >= map.height) return -1;
+    return nearestStreet(map, x, y);
   }
 }

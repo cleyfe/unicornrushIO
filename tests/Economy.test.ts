@@ -6,6 +6,7 @@ describe('profit and loss', () => {
   it('adds daily profit to cash', () => {
     const r = quietSetup();
     const me = r.game.player;
+    act(r, { type: 'setSalesShare', companyId: 0, share: 0 }); // no churn, so profit stays constant
     runDays(r, 1);
     const before = me.cash;
     runDays(r, 1);

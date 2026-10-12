@@ -37,10 +37,27 @@ Investors pay for profit, so a smaller, profitable company can beat a big one th
 | **Legal Dept** ⚖️ | $60K, $500/day rent. Needed to sue; each gives a 35% chance to get a suit against you dismissed (max 2) | Compliance as insurance |
 | **Bank loan** | $25K at a time, 24%/year interest, credit limit = 60 days of revenue | Leverage and risk |
 
+### The city
+
+The map is a grid of **streets**, and streets are what companies fight over. The blocks
+between them (houses, towers, villas, parks) show what kind of neighbourhood it is.
+Every street has a **wealth level**, shown by its curb colour:
+
+| Wealth | Customers spend | Customers per street | Price sensitivity | Prestige |
+|---|---|---|---|---|
+| Budget | ×0.7 | many | high: undercutting works | cheap brands do fine |
+| Middle | ×1.0 | normal | normal | normal |
+| Upscale | ×1.5 | fewer | low | premium brands hold customers better |
+| Luxury | ×2.2 | few | very low: price barely matters | premium brands are sticky; cheap ones look cheap |
+
+Serving a customer costs the same everywhere, so rich streets have much fatter margins.
+They also cost more sales push to win. Luxury clusters along the river and next to parks;
+downtown streets are packed with middle-income customers.
+
 ### Every day
 
 ```
-Revenue  = customers served × price
+Revenue  = customers served × their street's spend multiplier × price
 Costs    = variable cost ($15 / customer) + salaries + rent + interest
 Profit   = Revenue − Costs  → added to Cash
 ```

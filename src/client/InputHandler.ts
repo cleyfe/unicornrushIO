@@ -1,5 +1,5 @@
 import { NEUTRAL, Terrain } from '@unicornrush/engine-api/game/GameMap';
-import { buildingKind } from '@unicornrush/engine-lib/game/GameMap';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import type { ClientGameRunner } from './ClientGameRunner';
 import type { MapRenderer } from './render/MapRenderer';
@@ -97,17 +97,17 @@ export class InputHandler {
   }
 }
 
-const KIND_LABEL = { house: 'Houses', shop: 'Shops', tower: 'Office tower' } as const;
-
 export function describeTile(g: GameImpl, tile: number): string {
   const t = g.map.terrain[tile];
   if (t === Terrain.River) return 'River: no customers';
   if (t === Terrain.Park) return 'Park: no customers';
+  if (t === Terrain.Block) return 'Homes and offices: click a street to win customers';
   const d = g.map.demand[tile];
+  const tier = CONFIG.wealth[g.map.wealth[tile]];
   const o = g.owner[tile];
-  const what = t === Terrain.Bridge ? 'Bridge' : KIND_LABEL[buildingKind(d)];
-  const who = o === NEUTRAL ? 'untapped' : o === 0 ? 'your customers' : g.companies[o].name;
-  let s = `${what} · ${who} · ${d.toFixed(2)} customers`;
+  const what = t === Terrain.Bridge ? 'Bridge' : `${tier.label} street`;
+  const who = o === NEUTRAL ? 'untapped' : o === 0 ? 'yours' : g.companies[o].name;
+  let s = `${what} · ${who} · ${d.toFixed(2)} customers × ${tier.spend} spend`;
   if (o !== 0) s += ` · costs ${g.tileCost(g.player, o, tile).toFixed(1)} push`;
   return s;
 }

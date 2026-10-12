@@ -550,3 +550,22 @@ button.danger {
   width: 100%;
   text-align: right;
 }
+
+.wealth-legend {
+  position: absolute;
+  left: 8px;
+  bottom: 6px;
+  display: flex;
+  gap: 10px;
+  font-size: 11px;
+  background: rgba(10, 16, 24, 0.8);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.wealth-legend i {
+  display: inline-block;
+  width: 12px;
+  height: 3px;
+  margin-right: 4px;
+  vertical-align: middle;
+}

@@ -13,9 +13,10 @@ export function showIntro(container: HTMLElement, onStart: (name: string) => voi
       <h1>Unicorn<b>Rush</b></h1>
       <p class="lead">Run a company. Win customers. Don't run out of cash.</p>
       <ol>
-        <li>🏙️ The map is a city. Grey buildings are untapped customers; colours are companies. Downtown towers have the most customers.</li>
-        <li>🤝 Staff in <b>Sales</b> build up <b>push</b>. Click a building next to your territory to win its customers.</li>
-        <li>⚙️ Staff in <b>Operations</b> serve customers. Each serves ${CONFIG.staff.tilesPerOps} buildings. Overloaded companies lose customers.</li>
+        <li>🏙️ The map is a city and you fight over its <b>streets</b>. Grey streets are untapped; colours are companies. Downtown streets have the most customers.</li>
+        <li>💎 The curb colour shows a street's wealth: Budget, Middle, Upscale or Luxury. Rich customers spend up to ×${CONFIG.wealth[3].spend} more, and cost the same to serve.</li>
+        <li>🤝 Staff in <b>Sales</b> build up <b>push</b>. Click a street next to yours to win its customers.</li>
+        <li>⚙️ Staff in <b>Operations</b> serve customers. Each serves ${CONFIG.staff.tilesPerOps} street sections. Overloaded companies lose customers.</li>
         <li>🏷️ <b>Price</b> trades margin for growth and loyalty.</li>
         <li>📊 Every day: <b>Revenue − Costs = Profit</b>, added to cash. Cash below zero for ${CONFIG.bankruptcyGraceDays} days means bankruptcy.</li>
         <li>⚖️ With a Legal Dept you can <b>sue</b> a rival (${money(CONFIG.lawsuit.cost)}): it loses customers everywhere, unless its lawyers win.</li>

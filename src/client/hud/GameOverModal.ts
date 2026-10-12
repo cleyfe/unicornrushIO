@@ -47,7 +47,7 @@ export function showGameOver(game: GameImpl, r: GameResult, onAgain: () => void)
   overlay.innerHTML = `<div class="card result">
     <h1>${headline}</h1>
     <p class="lead">${why[r.reason]}</p>
-    <table class="final"><tr><th>Company</th><th>Final value</th><th>Peak value</th><th>Peak buildings</th></tr>${rows}</table>
+    <table class="final"><tr><th>Company</th><th>Final value</th><th>Peak value</th><th>Peak streets</th></tr>${rows}</table>
     <h3>What to take away</h3>
     <ul>${lessons.map((l) => `<li>${l}</li>`).join('')}</ul>
     <button class="primary" id="again">Play again</button>

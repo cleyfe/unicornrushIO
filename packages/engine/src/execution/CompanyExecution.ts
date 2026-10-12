@@ -65,10 +65,11 @@ export class CompanyExecution implements Execution {
 
   private economy(game: GameImpl): void {
     const c = this.c;
-    const served = c.customers * game.coverage(c);
+    const coverage = game.coverage(c);
     const p = {
-      revenue: served * CONFIG.prices[c.price].revenue * game.revenueMult(),
-      variableCost: served * CONFIG.variableCostPerCustomer * game.variableCostMult(c),
+      // Revenue depends on how much customers spend; serving them costs the same everywhere.
+      revenue: c.spend * coverage * CONFIG.prices[c.price].revenue * game.revenueMult(),
+      variableCost: c.customers * coverage * CONFIG.variableCostPerCustomer * game.variableCostMult(c),
       salaries: (c.employees + game.traineeCount(c)) * CONFIG.staff.salaryPerDay,
       rent: game.rentPerDay(c),
       interest: (c.debt * CONFIG.bank.interestPerYear) / 365,

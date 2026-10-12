@@ -7,7 +7,7 @@ import { $ } from './dom';
 
 const B = CONFIG.buildings;
 const BUILDING_INFO: Record<BuildingType, { icon: string; effect: string }> = {
-  branch: { icon: '🏬', effect: `+${B.branch.capacity} buildings served` },
+  branch: { icon: '🏬', effect: `+${B.branch.capacity} street sections served` },
   warehouse: { icon: '🏭', effect: `Variable costs −${pct(1 - B.warehouse.variableCostMult)}` },
   adAgency: { icon: '📣', effect: `Sales push +${pct(B.adAgency.pushBonus)}` },
   legalDept: { icon: '⚖️', effect: `Lets you sue · ${pct(B.legalDept.defense)} chance to dismiss suits` },
@@ -99,7 +99,7 @@ export class ControlPanel {
       <section class="panel">
         <h3>Sales push <small data-v="pushRate"></small></h3>
         <div class="meter push"><div data-v="pushFill"></div></div>
-        <p class="tip">👆 Click the map next to your territory to launch a campaign. It spends half your push. Rivals' customers cost more to win, especially if they're cheap or well served.</p>
+        <p class="tip">👆 Click a street next to yours to launch a campaign. It spends half your push. Rivals' customers cost more to win, especially if they're cheap or well served.</p>
       </section>
 
       <section class="panel">
@@ -209,7 +209,7 @@ export class ControlPanel {
     const coverFill = $(this.root, '[data-v="coverFill"]');
     coverFill.style.width = pct(cover);
     coverFill.className = cover < 1 ? 'bad' : '';
-    this.set('coverage', `${int(Math.min(cap, c.tiles))} / ${int(c.tiles)} buildings (capacity ${int(cap)})`);
+    this.set('coverage', `${int(Math.min(cap, c.tiles))} / ${int(c.tiles)} streets (capacity ${int(cap)})`);
     $(this.root, '[data-v="overload"]').hidden = cover >= 1;
 
     this.root

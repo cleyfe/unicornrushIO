@@ -1,5 +1,7 @@
 import './styles/main.css';
+import type { Wealth } from '@unicornrush/engine-api/game/GameMap';
 import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { ClientGameRunner } from './ClientGameRunner';
 import { ControlPanel } from './hud/ControlPanel';
 import { showGameOver } from './hud/GameOverModal';
@@ -8,7 +10,7 @@ import { Leaderboard } from './hud/Leaderboard';
 import { toast } from './hud/Toast';
 import { TopBar } from './hud/TopBar';
 import { InputHandler } from './InputHandler';
-import { MapRenderer } from './render/MapRenderer';
+import { MapRenderer, WEALTH_COLORS } from './render/MapRenderer';
 
 const app = document.getElementById('app')!;
 
@@ -30,7 +32,13 @@ function startGame(name: string): void {
   const hint = document.createElement('div');
   hint.className = 'map-hint';
   hint.textContent = 'Scroll to zoom · drag to pan';
-  mapWrap.append(renderer.canvas, tooltip, hint);
+  const legend = document.createElement('div');
+  legend.className = 'wealth-legend';
+  legend.innerHTML = CONFIG.wealth
+    .map((t, i) => `<span><i style="background:${WEALTH_COLORS[i as Wealth]}"></i>${t.label} ×${t.spend}</span>`)
+    .join('');
+  legend.title = 'Street wealth (curb colour): how much each customer spends';
+  mapWrap.append(renderer.canvas, tooltip, hint, legend);
   const left = document.createElement('div');
   left.className = 'left';
   left.append(mapWrap, board.root);

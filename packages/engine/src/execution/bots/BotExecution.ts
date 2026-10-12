@@ -77,7 +77,11 @@ export class BotExecution implements Execution {
     // Growth only makes sense while there are customers worth winning.
     const f = this.scanFrontier(g);
     const canGrow = f.neutral > 0 || f.cheapestRival <= this.rivalThreshold();
-    const salesWanted = canGrow ? Math.max(4, Math.ceil(opsNeeded * p.salesRatio)) : 2;
+    // Reinvest surplus cash in sales staff (about 3 months of salary each).
+    const surplusReps = Math.floor(Math.max(0, cash - reserve * 3) / (s.salaryPerDay * 90));
+    const salesWanted = canGrow
+      ? Math.max(4, Math.ceil(opsNeeded * p.salesRatio), Math.min(surplusReps, opsNeeded * 2 + 10))
+      : 2;
     const wanted = opsNeeded + salesWanted;
     const staff = c.employees + g.traineeCount(c);
 
@@ -167,7 +171,8 @@ export class BotExecution implements Execution {
         if (o === NEUTRAL) {
           f.neutral++;
           if (seen++ < 60) {
-            const d = g.map.demand[n] + g.rng.next();
+            // Prefer streets with big spenders.
+            const d = g.map.spend[n] + g.rng.next();
             if (d > bestDemand) {
               bestDemand = d;
               f.bestNeutral = n;
@@ -179,7 +184,7 @@ export class BotExecution implements Execution {
       }
     }
     for (const [owner, tile] of sample) {
-      const cost = g.tileCost(c, owner, tile) / g.map.demand[tile];
+      const cost = g.tileCost(c, owner, tile) / g.map.spend[tile];
       if (cost < f.cheapestRival) {
         f.cheapestRival = cost;
         f.cheapestRivalTile = tile;

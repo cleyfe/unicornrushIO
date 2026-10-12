@@ -38,7 +38,8 @@ export interface Company {
   push: number;
 
   tiles: number;
-  customers: number; // total demand of owned tiles
+  customers: number; // customers on owned streets
+  spend: number; // customers × wealth multiplier: drives revenue
   border: Set<number>;
 
   pnl: Pnl; // per day, latest
