@@ -20,13 +20,15 @@ export const CONFIG = {
 
   // Richer streets have fewer customers, but each spends more. Serving a
   // customer costs the same everywhere, so rich streets have fat margins.
-  // priceSensitivity: how much undercutting matters when fighting for them.
+  // pushCost: sales push per customer to win them (rich customers are harder to win).
+  // priceSensitivity: how much price matters to them, both for how much they buy
+  // (price elasticity) and for how easily a cheaper rival can steal them.
   // prestige: how much a high price helps (and a low price hurts) loyalty.
   wealth: [
-    { label: 'Budget', spend: 0.7, density: 1.2, priceSensitivity: 1.3, prestige: 0.9 },
-    { label: 'Middle', spend: 1.0, density: 1.0, priceSensitivity: 1.0, prestige: 1.0 },
-    { label: 'Upscale', spend: 1.5, density: 0.8, priceSensitivity: 0.6, prestige: 1.25 },
-    { label: 'Luxury', spend: 2.2, density: 0.6, priceSensitivity: 0.3, prestige: 1.6 },
+    { label: 'Budget', spend: 0.7, pushCost: 0.63, density: 1.2, priceSensitivity: 1.3, prestige: 0.9 },
+    { label: 'Middle', spend: 1.0, pushCost: 1.0, density: 1.0, priceSensitivity: 1.0, prestige: 1.0 },
+    { label: 'Upscale', spend: 1.5, pushCost: 1.69, density: 0.8, priceSensitivity: 0.6, prestige: 1.25 },
+    { label: 'Luxury', spend: 2.2, pushCost: 2.79, density: 0.6, priceSensitivity: 0.3, prestige: 1.6 },
   ],
 
   start: { cash: 60_000, employees: 10, customers: 90, salesShare: 0.5, push: 60 }, // starting territory: about this many customers
@@ -42,7 +44,7 @@ export const CONFIG = {
   // Revenue per customer per day, before the street's wealth multiplier.
   prices: {
   // volume: price elasticity of demand. Cheaper prices make customers buy more.
-    low: { revenue: 25, volume: 1.4, push: 1.2, loyalty: 1.25, label: 'Low' },
+    low: { revenue: 28, volume: 1.4, push: 1.2, loyalty: 1.25, label: 'Low' },
     medium: { revenue: 40, volume: 1.0, push: 1.0, loyalty: 1.0, label: 'Medium' },
     high: { revenue: 55, volume: 0.8, push: 0.9, loyalty: 0.9, label: 'High' },
   } satisfies Record<PriceLevel, { revenue: number; volume: number; push: number; loyalty: number; label: string }>,
@@ -78,11 +80,28 @@ export const CONFIG = {
   lawsuit: {
     cost: 250_000, // legal fees, paid when filing
     courtDays: 30, // time until the ruling: the defendant can prepare
-    customerLoss: 0.25, // share of the defendant's customers lost
+    customerLoss: 0.15, // share of the defendant's customers driven away by bad press
     clusters: 12, // the loss is spread over this many places
-    damagesRevenueDays: 8, // defendant pays plaintiff this many days of revenue
-    dismissChance: 0.35, // chance the court throws the case out
+    // Evidence decides the case: streets the defendant took from the plaintiff
+    // recently (poaching), plus a predatory-pricing claim if it prices low.
+    baseWinChance: 0.1, // with no evidence at all
+    winChancePerStolenStreet: 0.04,
+    predatoryPricingBonus: 0.1, // defendant charges Low prices
+    maxWinChance: 0.85,
+    evidenceHalfLifeDays: 70, // older grievances count less
+    // Damages = the plaintiff's lost profits: daily revenue of the stolen streets at a medium price, for this many days.
+    damagesDays: 45,
     dismissedCounterCost: 150_000, // plaintiff pays the defendant's costs if dismissed
+  },
+
+  // Competition authority: stops one company from swallowing the market.
+  antitrust: {
+    warnShare: 0.35, // share of the city's customers that triggers a warning
+    actShare: 0.4, // above this for `graceDays`, the company is fined and must sell streets
+    graceDays: 30,
+    fineRevenueDays: 20,
+    divestShare: 0.1, // share of its streets it must give up
+    cooldownDays: 120,
   },
 
   events: { firstDay: 150, minGap: 120, maxGap: 180 },

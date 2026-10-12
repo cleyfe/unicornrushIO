@@ -22,9 +22,9 @@ interface Persona {
 const PERSONAS: Record<Personality, Persona> = {
   // Equally competent players with different styles: they only differ in
   // price, which streets they want, and how they balance attack and defence.
-  discounter: { maxSales: 0.65, salesRatio: 0.9, reserveDays: 10, borrows: true, aggression: 0.8, litigious: 1, service: 1.05, pushReserve: 0.3, taste: 'volume' },
-  balanced: { maxSales: 0.6, salesRatio: 0.8, reserveDays: 10, borrows: true, aggression: 0.6, litigious: 0.5, service: 1.15, pushReserve: 0.4, taste: 'mixed' },
-  premium: { maxSales: 0.6, salesRatio: 0.8, reserveDays: 10, borrows: true, aggression: 0.5, litigious: 0.3, service: 1.25, pushReserve: 0.45, taste: 'wealth' },
+  discounter: { maxSales: 0.65, salesRatio: 0.9, reserveDays: 10, borrows: true, aggression: 0.8, litigious: 1, service: 1.05, pushReserve: 0.15, taste: 'volume' },
+  balanced: { maxSales: 0.6, salesRatio: 0.8, reserveDays: 10, borrows: true, aggression: 0.6, litigious: 0.5, service: 1.1, pushReserve: 0.2, taste: 'mixed' },
+  premium: { maxSales: 0.6, salesRatio: 0.8, reserveDays: 10, borrows: true, aggression: 0.5, litigious: 0.3, service: 1.15, pushReserve: 0.25, taste: 'wealth' },
 };
 
 interface Frontier {
@@ -80,8 +80,8 @@ export class BotExecution implements Execution {
     // Growth only makes sense while there are customers worth winning.
     const f = this.scanFrontier(g);
     const canGrow = f.neutral > 0 || f.cheapestRival <= this.rivalThreshold();
-    // Reinvest surplus cash in sales staff (about 3 months of salary each).
-    const surplusReps = Math.floor(Math.max(0, cash - reserve * 3) / (s.salaryPerDay * 90));
+    // Reinvest surplus cash in sales staff: recruiting plus about three weeks of salary each.
+    const surplusReps = Math.floor(Math.max(0, cash - reserve) / (s.hireCost + s.salaryPerDay * 20));
     const salesWanted = canGrow
       ? Math.max(4, Math.ceil(opsNeeded * p.salesRatio), Math.min(surplusReps, opsNeeded * 4 + 20))
       : 2;
@@ -113,7 +113,7 @@ export class BotExecution implements Execution {
     // 4. Hiring, from surplus cash only, up to the staff the business needs.
     if (staff < wanted && cash > reserve + s.hireCost * 2) {
       const affordable = Math.floor((cash - reserve) / (s.hireCost + s.salaryPerDay * 20));
-      const n = Math.min(affordable, wanted - staff, Math.ceil(c.employees * 0.35) + 2);
+      const n = Math.min(affordable, wanted - staff, Math.ceil(c.employees * 0.5) + 5);
       if (n > 0) this.act(g, { type: 'hire', companyId: id, count: n });
     }
 
@@ -128,14 +128,24 @@ export class BotExecution implements Execution {
   }
 
   /** Sue the market leader when it is pulling away, now and then. */
+  /** Sue the rival with the best case (evidence × damages), when it's worth the fees. */
   private lawsuitTarget(g: GameImpl): number | null {
     const c = this.c;
     if (g.activeLawsuitBy(c)) return null;
-    const leader = g.leaderId();
-    if (leader === null || leader === c.id) return null;
-    if (g.valuation(g.companies[leader]).total < g.valuation(c).total * 1.3) return null;
-    return g.rng.chance(this.p.litigious * 0.02) ? leader : null;
+    const L = CONFIG.lawsuit;
+    let best: number | null = null;
+    let bestValue = 0;
+    for (const r of g.companies) {
+      if (!r.alive || r.id === c.id) continue;
+      const p = g.lawsuitWinChance(c.id, r.id);
+      if (p < 0.45) continue;
+      // Expected payoff: damages if we win, minus their costs if we lose, minus fees.
+      const value = p * g.lawsuitDamages(c.id, r.id) - (1 - p) * L.dismissedCounterCost - L.cost;
+      if (value > bestValue) (bestValue = value), (best = r.id);
+    }
+    return best !== null && g.rng.chance(0.1 + this.p.litigious * 0.2) ? best : null;
   }
+
 
   /** How much this company wants an untapped street, given its style. */
   private streetAppeal(g: GameImpl, tile: number): number {
@@ -166,8 +176,9 @@ export class BotExecution implements Execution {
         if (o === c.id) continue;
         if (o === NEUTRAL) {
           f.neutral++;
-          if (seen++ < 60) {
-            const d = this.streetAppeal(g, n) + g.rng.next();
+          if (seen++ < 120) {
+            // Value per push spent, like a good player, with a little variety.
+            const d = (this.streetAppeal(g, n) / g.tileCost(c, NEUTRAL, n)) * (0.85 + 0.3 * g.rng.next());
             if (d > bestDemand) {
               bestDemand = d;
               f.bestNeutral = n;
@@ -179,7 +190,10 @@ export class BotExecution implements Execution {
       }
     }
     for (const [owner, tile] of sample) {
-      const cost = g.tileCost(c, owner, tile) / g.map.spend[tile];
+      let cost = g.tileCost(c, owner, tile) / g.map.spend[tile];
+      // Competitors focus on a runaway leader, as real rivals do.
+      const leader = g.leaderId();
+      if (owner === leader && g.valuation(g.companies[owner]).total > g.valuation(c).total * 1.5) cost *= 0.6;
       if (cost < f.cheapestRival) {
         f.cheapestRival = cost;
         f.cheapestRivalTile = tile;

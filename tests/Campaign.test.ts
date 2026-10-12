@@ -106,7 +106,7 @@ describe('explaining losses', () => {
     rival.push = 120;
     const ours = [...me.border][0];
     act(r, { type: 'campaign', companyId: rival.id, tile: ours });
-    runDays(r, 5);
+    runDays(r, 11);
     expect(r.game.log.some((l) => l.recipient === 0 && l.text.includes(`${rival.name} stole`))).toBe(true);
   });
 

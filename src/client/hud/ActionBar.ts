@@ -9,14 +9,17 @@ type WithoutCompany<T> = T extends unknown ? Omit<T, 'companyId'> : never;
 
 const P = CONFIG.prices;
 const PRICE_TIPS: Record<PriceLevel, string> = {
-  low: `Low price: customers buy ×${P.low.volume} as much, you win streets faster and they stay loyal, but each sale earns less. Works best on budget streets.`,
-  medium: 'Medium price: a balance between margin and growth.',
-  high: `High price: each sale earns more, but customers buy only ×${P.high.volume} as much, growth is slower and rivals steal customers more easily, except on rich streets, where premium brands are sticky.`,
+  low: `Low price ($${P.low.revenue}): price elasticity: middle-income customers buy ×${P.low.volume} as much (budget customers even more, luxury ones barely more). You win streets faster and they stay loyal, but each sale earns less. Works best on budget streets.`,
+  medium: `Medium price ($${P.medium.revenue}): a balance between margin and growth.`,
+  high: `High price ($${P.high.revenue}): each sale earns more, but middle-income customers buy only ×${P.high.volume} as much (luxury customers barely change). Growth is slower and rivals steal customers more easily, except on rich streets, where premium brands are sticky.`,
 };
 
 /** Bottom of the screen: the levers you use every few seconds. */
 export class ActionBar {
   readonly root: HTMLElement;
+  /** Keep just enough operations staff, automatically. On by default for beginners. */
+  autoOps = true;
+  private lastAutoDay = -1;
 
   constructor(
     private game: GameImpl,
@@ -25,7 +28,7 @@ export class ActionBar {
   ) {
     const prices = PRICE_LEVELS.map(
       (p, i) =>
-        `<button data-price="${p}" title="${PRICE_TIPS[p]}">${CONFIG.prices[p].label} ${'$'.repeat(i + 1)}<small>sells ×${CONFIG.prices[p].volume}</small></button>`,
+        `<button data-price="${p}" title="${PRICE_TIPS[p]}">${CONFIG.prices[p].label} ${'$'.repeat(i + 1)}<small>customers buy ×${CONFIG.prices[p].volume}</small></button>`,
     ).join('');
     this.root = el(
       'section',
@@ -38,10 +41,13 @@ export class ActionBar {
       <div class="ab-block team" data-tip="team">
         <div class="ab-label">👥 Team <span data-v="team"></span></div>
         <div class="split">
-          <span title="Operations staff serve customers: ${CONFIG.staff.customersPerOps} each">⚙️ Ops <b data-v="ops"></b></span>
+          <span title="Operations staff serve customers: ${CONFIG.staff.customersPerOps} each">◀ ⚙️ Ops <b data-v="ops"></b></span>
           <input type="range" min="0" max="100" step="5" data-input="split" aria-label="Share of staff in sales" />
-          <span title="Sales staff build push to win new streets">Sales <b data-v="sales"></b> 🤝</span>
+          <span title="Sales staff build push to win new streets">Sales <b data-v="sales"></b> 🤝 ▶</span>
         </div>
+        <label class="auto" title="Keeps just enough operations staff to serve every customer; everyone else sells. Move the slider yourself to take over.">
+          <input type="checkbox" data-input="auto" checked /> Auto: keep enough Ops for all customers
+        </label>
         <div class="team-row">
           <span class="capacity" data-v="capacity"></span>
           <span class="hire">
@@ -71,7 +77,18 @@ export class ActionBar {
   private bind(): void {
     const r = this.root;
     const slider = $<HTMLInputElement>(r, '[data-input="split"]');
-    slider.addEventListener('input', () => this.send({ type: 'setSalesShare', share: Number(slider.value) / 100 }));
+    const auto = $<HTMLInputElement>(r, '[data-input="auto"]');
+    slider.addEventListener('input', () => {
+      // Taking the slider means taking over from autopilot.
+      this.autoOps = false;
+      auto.checked = false;
+      this.send({ type: 'setSalesShare', share: Number(slider.value) / 100 });
+    });
+    auto.addEventListener('change', () => {
+      this.autoOps = auto.checked;
+      this.lastAutoDay = -1;
+      auto.blur();
+    });
     // Give keyboard focus back to the game, so Space still pauses.
     slider.addEventListener('change', () => slider.blur());
     r.querySelectorAll<HTMLButtonElement>('[data-price]').forEach((b) =>
@@ -88,14 +105,27 @@ export class ActionBar {
     );
   }
 
+  /** Autopilot: just enough operations staff for every customer (5% slack). */
+  private autoBalance(): void {
+    const g = this.game;
+    const c = g.player;
+    const day = Math.floor(g.day);
+    if (!this.autoOps || day === this.lastAutoDay || c.employees === 0) return;
+    this.lastAutoDay = day;
+    const opsNeeded = Math.ceil((c.customers * 1.05) / CONFIG.staff.customersPerOps);
+    const share = Math.max(0, Math.min(0.95, 1 - opsNeeded / c.employees));
+    if (Math.abs(share - c.salesShare) > 0.01) this.send({ type: 'setSalesShare', share });
+  }
+
   update(): void {
     const g = this.game;
     const c = g.player;
     const r = this.root;
+    this.autoBalance();
 
     const fill = c.push / g.maxPush(c);
     $(r, '[data-v="pushFill"]').style.width = pct(fill);
-    $(r, '[data-v="pushText"]').textContent = `${Math.floor(c.push)} / ${Math.floor(g.maxPush(c))}`;
+    $(r, '[data-v="pushText"]').textContent = `${Math.floor(c.push)} / ${Math.floor(g.maxPush(c))} · next click spends ${Math.floor(c.push * CONFIG.sales.campaignShare)}`;
     $(r, '[data-v="pushRate"]').textContent = `+${g.pushPerDay(c).toFixed(1)}/day`;
     const hint = $(r, '[data-v="pushHint"]');
     if (g.salesStaff(c) === 0) hint.textContent = 'No sales staff: move the slider toward Sales.';

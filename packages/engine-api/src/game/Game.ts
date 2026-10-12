@@ -45,6 +45,9 @@ export interface Company {
   tiles: number;
   customers: number; // customers on owned streets
   spend: number; // customers × wealth multiplier: drives revenue
+  /** Customers and spend per wealth level, for price elasticity that depends on wealth. */
+  tierCustomers: number[];
+  tierSpend: number[];
   border: Set<number>;
 
   pnl: Pnl; // per day, latest

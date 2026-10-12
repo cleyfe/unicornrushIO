@@ -43,7 +43,7 @@ export function showGameOver(game: GameImpl, r: GameResult, onAgain: () => void)
   lessons.push(`Valuation = cash − debt + ${CONFIG.valuation.earningsMultiple}× yearly profit.`);
 
   const rows = [...game.companies]
-    .sort((a, b) => b.peakValuation - a.peakValuation)
+    .sort((a, b) => (b.id === r.winnerId ? 1 : 0) - (a.id === r.winnerId ? 1 : 0) || game.valuation(b).total - game.valuation(a).total)
     .map(
       (c) => `<tr><td><i style="background:${rgb(c.color)}"></i>${c.name}</td>
         <td>${c.alive ? money(game.valuation(c).total) : 'closed'}</td><td>${money(c.peakValuation)}</td><td>${c.peakTiles}</td></tr>`,
@@ -58,10 +58,13 @@ export function showGameOver(game: GameImpl, r: GameResult, onAgain: () => void)
     <table class="final"><tr><th>Company</th><th>Final value</th><th>Peak value</th><th>Peak streets</th></tr>${rows}</table>
     <h3>What to take away</h3>
     <ul>${lessons.map((l) => `<li>${l}</li>`).join('')}</ul>
-    <button class="primary" id="again">Play again</button>
+    <button class="primary" id="again" disabled>Play again</button>
   </div>`;
   document.body.append(overlay);
-  overlay.querySelector('#again')!.addEventListener('click', () => {
+  // A short delay so a click meant for the map doesn't dismiss the results.
+  const again = overlay.querySelector<HTMLButtonElement>('#again')!;
+  window.setTimeout(() => (again.disabled = false), 1500);
+  again.addEventListener('click', () => {
     overlay.remove();
     onAgain();
   });

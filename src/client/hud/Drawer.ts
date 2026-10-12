@@ -12,6 +12,8 @@ export type DrawerKind = 'finances' | 'lawsuit';
 export class Drawer {
   readonly root: HTMLElement;
   private kind: DrawerKind | null = null;
+  /** Called with true when a drawer opens and false when it closes (to pause the game). */
+  onOpenChange: (open: boolean) => void = () => {};
   private valueChart = new Sparkline('Valuation', '#60a5fa');
   private profitChart = new Sparkline('Profit per day', '#a78bfa');
 
@@ -26,6 +28,7 @@ export class Drawer {
 
   toggle(kind: DrawerKind): void {
     if (this.kind === kind) return this.close();
+    if (!this.kind) this.onOpenChange(true);
     this.kind = kind;
     this.root.hidden = false;
     this.root.innerHTML = `<button class="close" aria-label="Close">✕</button>${kind === 'finances' ? this.financesHtml() : this.lawsuitHtml()}`;
@@ -36,6 +39,7 @@ export class Drawer {
   }
 
   close(): void {
+    if (this.kind) this.onOpenChange(false);
     this.kind = null;
     this.root.hidden = true;
   }
@@ -47,7 +51,7 @@ export class Drawer {
       <h3>Profit &amp; loss <small>per day</small></h3>
       <table class="pnl">
         <tr><td>Revenue <small>customers served × spend × price</small></td><td data-v="revenue" class="pos"></td></tr>
-        <tr><td>− Variable costs <small>${money(CONFIG.variableCostPerCustomer)} per customer</small></td><td data-v="variableCost" class="neg"></td></tr>
+        <tr><td>− Variable costs <small data-v="varNote"></small></td><td data-v="variableCost" class="neg"></td></tr>
         <tr><td>− Salaries <small>${money(CONFIG.staff.salaryPerDay)} per person</small></td><td data-v="salaries" class="neg"></td></tr>
         <tr><td>− Interest <small>${pct(b.interestPerYear)} a year on debt</small></td><td data-v="interest" class="neg"></td></tr>
         <tr class="total"><td>= Profit</td><td data-v="profit"></td></tr>
@@ -80,15 +84,18 @@ export class Drawer {
   private lawsuitHtml(): string {
     const L = CONFIG.lawsuit;
     return `<h2>⚖️ Unfair-competition lawsuit</h2>
-      <p>Accuse a rival of unfair practices (misleading ads, poaching staff, predatory pricing) and claim damages. Legal fees: <b>${money(L.cost)}</b>. The ruling comes in <b>${L.courtDays} days</b>, and everyone sees it coming.</p>
-      <ul class="facts">
-        <li>✅ If the court agrees (${pct(1 - L.dismissChance)} chance): they pay you <b>${L.damagesRevenueDays} days</b> of their revenue in damages, and the bad press drives away <b>${pct(L.customerLoss)}</b> of their customers all over the city.</li>
-        <li>❌ If it's dismissed (${pct(L.dismissChance)}): you pay their ${money(L.dismissedCounterCost)} legal costs.</li>
-        <li>One case at a time. Fees and damages show up in Finances under one-off cash flows.</li>
-      </ul>
+      <p>Sue a rival that hurt your business unfairly. The court looks at the <b>evidence</b>: streets they took from you recently (poaching your customers), and predatory pricing if they sell cheap. Legal fees: <b>${money(L.cost)}</b>; ruling in <b>${L.courtDays} days</b>.</p>
+      <table class="cases-table">
+        <tr><th>Rival</th><th title="Streets they took from you recently (older ones count less)">Evidence</th><th>Win chance</th><th title="Your lost profits on those streets">Damages</th><th title="Average result after fees and risk">Worth it?</th></tr>
+        <tbody data-v="caseRows"></tbody>
+      </table>
       <div class="sue-row"><select data-input="target" aria-label="Rival to sue"></select><button data-act="sue" class="danger">Sue for ${money(L.cost)}</button></div>
+      <ul class="facts">
+        <li>✅ If you win: they pay your lost profits as damages, and bad press drives away ${pct(L.customerLoss)} of their customers.</li>
+        <li>❌ If you lose: you pay their ${money(L.dismissedCounterCost)} legal costs on top of your fees.</li>
+      </ul>
       <div data-v="cases"></div>
-      <p class="tip">💡 Legal risk is a real business cost: even a strong company can lose a quarter of its market in one ruling.</p>`;
+      <p class="tip">💡 Courts decide on evidence, not on who is winning. Suing without a case is an expensive bet.</p>`;
   }
 
   private bind(): void {
@@ -117,6 +124,8 @@ export class Drawer {
       const p = c.pnl;
       this.set('revenue', money(p.revenue));
       this.set('variableCost', money(p.variableCost));
+      const unit = CONFIG.variableCostPerCustomer * g.variableCostMult();
+      this.set('varNote', `${money(unit)} per purchase${g.variableCostMult() > 1 ? ' (supplier price hike!)' : ''}`);
       this.set('salaries', money(p.salaries));
       this.set('interest', money(p.interest));
       this.set('profit', money(p.profit), p.profit >= 0 ? 'pos' : 'neg');
@@ -139,10 +148,27 @@ export class Drawer {
       return;
     }
     const select = $<HTMLSelectElement>(this.root, '[data-input="target"]');
+    const L = CONFIG.lawsuit;
     const rivals = g.companies.filter((r) => r.alive && r.id !== c.id);
+    const cases = rivals
+      .map((r) => {
+        const p = g.lawsuitWinChance(c.id, r.id);
+        const damages = g.lawsuitDamages(c.id, r.id);
+        return { r, p, damages, value: p * damages - (1 - p) * L.dismissedCounterCost - L.cost, evidence: g.streetsTaken(r.id, c.id) };
+      })
+      .sort((a, b) => b.value - a.value);
+    $(this.root, '[data-v="caseRows"]').innerHTML = cases
+      .map(
+        (k) => `<tr><td><i style="background:rgb(${k.r.color.join(',')})"></i>${k.r.name}</td>
+          <td>${k.evidence >= 0.5 ? `took ${Math.round(k.evidence)} streets` : 'none'}${k.r.price === 'low' ? ' · cheap' : ''}</td>
+          <td>${pct(k.p)}</td><td>${money(k.damages)}</td>
+          <td class="${k.value > 0 ? 'pos' : 'neg'}">${k.value > 0 ? '+' : ''}${money(k.value)}</td></tr>`,
+      )
+      .join('');
     const key = rivals.map((r) => r.id).join(',');
     if (select.dataset.key !== key) {
-      select.innerHTML = rivals.map((r) => `<option value="${r.id}">${r.name} · ${money(g.valuation(r).total)}</option>`).join('');
+      // Best case first: that's usually who you want to sue.
+      select.innerHTML = cases.map((k) => `<option value="${k.r.id}">${k.r.name} · ${pct(k.p)} chance</option>`).join('');
       select.dataset.key = key;
     }
     const sue = $<HTMLButtonElement>(this.root, '[data-act="sue"]');

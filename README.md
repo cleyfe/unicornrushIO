@@ -30,10 +30,10 @@ Investors pay for profit, so a smaller, profitable company can beat a big one th
 |---|---|---|
 | **Ops / Sales split** | Ops staff serve 20 customers each. Sales staff generate *push* to win new streets, with diminishing returns: a huge sales force gets less push per person. | Resource allocation, opportunity cost, diminishing returns |
 | **Hire / Fire** | $500 to hire, $100/day salary, 8 days of training before new hires are productive. $300 severance. | Hiring is an investment that pays back over time |
-| **Price** (Low / Medium / High) | $25 / $40 / $55 per purchase. Customers buy ×1.4 / ×1 / ×0.8 as much, and low prices win and keep customers more easily. | Price elasticity of demand, margin vs volume |
+| **Price** (Low / Medium / High) | $28 / $40 / $55 per purchase. Middle-income customers buy ×1.4 / ×1 / ×0.8 as much; budget customers react more, luxury ones barely. Low prices also win and keep customers more easily. | Price elasticity of demand, margin vs volume |
 | **Campaigns** | Click a street (or a building on it) next to yours to spend half your push winning it and its neighbours. | Customer acquisition cost |
 | **Bank loan** | $25K at a time, 24%/year interest, credit limit = 60 days of revenue | Leverage and risk |
-| **Lawsuit** ⚖️ | $250K to sue a rival for unfair competition. See below. | Legal risk |
+| **Lawsuit** ⚖️ | $250K to sue a rival for unfair competition; the court decides on evidence. See below. | Legal risk, damages as lost profits |
 
 ### The city
 
@@ -45,13 +45,15 @@ floors) mean more customers. Buildings are coloured by how wealthy the neighbour
 
 | Wealth | Customers spend | Customers | Price sensitivity | Prestige |
 |---|---|---|---|---|
-| $ Budget | ×0.7 | more per building | high: undercutting works | cheap brands do fine |
+| $ Budget | ×0.7 | more per building | high: undercutting works, and low prices make them buy much more | cheap brands do fine |
 | $$ Middle | ×1.0 | normal | normal | normal |
 | $$$ Upscale | ×1.5 | fewer (bigger homes) | low | premium brands hold customers better |
-| $$$$ Luxury | ×2.2 | fewest | very low: price barely matters | premium brands are sticky; cheap ones look cheap |
+| $$$$ Luxury | ×2.2 | fewest | very low: price barely changes what they buy | premium brands are sticky; cheap ones look cheap |
 
-Serving a customer costs the same everywhere, so rich streets have much fatter margins. They
-also cost more sales push to win.
+Serving a customer costs the same everywhere, so rich streets have much fatter margins. But rich
+customers are harder to win: a luxury customer costs about 2.8× the sales push of a middle-income
+one, and a budget customer about 0.6×. Every strategy (cheap on budget streets, premium on luxury
+ones, or in between) earns a similar profit per unit of sales effort; they differ in risk.
 
 **First city: Paris · Opéra & Monceau**, from Parc Monceau and the Golden Triangle to Pigalle.
 
@@ -93,12 +95,24 @@ Stealing a rival's street costs more when the rival:
 
 ### Unfair-competition lawsuits ⚖️
 
-The big weapon: accuse a rival of unfair practices (misleading ads, poaching, predatory pricing)
-and sue for **$250K** in legal fees. The case takes **30 days**, and everyone sees it coming.
-Courts dismiss **35%** of cases, and then you pay the defendant's $150K costs. Otherwise the
-defendant pays you **8 days of its revenue** in damages, and the bad press drives away **25% of
-its customers in clusters all over its territory**. One case at a time per company. Fees and
-damages are listed under one-off cash flows in Finances.
+Sue a rival that hurt your business unfairly, for **$250K** in legal fees. The court decides on
+**evidence**: every street the rival took from you recently counts (poaching your customers),
+plus a predatory-pricing claim if it sells cheap. With no evidence you have about a 10% chance;
+a strong case reaches 85%. Old grievances fade (half-life 70 days).
+
+- **If you win:** the rival pays your **lost profits** on the streets it took (45 days' worth), and
+  the bad press drives away **15% of its customers** all over its territory.
+- **If you lose:** you pay the rival's $150K legal costs on top of your fees.
+
+The lawsuit drawer shows your case against each rival: evidence, win chance, damages and whether
+it's worth it on average. Bots only sue when they have a good case. Fees and damages are listed
+under one-off cash flows in Finances.
+
+### Competition authority 🏛️
+
+A company serving more than **35%** of the city's customers gets a warning. If it stays above
+**40%** for 30 days, it is fined **20 days of revenue** and must give up **10% of its streets**,
+as regulators do with monopolies. It can happen again after 120 days.
 
 ### Market events (every ~4–6 months)
 

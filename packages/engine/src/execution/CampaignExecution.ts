@@ -88,7 +88,10 @@ export class CampaignExecution implements Execution {
         const def = game.companies[this.target];
         def.push = Math.max(0, def.push - cost * CONFIG.sales.retentionDrain);
       }
-      if (this.target >= 0) game.recordLoss(this.target, c.id);
+      if (this.target >= 0) {
+        game.recordLoss(this.target, c.id);
+        game.recordTaking(c.id, this.target, game.map.spend[tile]);
+      }
       game.setOwner(tile, c.id);
     }
     return false;

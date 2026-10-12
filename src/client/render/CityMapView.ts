@@ -148,14 +148,15 @@ export class CityMapView {
       paint: {
         'line-color': expr([
           'case',
-          ['boolean', ['feature-state', 'hover'], false],
-          '#ffffff',
           ['boolean', ['feature-state', 'court'], false],
           COURT_STREET,
           ['boolean', ['feature-state', 'border'], false],
           borderColor,
           owned,
           this.ownerColor(),
+          // Hovering an untapped street lights it up; owned streets keep their colour.
+          ['boolean', ['feature-state', 'hover'], false],
+          '#ffffff',
           // Streets the player can expand into glow, so it's clear where to click.
           ['boolean', ['feature-state', 'frontier'], false],
           FRONTIER_STREET,
@@ -184,8 +185,9 @@ export class CityMapView {
     map.addLayer({ id: 'streets-hit', type: 'line', source: 'streets', paint: { 'line-width': 16, 'line-opacity': 0 } });
     this.ready = true;
     this.update();
-    this.focusOnPlayer(false);
     this.onReady();
+    // Start on the whole city so you see where your rivals are, then fly to you.
+    window.setTimeout(() => this.focusOnPlayer(true), 1200);
   }
 
   /** Moves the camera to the player's territory. */
@@ -210,7 +212,7 @@ export class CityMapView {
         [w, s],
         [e, n],
       ],
-      { padding: { top: 140, bottom: 220, left: 340, right: 320 }, maxZoom: 15.6, duration: animate ? 800 : 0 },
+      { padding: { top: 140, bottom: 220, left: 340, right: 320 }, maxZoom: 15.6, duration: animate ? 1800 : 0 },
     );
   }
 
@@ -231,7 +233,8 @@ export class CityMapView {
       this.drawnBorder[i] = border;
       this.map.setFeatureState(
         { source: 'streets', id: i },
-        { owner: o, border: border === 1, court: o >= 0 && defendants.has(o) },
+        // Only the border of a company on trial glows, so it doesn't swamp the map.
+        { owner: o, border: border === 1, court: border === 1 && defendants.has(o) },
       );
       if (ownerChanged) {
         for (const b of this.buildingsOf[i]) this.map.setFeatureState({ source: 'buildings', id: b }, { owner: o });

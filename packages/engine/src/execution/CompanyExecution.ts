@@ -29,7 +29,7 @@ export class CompanyExecution implements Execution {
     c.peakTiles = Math.max(c.peakTiles, c.tiles);
     c.peakValuation = Math.max(c.peakValuation, game.valuation(c).total);
     this.checkSolvency(game);
-    if (game.tick % (CONFIG.ticksPerDay * 4) === 0) game.reportLosses(c.id);
+    if (game.tick % (CONFIG.ticksPerDay * 10) === 0) game.reportLosses(c.id);
   }
 
   private graduateTrainees(game: GameImpl): void {
@@ -73,11 +73,19 @@ export class CompanyExecution implements Execution {
     const c = this.c;
     const coverage = game.coverage(c);
     const price = CONFIG.prices[c.price];
+    // Revenue depends on how much customers spend; serving them costs the same everywhere.
+    // Price elasticity: cheaper prices make each customer buy more (and cost more to
+    // serve), more so for price-sensitive budget customers than for luxury ones.
+    let soldSpend = 0;
+    let soldUnits = 0;
+    for (let t = 0; t < 4; t++) {
+      const v = game.volume(c, t);
+      soldSpend += c.tierSpend[t] * v;
+      soldUnits += c.tierCustomers[t] * v;
+    }
     const p = {
-      // Revenue depends on how much customers spend; serving them costs the same everywhere.
-      // Price elasticity: cheaper prices make each customer buy more (and cost more to serve).
-      revenue: c.spend * coverage * price.volume * price.revenue * game.revenueMult(),
-      variableCost: c.customers * coverage * price.volume * CONFIG.variableCostPerCustomer * game.variableCostMult(),
+      revenue: soldSpend * coverage * price.revenue * game.revenueMult(),
+      variableCost: soldUnits * coverage * CONFIG.variableCostPerCustomer * game.variableCostMult(),
       salaries: (c.employees + game.traineeCount(c)) * CONFIG.staff.salaryPerDay,
       interest: (c.debt * CONFIG.bank.interestPerYear) / 365,
       profit: 0,
@@ -85,7 +93,9 @@ export class CompanyExecution implements Execution {
     p.profit = p.revenue - p.variableCost - p.salaries - p.interest;
     c.pnl = p;
     c.cash += p.profit * DT;
-    c.avgProfit += (p.profit - c.avgProfit) * (DT / CONFIG.valuation.profitWindowDays);
+    // Trailing average of daily profit; it starts at the first day's profit instead of ramping up from zero.
+    if (game.tick === 1) c.avgProfit = p.profit;
+    else c.avgProfit += (p.profit - c.avgProfit) * (DT / CONFIG.valuation.profitWindowDays);
   }
 
   private checkSolvency(game: GameImpl): void {

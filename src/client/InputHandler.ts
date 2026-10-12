@@ -76,7 +76,9 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
   const o = g.owner[seg];
   const me = g.player;
   const street = city.segments.names[seg] || 'Unnamed street';
-  const perDay = g.map.spend[seg] * CONFIG.prices[me.price].revenue - g.map.demand[seg] * CONFIG.variableCostPerCustomer;
+  const vol = g.volume(me, level);
+  const perDay =
+    vol * (g.map.spend[seg] * CONFIG.prices[me.price].revenue * g.revenueMult() - g.map.demand[seg] * CONFIG.variableCostPerCustomer * g.variableCostMult());
   const owner =
     o === NEUTRAL ? 'Untapped' : o === 0 ? 'Yours' : `<i style="background:rgb(${g.companies[o].color.join(',')})"></i>${g.companies[o].name}`;
   let action = '';
@@ -84,10 +86,10 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
     const cost = g.tileCost(me, o, seg);
     if (!reachable) action = '<div class="hc-action muted">Not next to your streets yet</div>';
     else if (me.push * CONFIG.sales.campaignShare >= cost) action = `<div class="hc-action ok">✓ Click to win it · ${cost.toFixed(0)} push</div>`;
-    else action = `<div class="hc-action wait">Needs ${cost.toFixed(0)} push (you have ${Math.floor(me.push * CONFIG.sales.campaignShare)} to spend)</div>`;
+    else action = `<div class="hc-action wait">Needs ${cost.toFixed(0)} push · your next click spends ${Math.floor(me.push * CONFIG.sales.campaignShare)}</div>`;
   }
   return `<div class="hc-title">${street}</div>
     <div class="hc-row"><span class="w${level}">${'$'.repeat(level + 1)} ${tier.label}</span><span>${owner}</span></div>
-    <div class="hc-row"><span>${g.map.demand[seg].toFixed(1)} customers × ${tier.spend} spend</span><span>≈ ${money(perDay)}/day</span></div>
+    <div class="hc-row"><span>${g.map.demand[seg].toFixed(1)} customers × ${tier.spend} spend</span><span>≈ ${money(perDay)} profit/day</span></div>
     ${action}`;
 }

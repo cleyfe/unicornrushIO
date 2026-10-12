@@ -3,6 +3,7 @@ import type { CompanySpec } from '@unicornrush/engine-api/game/Game';
 import type { Intent } from '@unicornrush/engine-api/Intents';
 import { BotExecution } from './execution/bots/BotExecution';
 import { CompanyExecution } from './execution/CompanyExecution';
+import { CompetitionAuthorityExecution } from './execution/CompetitionAuthorityExecution';
 import { createExecution } from './execution/ExecutionManager';
 import { MarketEventExecution } from './execution/MarketEventExecution';
 import { WinCheckExecution } from './execution/WinCheckExecution';
@@ -22,6 +23,7 @@ export class GameRunner {
     this.game = new GameImpl(seed, companies, city);
     const g = this.game;
     g.addExecution(new MarketEventExecution());
+    g.addExecution(new CompetitionAuthorityExecution());
     for (const c of g.companies) g.addExecution(new CompanyExecution(c.id));
     for (const c of g.companies) if (c.isBot) g.addExecution(new BotExecution(c.id));
     g.addExecution(new WinCheckExecution());

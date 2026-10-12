@@ -60,7 +60,7 @@ export class Coach {
       {
         id: 'overload',
         anchor: '.action-bar .team',
-        text: '⚙️ <b>Overloaded!</b> Each operations employee serves ' + CONFIG.staff.customersPerOps + ' customers. Unserved customers leave: slide toward Ops, or hire.',
+        text: '⚙️ <b>Overloaded!</b> Each operations employee serves ' + CONFIG.staff.customersPerOps + ' customers. Unserved customers leave: turn on <b>Auto</b>, slide left toward ⚙️ Ops, or hire.',
         when: (g) => g.coverage(g.player) < 0.97,
         done: (g) => g.coverage(g.player) >= 1,
       },

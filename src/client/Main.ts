@@ -69,6 +69,16 @@ async function startGame(name: string, cityId: CityId): Promise<void> {
   const labels = new CompanyLabels(game, city, view.map);
   const history = new History(game);
   const drawer = new Drawer(game, (i) => client.send(i), history);
+  // Opening a drawer pauses the game, so you can read and decide calmly.
+  let speedBeforeDrawer = 0;
+  drawer.onOpenChange = (open) => {
+    if (open) {
+      speedBeforeDrawer = client.speed;
+      client.speed = 0;
+    } else if (started) {
+      client.speed = speedBeforeDrawer;
+    }
+  };
   let speedBeforeHelp = 1;
   const top = new TopBar(game, `${info.flag} ${info.name} · ${info.area}`, setSpeed, () => {
     speedBeforeHelp = client.speed;
@@ -110,9 +120,13 @@ async function startGame(name: string, cityId: CityId): Promise<void> {
     }
     labels.update(now);
     history.update();
-    for (const l of client.newLogEntries()) {
+    const fresh = client.newLogEntries();
+    // When a lawsuit involves you, show your personal message instead of the public one.
+    const personalSuit = fresh.some((l) => l.recipient === 0 && l.text.startsWith('⚖️'));
+    for (const l of fresh) {
       if (l.recipient === 0 && l.tone === 'error') toast(l.text);
-      else if (l.recipient === undefined || l.recipient === 0) news.push(l);
+      else if (l.recipient === 0) news.push(l);
+      else if (l.recipient === undefined && !(personalSuit && l.text.startsWith('⚖️'))) news.push(l);
     }
     uiTimer += elapsed;
     if (uiTimer > 120 || game.result) {

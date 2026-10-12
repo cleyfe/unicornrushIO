@@ -37,6 +37,9 @@ export class GameImpl {
   /** Bumped whenever tile ownership changes, so renderers can skip redraws. */
   ownershipVersion = 0;
 
+  /** Evidence for lawsuits: streets (and their spend) attacker took from victim, decaying over time. */
+  private takenStreets = new Map<string, number>();
+  private takenSpend = new Map<string, number>();
   /** Streets each company lost since its last report, by cause (a rival's id, or churn). */
   private losses = new Map<number, Map<number | 'churn', number>>();
   private executions: Execution[] = [];
@@ -63,6 +66,7 @@ export class GameImpl {
   executeNextTick(): void {
     if (this.result) return;
     this.tick++;
+    if (this.isNewDay()) this.decayEvidence();
     this.startPending();
     for (const e of this.executions) if (e.isActive()) e.tick(this);
     this.executions = this.executions.filter((e) => e.isActive());
@@ -157,6 +161,11 @@ export class GameImpl {
     return { cash: c.cash, debt: c.debt, earnings, total: c.cash - c.debt + earnings };
   }
 
+  /** How much a customer of this wealth level buys at company c's price (price elasticity). */
+  volume(c: Company, wealthLevel: number): number {
+    return 1 + (CONFIG.prices[c.price].volume - 1) * CONFIG.wealth[wealthLevel].priceSensitivity;
+  }
+
   revenueMult(): number {
     let m = 1;
     for (const e of this.events) {
@@ -176,7 +185,7 @@ export class GameImpl {
   tileCost(attacker: Company, target: number, tile: number): number {
     // Wealthier customers are worth more, and harder to win.
     const w = CONFIG.wealth[this.map.wealth[tile]];
-    const d = this.map.demand[tile] * (0.5 + 0.5 * w.spend);
+    const d = this.map.demand[tile] * w.pushCost;
     if (target === NEUTRAL) return CONFIG.sales.neutralTileCost * d;
     const def = this.companies[target];
     // Price matters a lot to budget customers and little to luxury ones,
@@ -216,6 +225,43 @@ export class GameImpl {
 
   // ---------- state changes shared by executions ----------
 
+  /** Records that `taker` won a street from `victim`, as evidence for a lawsuit. */
+  recordTaking(taker: number, victim: number, spend: number): void {
+    const key = `${taker}>${victim}`;
+    this.takenStreets.set(key, (this.takenStreets.get(key) ?? 0) + 1);
+    this.takenSpend.set(key, (this.takenSpend.get(key) ?? 0) + spend);
+  }
+
+  /** Recent streets `taker` took from `victim` (older ones count less). */
+  streetsTaken(taker: number, victim: number): number {
+    return this.takenStreets.get(`${taker}>${victim}`) ?? 0;
+  }
+
+  spendTaken(taker: number, victim: number): number {
+    return this.takenSpend.get(`${taker}>${victim}`) ?? 0;
+  }
+
+  /** Once a day, old grievances fade (half-life `evidenceHalfLifeDays`). */
+  decayEvidence(): void {
+    const k = 1 - 0.693 / CONFIG.lawsuit.evidenceHalfLifeDays;
+    for (const m of [this.takenStreets, this.takenSpend]) for (const [key, v] of m) m.set(key, v * k);
+  }
+
+  /** Chance `plaintiff` wins a lawsuit against `defendant`, from the evidence. */
+  lawsuitWinChance(plaintiff: number, defendant: number): number {
+    const L = CONFIG.lawsuit;
+    let p = L.baseWinChance + L.winChancePerStolenStreet * this.streetsTaken(defendant, plaintiff);
+    if (this.companies[defendant].price === 'low') p += L.predatoryPricingBonus;
+    return Math.min(L.maxWinChance, p);
+  }
+
+  /** Damages if `plaintiff` wins: its lost profits on the streets `defendant` took. */
+  lawsuitDamages(plaintiff: number, defendant: number): number {
+    const L = CONFIG.lawsuit;
+    const lostPerDay = this.spendTaken(defendant, plaintiff) * (CONFIG.prices.medium.revenue - CONFIG.variableCostPerCustomer);
+    return Math.max(0, lostPerDay * L.damagesDays);
+  }
+
   recordLoss(loser: number, cause: number | 'churn'): void {
     if (this.companies[loser].isBot) return;
     if (!this.losses.has(loser)) this.losses.set(loser, new Map());
@@ -227,12 +273,40 @@ export class GameImpl {
   reportLosses(companyId: number): void {
     const m = this.losses.get(companyId);
     if (!m || m.size === 0) return;
+    const streets = (n: number) => (n === 1 ? '1 street' : `${n} streets`);
+    const parts: string[] = [];
     for (const [cause, n] of m) {
-      const streets = n === 1 ? '1 street' : `${n} streets`;
-      if (cause === 'churn') this.message(companyId, `${streets} left you: you were overloaded and couldn't serve them.`, 'bad');
-      else this.message(companyId, `${this.companies[cause].name} stole ${streets} from you.`, 'bad');
+      if (cause === 'churn') parts.push(`${streets(n)} left because you were overloaded`);
+      else parts.push(`${this.companies[cause].name} stole ${streets(n)}`);
     }
+    this.message(companyId, `You lost streets: ${parts.join('; ')}.`, 'bad');
     m.clear();
+  }
+
+/** Releases customers in several clusters spread over the territory. */
+  releaseScattered(ownerId: number, total: number, clusters: number): number {
+    const game = this;
+    const owned: number[] = [];
+    for (let i = 0; i < game.owner.length; i++) if (game.owner[i] === ownerId) owned.push(i);
+    if (owned.length === 0 || total <= 0) return 0;
+    const perCluster = Math.max(1, Math.ceil(total / clusters));
+    const nb: number[] = [];
+    let lost = 0;
+    for (let k = 0; k < clusters && lost < total; k++) {
+      const start = owned[game.rng.int(0, owned.length)];
+      if (game.owner[start] !== ownerId) continue;
+      const queue = [start];
+      let taken = 0;
+      while (queue.length > 0 && taken < perCluster && lost < total) {
+        const t = queue.shift()!;
+        if (game.owner[t] !== ownerId) continue;
+        game.setOwner(t, NEUTRAL);
+        taken++;
+        lost++;
+        for (const n of neighbors(game.map, t, nb)) if (game.owner[n] === ownerId) queue.push(n);
+      }
+    }
+    return lost;
   }
 
   closeCompany(c: Company, why: string): void {
@@ -261,6 +335,8 @@ export class GameImpl {
       oc.tiles--;
       oc.customers -= d;
       oc.spend -= this.map.spend[tile];
+      oc.tierCustomers[this.map.wealth[tile]] -= d;
+      oc.tierSpend[this.map.wealth[tile]] -= this.map.spend[tile];
       oc.border.delete(tile);
     }
     this.owner[tile] = newOwner;
@@ -269,6 +345,8 @@ export class GameImpl {
       nc.tiles++;
       nc.customers += d;
       nc.spend += this.map.spend[tile];
+      nc.tierCustomers[this.map.wealth[tile]] += d;
+      nc.tierSpend[this.map.wealth[tile]] += this.map.spend[tile];
     }
     this.refreshBorder(tile);
     for (const n of neighbors(this.map, tile, this.nb2)) this.refreshBorder(n);
@@ -396,6 +474,8 @@ function newCompany(id: number, s: CompanySpec): Company {
     tiles: 0,
     customers: 0,
     spend: 0,
+    tierCustomers: [0, 0, 0, 0],
+    tierSpend: [0, 0, 0, 0],
     border: new Set(),
     pnl: emptyPnl(),
     oneOff: { hiring: 0, severance: 0, legalFees: 0, damages: 0 },
