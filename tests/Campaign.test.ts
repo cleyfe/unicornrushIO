@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
+import { neighbors4 } from '@unicornrush/engine-lib/game/GameMap';
 import { act, lastMessage, neutralNeighbour, quietSetup, runDays } from './util/Setup';
 
 describe('sales campaigns', () => {
@@ -34,5 +36,53 @@ describe('sales campaigns', () => {
     rival.price = 'high';
     const pricey = g.tileCost(g.player, rival.id, tile);
     expect(cheap).toBeGreaterThan(pricey);
+  });
+});
+
+describe('defending customers', () => {
+  const rivalTile = (r: ReturnType<typeof quietSetup>) => r.game.companies[1].border.values().next().value!;
+
+  it('makes streets dearer to steal when the defender holds retention push', () => {
+    const r = quietSetup();
+    const g = r.game;
+    const tile = rivalTile(r);
+    g.companies[1].push = 0;
+    const undefended = g.tileCost(g.player, 1, tile);
+    g.companies[1].push = 300;
+    expect(g.tileCost(g.player, 1, tile)).toBeGreaterThan(undefended * 1.5);
+  });
+
+  it('rewards spare operations staff with more loyal customers', () => {
+    const r = quietSetup();
+    const g = r.game;
+    const def = g.companies[1];
+    const tile = rivalTile(r);
+    def.salesShare = 0.5;
+    const normal = g.tileCost(g.player, 1, tile);
+    def.salesShare = 0; // everyone in operations: service level above 1
+    expect(g.serviceLevel(def)).toBeGreaterThan(1);
+    expect(g.tileCost(g.player, 1, tile)).toBeGreaterThan(normal);
+  });
+
+  it('drains the defender’s push as it loses streets', () => {
+    const r = quietSetup();
+    const g = r.game;
+    const me = g.player;
+    const def = g.companies[1];
+    // Put the rival right next to us by giving it a street on our border.
+    const nb: number[] = [];
+    let target = -1;
+    for (const b of me.border) {
+      for (const n of neighbors4(g.map, b, nb)) if (g.owner[n] === NEUTRAL) target = n;
+      if (target >= 0) break;
+    }
+    g.setOwner(target, def.id);
+    def.push = 200;
+    me.push = 1e6;
+    me.salesShare = 0.5;
+    act(r, { type: 'campaign', companyId: 0, tile: target });
+    runDays(r, 1);
+    expect(g.owner[target]).toBe(0);
+    expect(def.push).toBeLessThan(200);
   });
 });

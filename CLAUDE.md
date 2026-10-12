@@ -11,6 +11,7 @@ npm test           # all tests (Vitest)
 npm run typecheck  # tsc
 npm run build      # typecheck + production build to dist/
 npm run balance -- 16   # simulate 16 bot-only matches and print outcomes
+npm run fairness -- 48  # controlled experiments: seat bias, price only, AI only, default lineup
 ```
 
 Run one test file: `npx vitest run tests/Lawsuit.test.ts`.
@@ -59,6 +60,20 @@ Intent executions: `CampaignExecution` (winning customers), `LawsuitExecution`
 2. Write `XxxExecution` in `packages/engine/src/execution/` and map it in `ExecutionManager.ts`.
 3. Put any numbers in `packages/engine-lib/src/configuration/Config.ts`.
 4. Add a test in `tests/`, a control in `src/client/hud/ControlPanel.ts`, and
-   check `npm run balance` still gives varied winners and unicorns around day 350–700.
+   check balance (below).
+
+### Balance checks
+
+Run `npm run fairness -- 48` after any rule or AI change. Each experiment rotates
+setups across seats, so 48 matches with 4 setups means ~12 wins each is perfectly fair.
+
+- **Seat bias** (identical companies): no seat far from 12. A gap means spawn or update-order bias.
+- **Price only** (same AI, different prices): no price should dominate. This tests the rules.
+- **AI only** (same price, different personalities): personalities should be equally
+  competent and differ in style. A dominant one means a rule rewards one behaviour too much.
+- **Default lineup**: every company should win sometimes; unicorns around day 350–700.
+
+Bot-only matches don't end when company 0 closes (only a human player's bankruptcy ends
+the match), so results aren't skewed by whoever happens to lead that day.
 
 Engine changes must include tests.

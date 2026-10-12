@@ -107,6 +107,16 @@ export class GameImpl {
     return this.opsStaff(c) * CONFIG.staff.tilesPerOps + c.buildings.branch * CONFIG.buildings.branch.capacity;
   }
 
+  /** Capacity relative to streets, capped: above 1 means spare staff and better service. */
+  serviceLevel(c: Company): number {
+    return c.tiles === 0 ? 1 : Math.min(CONFIG.sales.maxServiceLevel, this.capacity(c) / c.tiles);
+  }
+
+  /** Push the defender holds per street: its customer-retention effort. */
+  retention(c: Company): number {
+    return 1 + (CONFIG.sales.retentionPerPush * c.push) / Math.max(1, c.tiles);
+  }
+
   coverage(c: Company): number {
     return c.tiles === 0 ? 1 : Math.min(1, this.capacity(c) / c.tiles);
   }
@@ -168,7 +178,7 @@ export class GameImpl {
     let loyalty = 1 + (CONFIG.prices[def.price].loyalty - 1) * sens;
     if (def.price === 'high') loyalty *= w.prestige;
     if (def.price === 'low') loyalty /= w.prestige;
-    let mult = Math.max(0.3, this.coverage(def)) * loyalty;
+    let mult = Math.max(0.3, this.serviceLevel(def)) * loyalty * this.retention(def);
     const ar = CONFIG.prices[attacker.price].revenue;
     const dr = CONFIG.prices[def.price].revenue;
     if (ar < dr) mult *= 1 - 0.25 * sens;
@@ -319,7 +329,7 @@ function newCompany(id: number, s: CompanySpec): Company {
     employees: CONFIG.start.employees,
     trainees: [],
     salesShare: CONFIG.start.salesShare,
-    price: s.personality === 'discounter' ? 'low' : s.personality === 'premium' ? 'high' : 'medium',
+    price: s.price ?? (s.personality === 'discounter' ? 'low' : s.personality === 'premium' ? 'high' : 'medium'),
     buildings: { branch: 0, warehouse: 0, adAgency: 0, legalDept: 0 },
     buildingSpend: 0,
     push: 0,

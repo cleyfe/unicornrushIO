@@ -14,12 +14,17 @@ interface Persona {
   borrows: boolean;
   aggression: number; // 0..1 appetite for stealing rivals' customers
   litigious: number; // 0..1 appetite for suing the market leader
+  service: number; // operations capacity kept per street (above 1 = better service)
+  pushReserve: number; // share of max push kept back for defence before attacking
+  taste: 'volume' | 'mixed' | 'wealth'; // which streets it goes after
 }
 
 const PERSONAS: Record<Personality, Persona> = {
-  discounter: { maxSales: 0.7, salesRatio: 1.0, reserveDays: 8, borrows: true, aggression: 1, litigious: 1 },
-  balanced: { maxSales: 0.6, salesRatio: 0.7, reserveDays: 12, borrows: true, aggression: 0.6, litigious: 0.5 },
-  premium: { maxSales: 0.5, salesRatio: 0.5, reserveDays: 18, borrows: false, aggression: 0.3, litigious: 0.3 },
+  // Equally competent players with different styles: they only differ in
+  // price, which streets they want, and how they balance attack and defence.
+  discounter: { maxSales: 0.65, salesRatio: 0.9, reserveDays: 10, borrows: true, aggression: 1, litigious: 1, service: 1.05, pushReserve: 0.3, taste: 'volume' },
+  balanced: { maxSales: 0.6, salesRatio: 0.8, reserveDays: 10, borrows: true, aggression: 0.6, litigious: 0.5, service: 1.15, pushReserve: 0.4, taste: 'mixed' },
+  premium: { maxSales: 0.6, salesRatio: 0.8, reserveDays: 10, borrows: true, aggression: 0.5, litigious: 0.3, service: 1.25, pushReserve: 0.45, taste: 'wealth' },
 };
 
 interface Frontier {
@@ -70,7 +75,7 @@ export class BotExecution implements Execution {
 
     // 1. Staff split: enough operations to serve every customer, the rest sells.
     const branchCap = c.buildings.branch * b.branch.capacity;
-    const opsNeeded = Math.ceil(Math.max(0, c.tiles * 1.08 - branchCap) / s.tilesPerOps);
+    const opsNeeded = Math.ceil(Math.max(0, c.tiles * p.service - branchCap) / s.tilesPerOps);
     const share = c.employees > 0 ? 1 - opsNeeded / c.employees : 0;
     this.act(g, { type: 'setSalesShare', companyId: id, share: Math.min(p.maxSales, Math.max(0.05, share)) });
 
@@ -135,7 +140,7 @@ export class BotExecution implements Execution {
     }
 
     // 6. Sales campaigns.
-    if (c.push >= Math.max(5, g.maxPush(c) * 0.3)) {
+    if (c.push >= Math.max(5, g.maxPush(c) * p.pushReserve)) {
       let tile = -1;
       if (f.neutral > 8 || (f.neutral > 0 && f.cheapestRivalTile < 0)) tile = f.bestNeutral;
       else if (f.cheapestRival <= this.rivalThreshold()) tile = f.cheapestRivalTile;
@@ -152,6 +157,19 @@ export class BotExecution implements Execution {
     if (leader === null || leader === c.id) return null;
     if (g.valuation(g.companies[leader]).total < g.valuation(c).total * 1.3) return null;
     return g.rng.chance(this.p.litigious * 0.02) ? leader : null;
+  }
+
+  /** How much this company wants an untapped street, given its style. */
+  private streetAppeal(g: GameImpl, tile: number): number {
+    const wealth = g.map.wealth[tile];
+    switch (this.p.taste) {
+      case 'volume':
+        return g.map.demand[tile]; // many customers, whatever they spend
+      case 'wealth':
+        return g.map.spend[tile] * (wealth >= 2 ? 1.5 : 0.6); // rich streets suit high prices
+      default:
+        return g.map.spend[tile];
+    }
   }
 
   private rivalThreshold(): number {
@@ -171,8 +189,7 @@ export class BotExecution implements Execution {
         if (o === NEUTRAL) {
           f.neutral++;
           if (seen++ < 60) {
-            // Prefer streets with big spenders.
-            const d = g.map.spend[n] + g.rng.next();
+            const d = this.streetAppeal(g, n) + g.rng.next();
             if (d > bestDemand) {
               bestDemand = d;
               f.bestNeutral = n;

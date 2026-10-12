@@ -20,6 +20,14 @@ describe('ending the game', () => {
     expect(r.game.result).toMatchObject({ winnerId: 0, reason: 'unicorn' });
   });
 
+  it('keeps a bot-only match going when company 0 closes', () => {
+    const r = setup(3, true);
+    r.game.companies[0].cash = -1e9;
+    runDays(r, CONFIG.bankruptcyGraceDays + 2);
+    expect(r.game.companies[0].alive).toBe(false);
+    expect(r.game.result?.reason).not.toBe('playerBankrupt');
+  });
+
   it('finishes a bot-only match', () => {
     const r = setup(3, true);
     runDays(r, CONFIG.matchDays + 1);

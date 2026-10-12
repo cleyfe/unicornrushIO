@@ -7,6 +7,8 @@ export interface CompanySpec {
   color: [number, number, number];
   isBot: boolean;
   personality?: Personality;
+  /** Starting price; defaults to the personality's usual price. */
+  price?: PriceLevel;
 }
 
 export interface Pnl {

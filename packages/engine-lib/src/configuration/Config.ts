@@ -52,6 +52,12 @@ export const CONFIG = {
     neutralTileCost: 2, // × customers × wealth push factor
     rivalTileCost: 6, // × customers × wealth push factor × defense multiplier
     campaignShare: 0.5, // share of the push pool committed per click
+    // Defence: stockpiled push protects customers (account managers). Each
+    // point of push per street adds this much to the cost of stealing it,
+    // and the defender loses this share of the attacker's cost from its pool.
+    retentionPerPush: 0.15,
+    retentionDrain: 0.3,
+    maxServiceLevel: 1.5, // spare operations capacity makes customers loyal, up to this
   },
 
   churn: { ratePerDay: 0.05 }, // share of over-capacity areas lost per day

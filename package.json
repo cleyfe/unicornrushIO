@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "balance": "vite-node scripts/balance.ts --"
+    "balance": "vite-node scripts/balance.ts --",
+    "fairness": "vite-node scripts/fairness.ts --"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

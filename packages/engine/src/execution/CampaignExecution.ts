@@ -83,6 +83,11 @@ export class CampaignExecution implements Execution {
       const cost = game.tileCost(c, this.target, tile);
       if (this.budget < cost) return true;
       this.budget -= cost;
+      if (this.target >= 0) {
+        // The defender's retention effort is spent fighting back.
+        const def = game.companies[this.target];
+        def.push = Math.max(0, def.push - cost * CONFIG.sales.retentionDrain);
+      }
       game.setOwner(tile, c.id);
     }
     return false;

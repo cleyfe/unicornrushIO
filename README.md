@@ -73,6 +73,14 @@ lawyers. If it isn't dismissed, the defendant loses **25% of its customers in cl
 all over its territory** and pays you **20 days of its revenue** in damages. If it is
 dismissed, you pay the defendant's $50K costs. One case at a time per company.
 
+### Defending your customers
+
+Stealing a rival's street costs more when the rival:
+- **holds sales push in reserve** (account managers working to keep customers). Each street it
+  loses drains some of that reserve, so a well-defended company can't be steamrolled for free.
+- **has spare operations staff** (better service makes customers loyal, up to 1.5×).
+- **charges what its street's customers want** (cheap on budget streets, premium on luxury ones).
+
 ### Market events (every ~4–6 months)
 
 - **Recession**: revenue −30% for 60 days

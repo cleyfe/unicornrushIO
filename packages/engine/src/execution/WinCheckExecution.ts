@@ -18,7 +18,9 @@ export class WinCheckExecution implements Execution {
         return;
       }
     }
-    if (!game.player.alive) return game.finish(game.leaderId(), 'playerBankrupt');
+    // The match ends when the human player closes. In bot-only matches (balance
+    // runs) it carries on, so one bot closing doesn't crown whoever leads that day.
+    if (!game.player.alive && !game.player.isBot) return game.finish(game.leaderId(), 'playerBankrupt');
     const alive = game.companies.filter((c) => c.alive);
     if (alive.length === 1 && game.companies.length > 1) return game.finish(alive[0].id, 'lastStanding');
     if (game.day >= CONFIG.matchDays) game.finish(game.leaderId(), 'time');
