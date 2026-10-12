@@ -94,5 +94,100 @@
         "weight": -1.2
       }
     ]
+  },
+  "geneva": {
+    "name": "Genève · Centre",
+    "bbox": [
+      46.19,
+      6.128,
+      46.216,
+      6.168
+    ],
+    "wealthHints": [
+      {
+        "name": "Rue du Rhône & Rive (luxury shopping)",
+        "lat": 46.2033,
+        "lon": 6.149,
+        "radius": 380,
+        "weight": 3
+      },
+      {
+        "name": "Vieille Ville",
+        "lat": 46.201,
+        "lon": 6.1485,
+        "radius": 330,
+        "weight": 2.5
+      },
+      {
+        "name": "Quai du Mont-Blanc & Quai Wilson (lakefront hotels)",
+        "lat": 46.2105,
+        "lon": 6.1495,
+        "radius": 320,
+        "weight": 2.5
+      },
+      {
+        "name": "Champel",
+        "lat": 46.193,
+        "lon": 6.1555,
+        "radius": 520,
+        "weight": 2.5
+      },
+      {
+        "name": "Florissant & Malagnou",
+        "lat": 46.1965,
+        "lon": 6.164,
+        "radius": 480,
+        "weight": 2
+      },
+      {
+        "name": "Tranchées",
+        "lat": 46.1985,
+        "lon": 6.1545,
+        "radius": 320,
+        "weight": 2
+      },
+      {
+        "name": "Eaux-Vives",
+        "lat": 46.2025,
+        "lon": 6.1595,
+        "radius": 450,
+        "weight": 0.8
+      },
+      {
+        "name": "Pâquis",
+        "lat": 46.2115,
+        "lon": 6.1465,
+        "radius": 380,
+        "weight": -2
+      },
+      {
+        "name": "Gare Cornavin",
+        "lat": 46.2098,
+        "lon": 6.1423,
+        "radius": 330,
+        "weight": -1.5
+      },
+      {
+        "name": "Les Grottes & Servette",
+        "lat": 46.2145,
+        "lon": 6.1385,
+        "radius": 420,
+        "weight": -1.2
+      },
+      {
+        "name": "Plainpalais",
+        "lat": 46.1975,
+        "lon": 6.141,
+        "radius": 420,
+        "weight": -1
+      },
+      {
+        "name": "Jonction",
+        "lat": 46.2015,
+        "lon": 6.1315,
+        "radius": 420,
+        "weight": -1.8
+      }
+    ]
   }
 }

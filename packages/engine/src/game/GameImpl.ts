@@ -37,6 +37,8 @@ export class GameImpl {
   /** Bumped whenever tile ownership changes, so renderers can skip redraws. */
   ownershipVersion = 0;
 
+  /** Streets each company lost since its last report, by cause (a rival's id, or churn). */
+  private losses = new Map<number, Map<number | 'churn', number>>();
   private executions: Execution[] = [];
   private pending: Execution[] = [];
   private nb: number[] = [];
@@ -61,7 +63,17 @@ export class GameImpl {
   executeNextTick(): void {
     if (this.result) return;
     this.tick++;
-    // New executions start this tick; init may reject them (inactive).
+    this.startPending();
+    for (const e of this.executions) if (e.isActive()) e.tick(this);
+    this.executions = this.executions.filter((e) => e.isActive());
+  }
+
+  /**
+   * Starts newly added executions without advancing time, so actions taken
+   * while the game is paused (hire, price, staff split…) apply right away.
+   */
+  startPending(): void {
+    // init may reject an execution (it stays inactive) or add more.
     while (this.pending.length > 0) {
       const batch = this.pending;
       this.pending = [];
@@ -70,8 +82,6 @@ export class GameImpl {
         if (e.isActive()) this.executions.push(e);
       }
     }
-    for (const e of this.executions) if (e.isActive()) e.tick(this);
-    this.executions = this.executions.filter((e) => e.isActive());
   }
 
   // ---------- time ----------
@@ -114,7 +124,7 @@ export class GameImpl {
 
   /** Push the defender holds per street: its customer-retention effort. */
   retention(c: Company): number {
-    return 1 + (CONFIG.sales.retentionPerPush * c.push) / Math.max(1, c.tiles);
+    return Math.min(CONFIG.sales.maxRetention, 1 + (CONFIG.sales.retentionPerPush * c.push) / Math.max(1, c.tiles));
   }
 
   /** Share of customers actually served. */
@@ -122,8 +132,14 @@ export class GameImpl {
     return c.customers <= 0 ? 1 : Math.min(1, this.capacity(c) / c.customers);
   }
 
+  /** Sales staff after diminishing returns: each extra rep adds a bit less. */
+  effectiveSales(c: Company): number {
+    const reps = this.salesStaff(c);
+    return reps / (1 + reps / CONFIG.sales.salesScale);
+  }
+
   pushPerDay(c: Company): number {
-    return this.salesStaff(c) * CONFIG.sales.pushPerRepPerDay * CONFIG.prices[c.price].push;
+    return this.effectiveSales(c) * CONFIG.sales.pushPerRepPerDay * CONFIG.prices[c.price].push;
   }
 
   maxPush(c: Company): number {
@@ -200,8 +216,28 @@ export class GameImpl {
 
   // ---------- state changes shared by executions ----------
 
+  recordLoss(loser: number, cause: number | 'churn'): void {
+    if (this.companies[loser].isBot) return;
+    if (!this.losses.has(loser)) this.losses.set(loser, new Map());
+    const m = this.losses.get(loser)!;
+    m.set(cause, (m.get(cause) ?? 0) + 1);
+  }
+
+  /** Tells a human player which streets they lost, and why. */
+  reportLosses(companyId: number): void {
+    const m = this.losses.get(companyId);
+    if (!m || m.size === 0) return;
+    for (const [cause, n] of m) {
+      const streets = n === 1 ? '1 street' : `${n} streets`;
+      if (cause === 'churn') this.message(companyId, `${streets} left you: you were overloaded and couldn't serve them.`, 'bad');
+      else this.message(companyId, `${this.companies[cause].name} stole ${streets} from you.`, 'bad');
+    }
+    m.clear();
+  }
+
   closeCompany(c: Company, why: string): void {
     if (!c.alive) return;
+    this.reportLosses(c.id);
     c.alive = false;
     c.closedDay = this.day;
     for (let i = 0; i < this.owner.length; i++) if (this.owner[i] === c.id) this.setOwner(i, NEUTRAL);
@@ -330,6 +366,8 @@ export class GameImpl {
         while (queue.length > 0) {
           const t = queue.shift()!;
           if (this.owner[t] !== NEUTRAL) continue;
+          // Skip streets that would overshoot the target, so nobody starts overloaded.
+          if (c.customers > 0 && c.customers + m.demand[t] > CONFIG.start.customers * 1.1) continue;
           this.setOwner(t, id);
           for (const n of neighbors(m, t, nb)) if (this.owner[n] === NEUTRAL) queue.push(n);
           growing = true;
@@ -354,12 +392,13 @@ function newCompany(id: number, s: CompanySpec): Company {
     trainees: [],
     salesShare: CONFIG.start.salesShare,
     price: s.price ?? (s.personality === 'discounter' ? 'low' : s.personality === 'premium' ? 'high' : 'medium'),
-    push: 0,
+    push: CONFIG.start.push, // enough for a first expansion right away
     tiles: 0,
     customers: 0,
     spend: 0,
     border: new Set(),
     pnl: emptyPnl(),
+    oneOff: { hiring: 0, severance: 0, legalFees: 0, damages: 0 },
     avgProfit: 0,
     churnCarry: 0,
     negativeCashDays: 0,

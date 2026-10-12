@@ -1,6 +1,6 @@
 import type { GameResult } from '@unicornrush/engine-api/game/Game';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
-import { money } from '@unicornrush/engine-lib/Format';
+import { money, pct } from '@unicornrush/engine-lib/Format';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import { rgb } from './dom';
 
@@ -24,14 +24,23 @@ export function showGameOver(game: GameImpl, r: GameResult, onAgain: () => void)
     playerBankrupt: `On day ${Math.floor(r.day)} you ${me.tiles === 0 ? 'lost every customer' : 'ran out of cash'}.`,
   };
 
+  // Lessons drawn from what actually happened in this match.
   const lessons: string[] = [];
-  if (me.debt > 0 && !me.alive) lessons.push('Debt made you fragile: interest kept running when revenue fell.');
-  if (me.alive && me.peakTiles > me.tiles * 2) {
-    lessons.push('You grew big but lost much of it. Growth needs capacity to serve customers.');
+  const winnerC = winner ?? me;
+  const margin = (c: typeof me) => (c.pnl.revenue > 0 ? c.pnl.profit / c.pnl.revenue : 0);
+  if (!me.alive && me.debt > 0) lessons.push('Debt made you fragile: interest kept running when revenue fell.');
+  if (!me.alive && me.debt === 0) lessons.push('You ran out of cash. Cash is what keeps a company alive, even when it looks profitable on paper.');
+  if (me.alive && me.peakTiles > me.tiles * 1.6) lessons.push('You grew big but lost much of it. Growth needs operations capacity to keep the customers you win.');
+  if (winnerC !== me && margin(winnerC) > margin(me) + 0.05) {
+    lessons.push(`${winnerC.name} kept a ${pct(margin(winnerC))} profit margin vs your ${pct(margin(me))}: valuation follows profit, not just size.`);
+  } else if (winnerC !== me && winnerC.peakTiles > me.peakTiles * 2) {
+    lessons.push(`${winnerC.name} reached ${winnerC.peakTiles} streets vs your ${me.peakTiles}: scale matters when it stays profitable.`);
   }
-  if (me.price === 'low') lessons.push('Low prices win market share, but thin margins make valuation hard to grow.');
-  if (me.debt === 0 && me.alive) lessons.push('You never borrowed. Debt can speed up growth when each new customer earns more than the interest.');
-  lessons.push(`Valuation = cash − debt + ${CONFIG.valuation.earningsMultiple}× yearly profit. Profit drives value more than size does.`);
+  if (me.oneOff.legalFees < 0 && me.oneOff.damages + me.oneOff.legalFees < 0) {
+    lessons.push(`Lawsuits cost you ${money(-(me.oneOff.damages + me.oneOff.legalFees))} net: legal battles are expensive bets.`);
+  }
+  if (me.debt === 0 && me.alive && !won) lessons.push('You never borrowed. Debt can speed up growth when each new customer earns more than the interest.');
+  lessons.push(`Valuation = cash − debt + ${CONFIG.valuation.earningsMultiple}× yearly profit.`);
 
   const rows = [...game.companies]
     .sort((a, b) => b.peakValuation - a.peakValuation)

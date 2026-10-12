@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
 import { neighbors } from '@unicornrush/engine-lib/game/GameMap';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { act, lastMessage, neutralNeighbour, quietSetup, runDays } from './util/Setup';
 
 describe('sales campaigns', () => {
@@ -84,5 +85,33 @@ describe('defending customers', () => {
     runDays(r, 1);
     expect(g.owner[target]).toBe(0);
     expect(def.push).toBeLessThan(200);
+  });
+});
+
+describe('explaining losses', () => {
+  it('tells the player which rival stole their streets', () => {
+    const r = quietSetup();
+    const g = r.game;
+    const me = g.player;
+    const rival = g.companies[1];
+    // Hand the rival one of our border streets' neighbours so we touch, then let it attack us.
+    const nb: number[] = [];
+    let target = -1;
+    for (const b of me.border) {
+      for (const n of neighbors(g.map, b, nb)) if (g.owner[n] === NEUTRAL) target = n;
+      if (target >= 0) break;
+    }
+    g.setOwner(target, rival.id);
+    me.push = 0;
+    rival.push = 120;
+    const ours = [...me.border][0];
+    act(r, { type: 'campaign', companyId: rival.id, tile: ours });
+    runDays(r, 5);
+    expect(r.game.log.some((l) => l.recipient === 0 && l.text.includes(`${rival.name} stole`))).toBe(true);
+  });
+
+  it('starts every company with enough push for a first expansion', () => {
+    const g = quietSetup().game;
+    for (const c of g.companies) expect(c.push).toBe(CONFIG.start.push);
   });
 });

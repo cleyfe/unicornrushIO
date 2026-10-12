@@ -83,7 +83,7 @@ export class BotExecution implements Execution {
     // Reinvest surplus cash in sales staff (about 3 months of salary each).
     const surplusReps = Math.floor(Math.max(0, cash - reserve * 3) / (s.salaryPerDay * 90));
     const salesWanted = canGrow
-      ? Math.max(4, Math.ceil(opsNeeded * p.salesRatio), Math.min(surplusReps, opsNeeded * 2 + 10))
+      ? Math.max(4, Math.ceil(opsNeeded * p.salesRatio), Math.min(surplusReps, opsNeeded * 4 + 20))
       : 2;
     const wanted = opsNeeded + salesWanted;
     const staff = c.employees + g.traineeCount(c);
@@ -113,7 +113,7 @@ export class BotExecution implements Execution {
     // 4. Hiring, from surplus cash only, up to the staff the business needs.
     if (staff < wanted && cash > reserve + s.hireCost * 2) {
       const affordable = Math.floor((cash - reserve) / (s.hireCost + s.salaryPerDay * 20));
-      const n = Math.min(affordable, wanted - staff, Math.ceil(c.employees * 0.2) + 1);
+      const n = Math.min(affordable, wanted - staff, Math.ceil(c.employees * 0.35) + 2);
       if (n > 0) this.act(g, { type: 'hire', companyId: id, count: n });
     }
 

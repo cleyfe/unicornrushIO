@@ -7,8 +7,9 @@ import type { GameImpl } from '../game/GameImpl';
 import type { Execution } from './Execution';
 
 /**
- * A class action lawsuit. The plaintiff pays heavy legal fees, the case goes
- * to court, and unless it is dismissed, the defendant loses customers all over its territory and pays damages.
+ * An unfair-competition lawsuit: the plaintiff accuses a rival of unfair
+ * practices (misleading ads, poaching, predatory pricing). It pays heavy legal
+ * fees, the case goes to court, and unless it is dismissed, the defendant loses customers all over its territory and pays damages.
  */
 export class LawsuitExecution implements Execution {
   private active = true;
@@ -32,9 +33,10 @@ export class LawsuitExecution implements Execution {
     if (game.activeLawsuitBy(c)) return fail('Your lawyers are already busy with a case.');
     if (c.cash < L.cost) return fail(`Legal fees are ${money(L.cost)}: not enough cash.`);
     c.cash -= L.cost;
+    c.oneOff.legalFees -= L.cost;
     this.suit = { plaintiff: c.id, defendant: d.id, filedDay: game.day, rulingDay: game.day + L.courtDays };
     game.lawsuits.push(this.suit);
-    game.news(`⚖️ ${c.name} filed a class action lawsuit against ${d.name}! Ruling in ${L.courtDays} days.`, 'bad');
+    game.news(`⚖️ ${c.name} sued ${d.name} for unfair competition! Ruling in ${L.courtDays} days.`, 'bad');
   }
 
   isActive(): boolean {
@@ -61,17 +63,25 @@ export class LawsuitExecution implements Execution {
     if (game.rng.chance(L.dismissChance)) {
       p.cash -= L.dismissedCounterCost;
       d.cash += L.dismissedCounterCost;
-      game.news(`⚖️ Case dismissed! ${p.name} pays ${d.name}'s legal costs (${money(L.dismissedCounterCost)}).`, 'good');
+      p.oneOff.legalFees -= L.dismissedCounterCost;
+      d.oneOff.damages += L.dismissedCounterCost;
+      game.news(`⚖️ Case dismissed! ${p.name} pays ${d.name}'s legal costs (${money(L.dismissedCounterCost)}).`, 'info');
+      game.message(p.id, `⚖️ Your lawsuit against ${d.name} was dismissed: you pay their ${money(L.dismissedCounterCost)} costs.`, 'bad');
+      game.message(d.id, `⚖️ ${p.name}'s lawsuit against you was dismissed! They pay you ${money(L.dismissedCounterCost)}.`, 'good');
       return;
     }
     const lost = this.scatterLoss(game, d.id, Math.floor(d.tiles * L.customerLoss));
     const damages = Math.max(0, d.pnl.revenue * L.damagesRevenueDays);
     d.cash -= damages;
     p.cash += damages;
+    d.oneOff.damages -= damages;
+    p.oneOff.damages += damages;
     game.news(
-      `⚖️ ${d.name} lost the lawsuit: ${lost} streets of customers walk away and it pays ${money(damages)} in damages to ${p.name}.`,
-      'bad',
+      `⚖️ ${d.name} lost the lawsuit: the bad press drives away ${lost} streets of customers and it pays ${money(damages)} in damages to ${p.name}.`,
+      'info',
     );
+    game.message(p.id, `⚖️ You won the lawsuit! ${d.name} loses ${lost} streets and pays you ${money(damages)}.`, 'good');
+    game.message(d.id, `⚖️ You lost ${p.name}'s lawsuit: the bad press drives away ${lost} streets of customers and you pay ${money(damages)}.`, 'bad');
   }
 
   /** Releases customers in several clusters spread over the territory. */

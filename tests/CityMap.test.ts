@@ -61,8 +61,10 @@ describe('real city (Paris · Opéra & Monceau)', () => {
   it('starts every company with about the same customers', () => {
     const r = new GameRunner(4, defaultCompanies('Tester'), city);
     for (const c of r.game.companies) {
-      expect(c.customers).toBeGreaterThanOrEqual(CONFIG.start.customers);
-      expect(c.customers).toBeLessThan(CONFIG.start.customers + 50);
+      expect(c.customers).toBeGreaterThan(CONFIG.start.customers * 0.8);
+      expect(c.customers).toBeLessThanOrEqual(CONFIG.start.customers * 1.1);
+      // Nobody starts overloaded.
+      expect(r.game.coverage(c)).toBe(1);
     }
   });
 

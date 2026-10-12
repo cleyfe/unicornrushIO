@@ -1,5 +1,6 @@
 import type { PriceLevel } from '@unicornrush/engine-api/game/Game';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { money } from '@unicornrush/engine-lib/Format';
 import type { GameImpl } from '../game/GameImpl';
 import { InstantExecution } from './Execution';
 
@@ -44,6 +45,7 @@ export class HireExecution extends InstantExecution {
     const cost = n * CONFIG.staff.hireCost;
     if (c.cash < cost) return game.message(c.id, 'Not enough cash to hire.');
     c.cash -= cost;
+    c.oneOff.hiring -= cost;
     c.trainees.push({ count: n, readyDay: game.day + CONFIG.staff.trainingDays });
   }
 }
@@ -61,6 +63,8 @@ export class FireExecution extends InstantExecution {
     if (n <= 0) return game.message(c.id, 'You need at least one employee.');
     c.employees -= n;
     c.cash -= n * CONFIG.staff.fireCost;
+    c.oneOff.severance -= n * CONFIG.staff.fireCost;
+    game.message(c.id, `You let ${n} ${n === 1 ? 'person' : 'people'} go (${money(n * CONFIG.staff.fireCost)} severance).`, 'info');
   }
 }
 

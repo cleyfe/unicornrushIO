@@ -18,7 +18,7 @@ npm run fairness  # controlled balance experiments (add a city id to test a real
 - 🏆 Otherwise, the **most valuable company after 900 days** (~2.5 years, 15 minutes at 1×) wins.
 - 💸 If your cash stays below zero for 10 days, or you lose every customer, your company closes.
 
-**Valuation = Cash − Debt + 13 × yearly profit**
+**Valuation = Cash − Debt + 18 × yearly profit** (yearly profit is based on the average daily profit of the last 30 days, so valuation reacts with a delay)
 
 Investors pay for profit, so a smaller, profitable company can beat a big one that's losing money.
 
@@ -28,12 +28,12 @@ Investors pay for profit, so a smaller, profitable company can beat a big one th
 
 | Lever | What it does | What it teaches |
 |---|---|---|
-| **Ops / Sales split** | Ops staff serve 20 customers each. Sales staff generate *push* to win new streets. | Resource allocation, opportunity cost |
+| **Ops / Sales split** | Ops staff serve 20 customers each. Sales staff generate *push* to win new streets, with diminishing returns: a huge sales force gets less push per person. | Resource allocation, opportunity cost, diminishing returns |
 | **Hire / Fire** | $500 to hire, $100/day salary, 8 days of training before new hires are productive. $300 severance. | Hiring is an investment that pays back over time |
-| **Price** (Low / Medium / High) | $25 / $40 / $55 per customer per day. Lower prices win customers faster and keep them loyal. | Price elasticity, margin vs volume |
+| **Price** (Low / Medium / High) | $25 / $40 / $55 per purchase. Customers buy ×1.4 / ×1 / ×0.8 as much, and low prices win and keep customers more easily. | Price elasticity of demand, margin vs volume |
 | **Campaigns** | Click a street (or a building on it) next to yours to spend half your push winning it and its neighbours. | Customer acquisition cost |
 | **Bank loan** | $25K at a time, 24%/year interest, credit limit = 60 days of revenue | Leverage and risk |
-| **Lawsuit** ⚖️ | $250K to sue a rival. See below. | Legal risk |
+| **Lawsuit** ⚖️ | $250K to sue a rival for unfair competition. See below. | Legal risk |
 
 ### The city
 
@@ -67,12 +67,21 @@ npm run build-city -- <id>   # downloads OSM data and writes public/cities/<id>.
 ### Every day
 
 ```
-Revenue  = customers served × their street's spend multiplier × price
-Costs    = variable cost ($5 / customer) + salaries + interest
+Revenue  = customers served × their street's spend multiplier × how much they buy at your price × price
+Costs    = variable cost ($5 / purchase) + salaries + interest
 Profit   = Revenue − Costs  → added to Cash
 ```
 
 - If you have more customers than your Ops staff can serve, the unserved ones bring in no revenue **and start leaving**.
+
+### Playing
+
+The map opens on your company, paused. Click a **glowing street** next to yours to win it (or
+any building on it); hovering a street shows its customers, what it would earn you per day,
+and whether you can afford it. Your card (top-left) shows valuation, cash, profit and how many
+customers you serve; the race board (top-right) shows everyone's progress to $1B; the bar at
+the bottom holds the levers. Finances (charts, P&L, valuation, one-off costs, bank) and lawsuits
+open in a side drawer. Short tips appear the first time each mechanic matters.
 
 ### Defending your customers
 
@@ -82,12 +91,14 @@ Stealing a rival's street costs more when the rival:
 - **has spare operations staff** (better service makes customers loyal, up to 1.5×).
 - **charges what its street's customers want** (cheap on budget streets, premium on luxury ones).
 
-### Class action lawsuits ⚖️
+### Unfair-competition lawsuits ⚖️
 
-The big weapon: sue a rival for **$250K** in legal fees. The case takes **30 days**, and
-everyone sees it coming. Courts dismiss **35%** of cases, and then you pay the defendant's
-$50K costs. Otherwise the defendant loses **25% of its customers in clusters all over its
-territory** and pays you **20 days of its revenue** in damages. One case at a time per company.
+The big weapon: accuse a rival of unfair practices (misleading ads, poaching, predatory pricing)
+and sue for **$250K** in legal fees. The case takes **30 days**, and everyone sees it coming.
+Courts dismiss **35%** of cases, and then you pay the defendant's $150K costs. Otherwise the
+defendant pays you **8 days of its revenue** in damages, and the bad press drives away **25% of
+its customers in clusters all over its territory**. One case at a time per company. Fees and
+damages are listed under one-off cash flows in Finances.
 
 ### Market events (every ~4–6 months)
 

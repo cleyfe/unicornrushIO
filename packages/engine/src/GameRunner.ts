@@ -32,6 +32,14 @@ export class GameRunner {
     this.queued.push(intent);
   }
 
+  /** Applies queued intents without advancing time (used while paused). */
+  applyIntentsNow(): void {
+    const turn = this.queued;
+    this.queued = [];
+    this.game.addExecution(...turn.map(createExecution));
+    this.game.startPending();
+  }
+
   executeNextTick(): void {
     const turn = this.queued;
     this.queued = [];

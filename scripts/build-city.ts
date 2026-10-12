@@ -23,6 +23,8 @@ const BUDGET_SHOPS = new Set(['convenience', 'discount', 'second_hand', 'pawnbro
 // Tunables for turning buildings into customers.
 const FLOOR_M2_PER_CUSTOMER = 900; // floor area that makes one customer unit
 const POI_CUSTOMERS = 0.4; // extra foot traffic per shop, café or restaurant
+// Every city is scaled to the same total market, so matches last about as long anywhere.
+const TOTAL_CUSTOMERS = 18_000;
 const MAX_SEGMENT_CUSTOMERS = 45; // one giant building (a station, a mall) shouldn't make a super-street
 const MAX_ASSIGN_DISTANCE = 70; // metres from a building to its street
 const WEALTH_SHARES = [0.3, 0.35, 0.22, 0.13]; // Budget, Middle, Upscale, Luxury
@@ -309,6 +311,11 @@ order.forEach((i, rank) => {
 });
 
 // ---------- write ----------
+
+const rawTotal = customers.reduce((a, b) => a + b, 0);
+const scale = TOTAL_CUSTOMERS / rawTotal;
+for (let i = 0; i < customers.length; i++) customers[i] *= scale;
+console.log(`Scaled customers ×${scale.toFixed(2)} to a total of ${TOTAL_CUSTOMERS}`);
 
 const adjStart: number[] = [0];
 const adj: number[] = [];

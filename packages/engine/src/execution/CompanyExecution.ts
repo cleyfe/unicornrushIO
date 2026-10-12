@@ -29,6 +29,7 @@ export class CompanyExecution implements Execution {
     c.peakTiles = Math.max(c.peakTiles, c.tiles);
     c.peakValuation = Math.max(c.peakValuation, game.valuation(c).total);
     this.checkSolvency(game);
+    if (game.tick % (CONFIG.ticksPerDay * 4) === 0) game.reportLosses(c.id);
   }
 
   private graduateTrainees(game: GameImpl): void {
@@ -61,17 +62,22 @@ export class CompanyExecution implements Execution {
       const tile = border[j];
       border[j] = border[border.length - 1];
       border.pop();
-      if (game.owner[tile] === c.id) game.setOwner(tile, NEUTRAL);
+      if (game.owner[tile] === c.id) {
+        game.recordLoss(c.id, 'churn');
+        game.setOwner(tile, NEUTRAL);
+      }
     }
   }
 
   private economy(game: GameImpl): void {
     const c = this.c;
     const coverage = game.coverage(c);
+    const price = CONFIG.prices[c.price];
     const p = {
       // Revenue depends on how much customers spend; serving them costs the same everywhere.
-      revenue: c.spend * coverage * CONFIG.prices[c.price].revenue * game.revenueMult(),
-      variableCost: c.customers * coverage * CONFIG.variableCostPerCustomer * game.variableCostMult(),
+      // Price elasticity: cheaper prices make each customer buy more (and cost more to serve).
+      revenue: c.spend * coverage * price.volume * price.revenue * game.revenueMult(),
+      variableCost: c.customers * coverage * price.volume * CONFIG.variableCostPerCustomer * game.variableCostMult(),
       salaries: (c.employees + game.traineeCount(c)) * CONFIG.staff.salaryPerDay,
       interest: (c.debt * CONFIG.bank.interestPerYear) / 365,
       profit: 0,

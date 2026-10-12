@@ -10,6 +10,13 @@ export interface CompanySpec {
   price?: PriceLevel;
 }
 
+export interface OneOffFlows {
+  hiring: number; // recruiting costs paid (negative)
+  severance: number; // firing costs paid (negative)
+  legalFees: number; // lawsuit fees and costs paid (negative)
+  damages: number; // lawsuit damages received (+) or paid (−)
+}
+
 export interface Pnl {
   revenue: number;
   variableCost: number;
@@ -41,6 +48,8 @@ export interface Company {
   border: Set<number>;
 
   pnl: Pnl; // per day, latest
+  /** One-off cash flows since the start, outside the daily P&L. */
+  oneOff: OneOffFlows;
   avgProfit: number; // trailing average per day
   churnCarry: number;
   negativeCashDays: number;

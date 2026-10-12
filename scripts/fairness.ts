@@ -3,7 +3,10 @@
 import { readFileSync } from 'node:fs';
 import type { CityData } from '@unicornrush/engine-api/game/City';
 import type { CompanySpec, Personality, PriceLevel } from '@unicornrush/engine-api/game/Game';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
 import { GameRunner } from '@unicornrush/engine/GameRunner';
+import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 
 const N = Number(process.argv[2] ?? 24);
 const cityId = process.argv[3];
@@ -83,3 +86,63 @@ experiment('Default lineup, seats rotated', [
   { label: 'Steady', personality: 'balanced', price: 'medium' },
   { label: 'Luxe', personality: 'premium', price: 'high' },
 ]);
+
+/**
+ * A skilled human, scripted: the strategy a strong playtester found. High
+ * prices, ~75% of staff in sales, hire with every spare dollar, expand into
+ * the highest-spending streets, sue the leader.
+ */
+function blitzTurn(r: GameRunner, g: GameImpl): void {
+  const me = g.player;
+  if (!me.alive || g.tick % CONFIG.ticksPerDay !== 0) return;
+  const send = (i: object) => r.addIntent({ companyId: 0, ...i } as never);
+  if (me.price !== 'high') send({ type: 'setPrice', price: 'high' });
+  const opsNeeded = Math.ceil((me.customers * 1.05) / CONFIG.staff.customersPerOps);
+  send({ type: 'setSalesShare', share: Math.min(0.75, Math.max(0.1, 1 - opsNeeded / Math.max(1, me.employees))) });
+  const reserve = (me.pnl.salaries + me.pnl.interest) * 10;
+  // A skilled player stops adding sales staff once extra reps barely add push.
+  const wanted = opsNeeded + Math.min(Math.round(CONFIG.sales.salesScale * 1.2), opsNeeded * 3 + 10);
+  const room = wanted - me.employees - g.traineeCount(me);
+  const n = Math.min(room, Math.floor((me.cash - reserve) / (CONFIG.staff.hireCost + CONFIG.staff.salaryPerDay * 15)));
+  if (n > 0) send({ type: 'hire', count: Math.min(n, 100) });
+  if (room < -10 && me.pnl.profit < 0) send({ type: 'fire', count: Math.ceil(-room / 4) });
+  if (me.push >= 10) {
+    let best = -1;
+    let bestScore = -Infinity;
+    const { adjStart, adj } = g.map;
+    for (const b of me.border) {
+      for (let k = adjStart[b]; k < adjStart[b + 1]; k++) {
+        const t = adj[k];
+        if (g.owner[t] === 0) continue;
+        const score = g.map.spend[t] / g.tileCost(me, g.owner[t], t);
+        if (score > bestScore) (bestScore = score), (best = t);
+      }
+    }
+    if (best >= 0) send({ type: 'campaign', tile: best });
+  }
+  const leader = g.leaderId();
+  if (leader !== null && leader !== 0 && !g.activeLawsuitBy(me) && me.cash > CONFIG.lawsuit.cost * 3) {
+    send({ type: 'lawsuit', targetId: leader });
+  }
+}
+
+function skilledHuman(): void {
+  let wins = 0;
+  let days = 0;
+  let unicornDays = 0;
+  let unicorns = 0;
+  for (let m = 0; m < N; m++) {
+    const specs = defaultCompanies('Blitz');
+    const r = new GameRunner(9000 + m, specs, city);
+    const g = r.game;
+    while (!g.result) {
+      blitzTurn(r, g);
+      r.executeNextTick();
+    }
+    if (g.result.winnerId === 0) wins++;
+    if (g.result.reason === 'unicorn') (unicorns++, (unicornDays += g.result.day));
+    days += g.result.day;
+  }
+  console.log(`\nSkilled human (scripted blitz) vs default bots: wins ${wins}/${N}, unicorns ${unicorns} at avg day ${Math.round(unicornDays / Math.max(1, unicorns))}, avg end day ${Math.round(days / N)}`);
+}
+skilledHuman();

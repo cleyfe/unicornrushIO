@@ -10,7 +10,9 @@ import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 maplibregl.setWorkerUrl(workerUrl);
 
 const BASE_STYLE = 'https://tiles.openfreemap.org/styles/dark';
-const NEUTRAL_STREET = '#7d8796';
+const NEUTRAL_STREET = '#6f7988';
+const FRONTIER_STREET = '#c7d2e0';
+const COURT_STREET = '#facc15'; // a company on trial
 
 /** Building colour by wealth when nobody owns its street: dark to gold. */
 export const WEALTH_COLORS: Record<Wealth, string> = {
@@ -38,7 +40,11 @@ export class CityMapView {
   private drawnOwner: Int16Array;
   private drawnBorder: Uint8Array;
   private drawnCourt = '';
+  private frontier = new Set<number>();
+  private hovered = -1;
   private buildingsOf: number[][];
+  /** Called once the map has drawn its layers. */
+  onReady: () => void = () => {};
 
   constructor(
     container: HTMLElement,
@@ -59,7 +65,7 @@ export class CityMapView {
       style: BASE_STYLE,
       bounds: [w, s, e, nth],
       maxBounds: [w - padX, s - padY, e + padX, nth + padY],
-      minZoom: 13,
+      minZoom: 12,
       maxZoom: 18.5,
       attributionControl: false,
       dragRotate: false,
@@ -68,7 +74,7 @@ export class CityMapView {
     this.map.addControl(
       new maplibregl.AttributionControl({ compact: true, customAttribution: `Game map: ${city.attribution}` }),
     );
-    this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
     this.map.on('load', () => this.addLayers());
   }
 
@@ -122,7 +128,7 @@ export class CityMapView {
       source: 'buildings',
       paint: {
         'fill-color': expr(['case', owned, this.ownerColor(), wealthColor]),
-        'fill-opacity': expr(['case', owned, 0.7, 0.85]),
+        'fill-opacity': expr(['case', owned, 0.55, 0.85]),
         'fill-outline-color': 'rgba(0,0,0,0.35)',
       },
     });
@@ -131,7 +137,7 @@ export class CityMapView {
     const borderColor = [
       'match',
       ['coalesce', ['feature-state', 'owner'], NEUTRAL],
-      ...this.game.companies.flatMap((c) => [c.id, lighten(c.color, c.id === 0 ? 0.3 : 0.2)]),
+      ...this.game.companies.flatMap((c) => [c.id, lighten(c.color, c.id === 0 ? 0.25 : 0.15)]),
       '#ffffff',
     ];
     map.addLayer({
@@ -142,12 +148,17 @@ export class CityMapView {
       paint: {
         'line-color': expr([
           'case',
-          ['boolean', ['feature-state', 'court'], false],
+          ['boolean', ['feature-state', 'hover'], false],
           '#ffffff',
+          ['boolean', ['feature-state', 'court'], false],
+          COURT_STREET,
           ['boolean', ['feature-state', 'border'], false],
           borderColor,
           owned,
           this.ownerColor(),
+          // Streets the player can expand into glow, so it's clear where to click.
+          ['boolean', ['feature-state', 'frontier'], false],
+          FRONTIER_STREET,
           NEUTRAL_STREET,
         ]),
         'line-width': expr([
@@ -155,19 +166,52 @@ export class CityMapView {
           ['linear'],
           ['zoom'],
           13,
-          ['case', owned, 2.5, 1],
+          ['case', ['boolean', ['feature-state', 'hover'], false], 4, owned, 2.5, ['boolean', ['feature-state', 'frontier'], false], 2, 1],
           16,
-          ['case', owned, 6, 2.5],
+          ['case', ['boolean', ['feature-state', 'hover'], false], 9, owned, 6, ['boolean', ['feature-state', 'frontier'], false], 4.5, 2.5],
           18,
-          ['case', owned, 12, 5],
+          ['case', ['boolean', ['feature-state', 'hover'], false], 16, owned, 12, ['boolean', ['feature-state', 'frontier'], false], 8, 5],
         ]),
-        'line-opacity': expr(['case', owned, 1, 0.55]),
+        'line-opacity': expr([
+          'case',
+          ['any', owned, ['boolean', ['feature-state', 'hover'], false], ['boolean', ['feature-state', 'frontier'], false]],
+          1,
+          0.5,
+        ]),
       },
     });
     // A wide invisible line makes streets easy to click.
     map.addLayer({ id: 'streets-hit', type: 'line', source: 'streets', paint: { 'line-width': 16, 'line-opacity': 0 } });
     this.ready = true;
     this.update();
+    this.focusOnPlayer(false);
+    this.onReady();
+  }
+
+  /** Moves the camera to the player's territory. */
+  focusOnPlayer(animate = true): void {
+    const g = this.game;
+    let w = Infinity;
+    let s = Infinity;
+    let e = -Infinity;
+    let n = -Infinity;
+    for (let i = 0; i < g.owner.length; i++) {
+      if (g.owner[i] !== 0) continue;
+      for (const [lon, lat] of this.city.segments.coords[i]) {
+        w = Math.min(w, lon);
+        e = Math.max(e, lon);
+        s = Math.min(s, lat);
+        n = Math.max(n, lat);
+      }
+    }
+    if (!Number.isFinite(w)) return;
+    this.map.fitBounds(
+      [
+        [w, s],
+        [e, n],
+      ],
+      { padding: { top: 140, bottom: 220, left: 340, right: 320 }, maxZoom: 15.6, duration: animate ? 800 : 0 },
+    );
   }
 
   /** Pushes ownership changes to the map as feature state. */
@@ -193,6 +237,36 @@ export class CityMapView {
         for (const b of this.buildingsOf[i]) this.map.setFeatureState({ source: 'buildings', id: b }, { owner: o });
       }
     }
+    this.updateFrontier();
+  }
+
+  /** Marks the streets next to the player's territory that it could win. */
+  private updateFrontier(): void {
+    const g = this.game;
+    const me = g.player;
+    const next = new Set<number>();
+    if (me.alive) {
+      const { adjStart, adj } = g.map;
+      for (const b of me.border) {
+        for (let k = adjStart[b]; k < adjStart[b + 1]; k++) if (g.owner[adj[k]] !== 0) next.add(adj[k]);
+      }
+    }
+    for (const t of this.frontier) if (!next.has(t)) this.map.setFeatureState({ source: 'streets', id: t }, { frontier: false });
+    for (const t of next) if (!this.frontier.has(t)) this.map.setFeatureState({ source: 'streets', id: t }, { frontier: true });
+    this.frontier = next;
+  }
+
+  /** Highlights the street under the cursor. */
+  setHover(seg: number): void {
+    if (!this.ready || seg === this.hovered) return;
+    if (this.hovered >= 0) this.map.setFeatureState({ source: 'streets', id: this.hovered }, { hover: false });
+    if (seg >= 0) this.map.setFeatureState({ source: 'streets', id: seg }, { hover: true });
+    this.hovered = seg;
+  }
+
+  /** Can the player expand into this street right now? */
+  isFrontier(seg: number): boolean {
+    return this.frontier.has(seg);
   }
 
   /** The street segment under the cursor (a building counts as its street), or -1. */

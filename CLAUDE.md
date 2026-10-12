@@ -81,6 +81,9 @@ setups across seats, so 48 matches with 4 setups means ~12 wins each is perfectl
 - **AI only** (same price, different personalities): personalities should be equally
   competent and differ in style. A dominant one means a rule rewards one behaviour too much.
 - **Default lineup**: every company should win sometimes; unicorns around day 350–700.
+- **Skilled human** (a scripted strong player vs the default bots): should win roughly
+  half to three quarters of matches, with unicorns around day 400–600. If it wins almost
+  always or very early, the bots are too weak or a strategy snowballs.
 
 Check both the grid city and every real city (`npm run fairness -- 96 <city>`); real cities
 are uneven, so spawns are picked as the most spread-out set and shuffled between seats.

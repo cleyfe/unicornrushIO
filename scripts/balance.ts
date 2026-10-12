@@ -21,7 +21,7 @@ for (let m = 0; m < matches; m++) {
   const res = g.result;
   const w = res.winnerId === null ? 'none' : g.companies[res.winnerId].name;
   wins[w] = (wins[w] ?? 0) + 1;
-  suits += g.log.filter((l) => l.text.includes('filed a class action')).length;
+  suits += g.log.filter((l) => l.text.includes('for unfair competition')).length;
   dismissed += g.log.filter((l) => l.text.includes('dismissed')).length;
   console.log(`match ${m}: ${w} wins by ${res.reason} on day ${res.day.toFixed(0)}`);
   for (const c of g.companies) {

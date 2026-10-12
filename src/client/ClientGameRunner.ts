@@ -23,6 +23,8 @@ export class ClientGameRunner {
   /** Sends an intent on behalf of the player (company 0). */
   send(intent: Intent): void {
     this.runner.addIntent(intent);
+    // While paused, apply it right away so the player sees the effect.
+    if (this.speed === 0) this.runner.applyIntentsNow();
   }
 
   /** Advances the simulation by `elapsedMs` of real time. */
