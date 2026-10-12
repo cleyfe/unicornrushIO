@@ -10,9 +10,10 @@ import type {
   ValuationBreakdown,
   WinReason,
 } from '@unicornrush/engine-api/game/Game';
-import { NEUTRAL, WATER, type GameMap } from '@unicornrush/engine-api/game/GameMap';
+import type { CityData } from '@unicornrush/engine-api/game/City';
+import { NEUTRAL, Wealth, type GameMap } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
-import { generateMap, neighbors4 } from '@unicornrush/engine-lib/game/GameMap';
+import { generateGridCity, mapFromCity, neighbors } from '@unicornrush/engine-lib/game/GameMap';
 import { PseudoRandom } from '@unicornrush/engine-lib/PseudoRandom';
 import type { Execution } from '../execution/Execution';
 
@@ -42,12 +43,11 @@ export class GameImpl {
   private nb2: number[] = [];
   private logId = 0;
 
-  constructor(seed: number, specs: CompanySpec[]) {
+  /** Plays on `city` (from OpenStreetMap) when given, otherwise on a synthetic grid city. */
+  constructor(seed: number, specs: CompanySpec[], city?: CityData) {
     this.rng = new PseudoRandom(seed);
-    this.map = generateMap(this.rng);
-    const size = this.map.width * this.map.height;
-    this.owner = new Int16Array(size).fill(NEUTRAL);
-    for (let i = 0; i < size; i++) if (this.map.isWater[i]) this.owner[i] = WATER;
+    this.map = city ? mapFromCity(city) : generateGridCity(this.rng);
+    this.owner = new Int16Array(this.map.size).fill(NEUTRAL);
     specs.forEach((s, id) => this.companies.push(newCompany(id, s)));
     this.placeSpawns();
   }
@@ -102,13 +102,14 @@ export class GameImpl {
     return c.trainees.reduce((s, t) => s + t.count, 0);
   }
 
+  /** Customers the operations team can serve. */
   capacity(c: Company): number {
-    return this.opsStaff(c) * CONFIG.staff.tilesPerOps;
+    return this.opsStaff(c) * CONFIG.staff.customersPerOps;
   }
 
-  /** Capacity relative to streets, capped: above 1 means spare staff and better service. */
+  /** Capacity relative to customers, capped: above 1 means spare staff and better service. */
   serviceLevel(c: Company): number {
-    return c.tiles === 0 ? 1 : Math.min(CONFIG.sales.maxServiceLevel, this.capacity(c) / c.tiles);
+    return c.customers <= 0 ? 1 : Math.min(CONFIG.sales.maxServiceLevel, this.capacity(c) / c.customers);
   }
 
   /** Push the defender holds per street: its customer-retention effort. */
@@ -116,8 +117,9 @@ export class GameImpl {
     return 1 + (CONFIG.sales.retentionPerPush * c.push) / Math.max(1, c.tiles);
   }
 
+  /** Share of customers actually served. */
   coverage(c: Company): number {
-    return c.tiles === 0 ? 1 : Math.min(1, this.capacity(c) / c.tiles);
+    return c.customers <= 0 ? 1 : Math.min(1, this.capacity(c) / c.customers);
   }
 
   pushPerDay(c: Company): number {
@@ -182,7 +184,7 @@ export class GameImpl {
   /** Does company `c` share a border with `target`? */
   touches(c: Company, target: number): boolean {
     for (const b of c.border) {
-      for (const n of neighbors4(this.map, b, this.nb)) if (this.owner[n] === target) return true;
+      for (const n of neighbors(this.map, b, this.nb)) if (this.owner[n] === target) return true;
     }
     return false;
   }
@@ -216,7 +218,7 @@ export class GameImpl {
 
   setOwner(tile: number, newOwner: number): void {
     const old = this.owner[tile];
-    if (old === newOwner || old === WATER) return;
+    if (old === newOwner) return;
     const d = this.map.demand[tile];
     if (old >= 0) {
       const oc = this.companies[old];
@@ -233,7 +235,7 @@ export class GameImpl {
       nc.spend += this.map.spend[tile];
     }
     this.refreshBorder(tile);
-    for (const n of neighbors4(this.map, tile, this.nb2)) this.refreshBorder(n);
+    for (const n of neighbors(this.map, tile, this.nb2)) this.refreshBorder(n);
     this.ownershipVersion++;
   }
 
@@ -241,9 +243,8 @@ export class GameImpl {
   isBorder(tile: number): boolean {
     const o = this.owner[tile];
     if (o < 0) return false;
-    for (const n of neighbors4(this.map, tile, this.nb)) {
-      const no = this.owner[n];
-      if (no !== o && no !== WATER) return true;
+    for (const n of neighbors(this.map, tile, this.nb)) {
+      if (this.owner[n] !== o) return true;
     }
     return false;
   }
@@ -271,32 +272,71 @@ export class GameImpl {
     if (this.log.length > 80) this.log.shift();
   }
 
+  /**
+   * Starts every company far apart, in an ordinary middle-income area, with
+   * about the same number of customers, grown outward along its streets.
+   */
   private placeSpawns(): void {
-    const { width: w, height: h } = this.map;
-    const spots: [number, number][] = [];
-    let minDist = 45;
-    let attempts = 0;
-    while (spots.length < this.companies.length) {
-      attempts++;
-      if (attempts % 400 === 0) minDist *= 0.85;
-      const x = this.rng.int(8, w - 8);
-      const y = this.rng.int(6, h - 6);
-      const i = y * w + x;
-      // Start in the suburbs, not downtown.
-      if (this.map.isWater[i] || this.map.demand[i] > CONFIG.map.customersPerStreet * 1.6) continue;
-      if (spots.some(([sx, sy]) => (sx - x) * (sx - x) + (sy - y) * (sy - y) < minDist * minDist)) continue;
-      spots.push([x, y]);
+    const m = this.map;
+    const sorted = [...m.demand].sort((a, b) => a - b);
+    const median = sorted[sorted.length >> 1];
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (let i = 0; i < m.size; i++) {
+      minX = Math.min(minX, m.x[i]);
+      maxX = Math.max(maxX, m.x[i]);
+      minY = Math.min(minY, m.y[i]);
+      maxY = Math.max(maxY, m.y[i]);
     }
-    const r = CONFIG.start.radius;
-    spots.forEach(([sx, sy], id) => {
-      for (let dy = -r; dy <= r; dy++) {
-        for (let dx = -r; dx <= r; dx++) {
-          if (dx * dx + dy * dy > r * r) continue;
-          const i = (sy + dy) * w + (sx + dx);
-          if (this.owner[i] === NEUTRAL) this.setOwner(i, id);
+    // Stay away from the edges, where there is less room to grow.
+    const marginX = (maxX - minX) * 0.12;
+    const marginY = (maxY - minY) * 0.12;
+    // Candidate starts: ordinary middle-income streets away from the edges.
+    const inside = (i: number) =>
+      m.x[i] >= minX + marginX && m.x[i] <= maxX - marginX && m.y[i] >= minY + marginY && m.y[i] <= maxY - marginY;
+    let candidates: number[] = [];
+    for (let i = 0; i < m.size; i++) {
+      if (inside(i) && m.wealth[i] === Wealth.Middle && m.demand[i] <= median * 1.5) candidates.push(i);
+    }
+    if (candidates.length < this.companies.length) candidates = [...Array(m.size).keys()];
+    // Pick the most spread-out set among many random tries, so no start is cramped.
+    const n = this.companies.length;
+    let best: number[] = [];
+    let bestSpread = -1;
+    for (let attempt = 0; attempt < 300; attempt++) {
+      const set = Array.from({ length: n }, () => candidates[this.rng.int(0, candidates.length)]);
+      let spread = Infinity;
+      for (let a = 0; a < n; a++)
+        for (let b = a + 1; b < n; b++) spread = Math.min(spread, Math.hypot(m.x[set[a]] - m.x[set[b]], m.y[set[a]] - m.y[set[b]]));
+      if (spread > bestSpread) (bestSpread = spread), (best = set);
+    }
+    // Shuffle which company gets which start, so no seat is favoured.
+    const seeds = best;
+    for (let k = seeds.length - 1; k > 0; k--) {
+      const j = this.rng.int(0, k + 1);
+      [seeds[k], seeds[j]] = [seeds[j], seeds[k]];
+    }
+    // Grow every territory one street at a time, in turns, so nobody gets more.
+    const frontiers = seeds.map((s) => [s]);
+    const nb: number[] = [];
+    let growing = true;
+    while (growing) {
+      growing = false;
+      this.companies.forEach((c, id) => {
+        if (c.customers >= CONFIG.start.customers) return;
+        const queue = frontiers[id];
+        while (queue.length > 0) {
+          const t = queue.shift()!;
+          if (this.owner[t] !== NEUTRAL) continue;
+          this.setOwner(t, id);
+          for (const n of neighbors(m, t, nb)) if (this.owner[n] === NEUTRAL) queue.push(n);
+          growing = true;
+          return;
         }
-      }
-    });
+      });
+    }
   }
 }
 

@@ -44,7 +44,9 @@ export class CompanyExecution implements Execution {
   /** Customers the operations team cannot serve drift away. */
   private churn(game: GameImpl): void {
     const c = this.c;
-    const excess = c.tiles - game.capacity(c);
+    // Unserved customers, expressed in streets.
+    const excessCustomers = c.customers - game.capacity(c);
+    const excess = c.tiles > 0 ? (excessCustomers * c.tiles) / c.customers : 0;
     if (excess <= 0) {
       c.churnCarry = 0;
       return;

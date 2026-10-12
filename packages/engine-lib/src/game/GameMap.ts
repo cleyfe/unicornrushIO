@@ -1,11 +1,46 @@
-import { Terrain, Wealth, type GameMap } from '@unicornrush/engine-api/game/GameMap';
+import type { CityData } from '@unicornrush/engine-api/game/City';
+import { Wealth, type GameMap } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '../configuration/Config';
 import { exp } from '../DetMath';
 import type { PseudoRandom } from '../PseudoRandom';
 
+/** Writes the neighbours of tile i into `out` and returns it. */
+export function neighbors(map: GameMap, i: number, out: number[]): number[] {
+  out.length = 0;
+  for (let k = map.adjStart[i]; k < map.adjStart[i + 1]; k++) out.push(map.adj[k]);
+  return out;
+}
+
+function withSpend(demand: Float32Array, wealth: Uint8Array): Float32Array {
+  return demand.map((d, i) => d * CONFIG.wealth[wealth[i]].spend);
+}
+
+/** A real city built from OpenStreetMap. */
+export function mapFromCity(city: CityData): GameMap {
+  const s = city.segments;
+  const wealth = Uint8Array.from(s.wealth);
+  // Wealthy homes are bigger: the same floor area holds fewer customers.
+  // Real floor-area data already varies a lot, so the effect is halved.
+  const demand = Float32Array.from(s.customers, (c, i) => c * (1 + (CONFIG.wealth[wealth[i]].density - 1) * 0.5));
+  return {
+    size: s.customers.length,
+    adjStart: Int32Array.from(s.adjStart),
+    adj: Int32Array.from(s.adj),
+    x: Float32Array.from(s.x),
+    y: Float32Array.from(s.y),
+    demand,
+    wealth,
+    spend: withSpend(demand, wealth),
+  };
+}
+
+// ---------- synthetic grid city (tests, balance runs, fallback) ----------
+
+const Tile = { Street: 0, River: 1, Park: 2, Bridge: 3, Block: 4 } as const;
+const METRES_PER_TILE = 20;
+
 const smooth = (t: number) => t * t * (3 - 2 * t);
 
-/** Smooth 1D noise in [0, 1] sampled at `n` points. */
 function noise1d(rng: PseudoRandom, n: number, cell: number): Float32Array {
   const knots = Array.from({ length: Math.ceil(n / cell) + 2 }, () => rng.next());
   const out = new Float32Array(n);
@@ -18,7 +53,6 @@ function noise1d(rng: PseudoRandom, n: number, cell: number): Float32Array {
   return out;
 }
 
-/** Smooth 2D noise in [0, 1]. */
 function noise2d(rng: PseudoRandom, w: number, h: number, cell: number): Float32Array {
   const gw = Math.ceil(w / cell) + 2;
   const gh = Math.ceil(h / cell) + 2;
@@ -42,30 +76,20 @@ function noise2d(rng: PseudoRandom, w: number, h: number, cell: number): Float32
   return out;
 }
 
-export function isStreetLine(map: { streetEvery: number }, x: number, y: number): boolean {
-  return x % map.streetEvery === 0 || y % map.streetEvery === 0;
-}
-
 /**
- * A city of streets. Companies own street tiles (the shops along them);
- * the blocks in between are scenery. Each neighbourhood has a wealth level:
- * rich streets near the river and parks, budget streets elsewhere, and dense
- * downtowns with many customers.
+ * A synthetic city on a grid: streets around 4×4 blocks, a river crossed by
+ * bridges, parks, downtowns, and wealthier neighbourhoods by the river and
+ * parks. Only street tiles become map tiles.
  */
-export function generateMap(rng: PseudoRandom): GameMap {
-  const cfg = CONFIG.map;
+export function generateGridCity(rng: PseudoRandom): GameMap {
+  const cfg = CONFIG.gridCity;
   const { width: w, height: h, streetEvery: se } = cfg;
   const n = w * h;
-  const terrain = new Uint8Array(n);
-  const demand = new Float32Array(n);
-  const wealth = new Uint8Array(n);
-  const spend = new Float32Array(n);
-  const isWater = new Uint8Array(n);
-
+  const tile = new Uint8Array(n);
   for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) terrain[y * w + x] = isStreetLine(cfg, x, y) ? Terrain.Street : Terrain.Block;
+    for (let x = 0; x < w; x++) tile[y * w + x] = x % se === 0 || y % se === 0 ? Tile.Street : Tile.Block;
 
-  // River: meanders across the city, crossed by bridges on some avenues.
+  // River, crossed by bridges on some avenues.
   const centre = noise1d(rng, w, 40);
   const width = noise1d(rng, w, 25);
   const riverMid = rng.range(0.35, 0.65) * h;
@@ -77,8 +101,7 @@ export function generateMap(rng: PseudoRandom): GameMap {
     riverHalf[x] = 1.5 + width[x];
     const bridge = x % se === 0 && (x / se) % cfg.bridgeEveryAvenues === bridgeOffset;
     for (let y = Math.floor(riverY[x] - riverHalf[x]); y <= Math.ceil(riverY[x] + riverHalf[x]); y++) {
-      if (y < 0 || y >= h) continue;
-      terrain[y * w + x] = bridge ? Terrain.Bridge : Terrain.River;
+      if (y >= 0 && y < h) tile[y * w + x] = bridge ? Tile.Bridge : Tile.River;
     }
   }
 
@@ -92,13 +115,10 @@ export function generateMap(rng: PseudoRandom): GameMap {
       let dry = true;
       for (let y = by * se; y <= (by + 1) * se; y++)
         for (let x = bx * se; x <= (bx + 1) * se; x++) {
-          const t = terrain[y * w + x];
-          if (t === Terrain.River || t === Terrain.Bridge) dry = false;
+          const t = tile[y * w + x];
+          if (t === Tile.River || t === Tile.Bridge) dry = false;
         }
-      if (!dry) continue;
-      parkBlock[by * blocksX + bx] = 1;
-      for (let y = by * se + 1; y < (by + 1) * se; y++)
-        for (let x = bx * se + 1; x < (bx + 1) * se; x++) terrain[y * w + x] = Terrain.Park;
+      if (dry) parkBlock[by * blocksX + bx] = 1;
     }
   }
   const nearPark = (x: number, y: number) => {
@@ -106,7 +126,6 @@ export function generateMap(rng: PseudoRandom): GameMap {
     const by = Math.floor(y / se);
     for (let dy = -1; dy <= 0; dy++)
       for (let dx = -1; dx <= 0; dx++) {
-        // A street tile on a block's edge touches the blocks on either side.
         const cx = x % se === 0 ? bx + dx : bx;
         const cy = y % se === 0 ? by + dy : by;
         if (cx >= 0 && cy >= 0 && cx < blocksX && cy < blocksY && parkBlock[cy * blocksX + cx]) return true;
@@ -114,7 +133,7 @@ export function generateMap(rng: PseudoRandom): GameMap {
     return false;
   };
 
-  // Wealth: smooth neighbourhoods, richer by the river and by parks.
+  // Wealth and customers on every street tile.
   const field = noise2d(rng, w, h, 28);
   const centres = Array.from({ length: cfg.downtowns }, () => ({
     x: rng.range(15, w - 15),
@@ -122,50 +141,57 @@ export function generateMap(rng: PseudoRandom): GameMap {
     r: rng.range(7, 13),
     peak: rng.range(1.5, 3),
   }));
+  const index = new Int32Array(n).fill(-1);
+  const xs: number[] = [];
+  const ys: number[] = [];
+  const demand: number[] = [];
+  const wealth: number[] = [];
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
+      const t = tile[i];
+      if (t !== Tile.Street && t !== Tile.Bridge) continue;
       const riverDist = Math.abs(y - riverY[x]) - riverHalf[x];
       let v = field[i];
       if (riverDist < 5) v += 0.25 * (1 - Math.max(0, riverDist) / 5);
       if (nearPark(x, y)) v += 0.2;
-      wealth[i] = v < 0.38 ? Wealth.Budget : v < 0.6 ? Wealth.Middle : v < 0.8 ? Wealth.Upscale : Wealth.Luxury;
-
-      const t = terrain[i];
-      if (t === Terrain.Street || t === Terrain.Bridge) {
-        let density = 1;
-        for (const c of centres) {
-          const dist2 = (x - c.x) * (x - c.x) + (y - c.y) * (y - c.y);
-          density += c.peak * exp(-dist2 / (2 * c.r * c.r));
-        }
-        const tier = CONFIG.wealth[wealth[i]];
-        const base = t === Terrain.Bridge ? 0.3 : cfg.customersPerStreet * density * tier.density;
-        demand[i] = Math.round(base * 4) / 4;
-        spend[i] = demand[i] * tier.spend;
-      } else {
-        isWater[i] = 1;
+      const level = v < 0.38 ? Wealth.Budget : v < 0.6 ? Wealth.Middle : v < 0.8 ? Wealth.Upscale : Wealth.Luxury;
+      let density = 1;
+      for (const c of centres) {
+        const dist2 = (x - c.x) * (x - c.x) + (y - c.y) * (y - c.y);
+        density += c.peak * exp(-dist2 / (2 * c.r * c.r));
       }
+      const base = t === Tile.Bridge ? 0.3 : cfg.customersPerStreet * density * CONFIG.wealth[level].density;
+      index[i] = xs.length;
+      xs.push(x * METRES_PER_TILE);
+      ys.push((h - y) * METRES_PER_TILE);
+      demand.push(Math.round(base * 4) / 4);
+      wealth.push(level);
     }
   }
-  return { width: w, height: h, streetEvery: se, terrain, demand, wealth, spend, isWater };
-}
 
-export function neighbors4(map: GameMap, i: number, out: number[]): number[] {
-  out.length = 0;
-  const x = i % map.width;
-  const y = (i / map.width) | 0;
-  if (x > 0) out.push(i - 1);
-  if (x < map.width - 1) out.push(i + 1);
-  if (y > 0) out.push(i - map.width);
-  if (y < map.height - 1) out.push(i + map.width);
-  return out;
-}
-
-/** The street tile nearest to (x, y): blocks snap to the street around them. */
-export function nearestStreet(map: GameMap, x: number, y: number): number {
-  const se = map.streetEvery;
-  if (isStreetLine(map, x, y)) return y * map.width + x;
-  const sx = Math.round(x / se) * se;
-  const sy = Math.round(y / se) * se;
-  return Math.abs(sx - x) <= Math.abs(sy - y) ? y * map.width + Math.min(map.width - 1, sx) : Math.min(map.height - 1, sy) * map.width + x;
+  // Adjacency between street tiles.
+  const adjStart = [0];
+  const adj: number[] = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (index[y * w + x] < 0) continue;
+      for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+        if (nx >= 0 && ny >= 0 && nx < w && ny < h && index[ny * w + nx] >= 0) adj.push(index[ny * w + nx]);
+      }
+      adjStart.push(adj.length);
+    }
+  }
+  const d = Float32Array.from(demand);
+  const wl = Uint8Array.from(wealth);
+  return {
+    size: xs.length,
+    adjStart: Int32Array.from(adjStart),
+    adj: Int32Array.from(adj),
+    x: Float32Array.from(xs),
+    y: Float32Array.from(ys),
+    demand: d,
+    wealth: wl,
+    spend: withSpend(d, wl),
+  };
 }

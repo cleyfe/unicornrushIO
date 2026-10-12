@@ -6,7 +6,9 @@ export const CONFIG = {
   ticksPerDay: 10,
   matchDays: 900, // ~2.5 years, 15 minutes at 1x
 
-  map: {
+  // The synthetic grid city used by tests and as a fallback; real cities come
+  // from OpenStreetMap (scripts/build-city.ts).
+  gridCity: {
     width: 161, // multiples of streetEvery + 1, so the city is framed by streets
     height: 101,
     streetEvery: 5, // blocks are 4×4 tiles with a street all around
@@ -27,14 +29,14 @@ export const CONFIG = {
     { label: 'Luxury', spend: 2.2, density: 0.6, priceSensitivity: 0.3, prestige: 1.6 },
   ],
 
-  start: { cash: 60_000, employees: 10, radius: 5, salesShare: 0.5 },
+  start: { cash: 60_000, employees: 10, customers: 90, salesShare: 0.5 }, // starting territory: about this many customers
 
   staff: {
     salaryPerDay: 100,
     hireCost: 500, // recruiting + onboarding, paid once
     fireCost: 300, // severance
     trainingDays: 8, // new hires are paid but not productive yet
-    tilesPerOps: 6, // street sections one operations employee can serve
+    customersPerOps: 20, // customers one operations employee can serve
   },
 
   // Revenue per customer per day, before the street's wealth multiplier.

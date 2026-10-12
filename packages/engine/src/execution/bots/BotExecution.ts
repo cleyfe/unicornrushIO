@@ -1,8 +1,8 @@
 import type { Company, Personality } from '@unicornrush/engine-api/game/Game';
-import { NEUTRAL, WATER } from '@unicornrush/engine-api/game/GameMap';
+import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
 import type { Intent } from '@unicornrush/engine-api/Intents';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
-import { neighbors4 } from '@unicornrush/engine-lib/game/GameMap';
+import { neighbors } from '@unicornrush/engine-lib/game/GameMap';
 import type { GameImpl } from '../../game/GameImpl';
 import type { Execution } from '../Execution';
 import { createExecution } from '../ExecutionManager';
@@ -73,7 +73,7 @@ export class BotExecution implements Execution {
     let cash = c.cash;
 
     // 1. Staff split: enough operations to serve every customer, the rest sells.
-    const opsNeeded = Math.ceil((c.tiles * p.service) / s.tilesPerOps);
+    const opsNeeded = Math.ceil((c.customers * p.service) / s.customersPerOps);
     const share = c.employees > 0 ? 1 - opsNeeded / c.employees : 0;
     this.act(g, { type: 'setSalesShare', companyId: id, share: Math.min(p.maxSales, Math.max(0.05, share)) });
 
@@ -161,9 +161,9 @@ export class BotExecution implements Execution {
     let bestDemand = -1;
     let seen = 0;
     for (const tile of c.border) {
-      for (const n of neighbors4(g.map, tile, this.nb)) {
+      for (const n of neighbors(g.map, tile, this.nb)) {
         const o = g.owner[n];
-        if (o === WATER || o === c.id) continue;
+        if (o === c.id) continue;
         if (o === NEUTRAL) {
           f.neutral++;
           if (seen++ < 60) {

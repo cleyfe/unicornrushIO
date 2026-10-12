@@ -1,3 +1,4 @@
+import type { CityData } from '@unicornrush/engine-api/game/City';
 import type { CompanySpec, LogEntry } from '@unicornrush/engine-api/game/Game';
 import type { Intent } from '@unicornrush/engine-api/Intents';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
@@ -11,8 +12,8 @@ export class ClientGameRunner {
   private acc = 0;
   private lastLogId = 0;
 
-  constructor(seed: number, companies: CompanySpec[]) {
-    this.runner = new GameRunner(seed, companies);
+  constructor(seed: number, companies: CompanySpec[], city?: CityData) {
+    this.runner = new GameRunner(seed, companies, city);
   }
 
   get game(): GameImpl {

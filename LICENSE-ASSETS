@@ -11,6 +11,18 @@ Attribution required: "UnicornRush" or "UnicornRush and Contributors".
 
 Full license: https://creativecommons.org/licenses/by-sa/4.0/
 
+## City maps: ODbL (OpenStreetMap)
+
+The city files in `public/cities/` are built from OpenStreetMap data by
+`scripts/build-city.ts`. They are © OpenStreetMap contributors and available
+under the Open Database License (ODbL): https://opendatacommons.org/licenses/odbl/
+
+If you share a modified version of these files, you must share it under the
+ODbL too. The game shows "© OpenStreetMap contributors" on the map.
+
+The base map is served by OpenFreeMap (https://openfreemap.org), using
+OpenMapTiles and OpenStreetMap data, and is credited on the map as well.
+
 ## Not covered
 
 - The "UnicornRush" name, the "unicornrush.io" domain, and logos are not

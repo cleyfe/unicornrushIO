@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
-import { neighbors4 } from '@unicornrush/engine-lib/game/GameMap';
+import { neighbors } from '@unicornrush/engine-lib/game/GameMap';
 import { act, lastMessage, neutralNeighbour, quietSetup, runDays } from './util/Setup';
 
 describe('sales campaigns', () => {
@@ -73,7 +73,7 @@ describe('defending customers', () => {
     const nb: number[] = [];
     let target = -1;
     for (const b of me.border) {
-      for (const n of neighbors4(g.map, b, nb)) if (g.owner[n] === NEUTRAL) target = n;
+      for (const n of neighbors(g.map, b, nb)) if (g.owner[n] === NEUTRAL) target = n;
       if (target >= 0) break;
     }
     g.setOwner(target, def.id);

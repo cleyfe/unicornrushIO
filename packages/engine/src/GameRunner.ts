@@ -1,3 +1,4 @@
+import type { CityData } from '@unicornrush/engine-api/game/City';
 import type { CompanySpec } from '@unicornrush/engine-api/game/Game';
 import type { Intent } from '@unicornrush/engine-api/Intents';
 import { BotExecution } from './execution/bots/BotExecution';
@@ -16,8 +17,9 @@ export class GameRunner {
   readonly game: GameImpl;
   private queued: Intent[] = [];
 
-  constructor(seed: number, companies: CompanySpec[]) {
-    this.game = new GameImpl(seed, companies);
+  /** Plays on a real city when `city` is given, otherwise on a synthetic grid city. */
+  constructor(seed: number, companies: CompanySpec[], city?: CityData) {
+    this.game = new GameImpl(seed, companies, city);
     const g = this.game;
     g.addExecution(new MarketEventExecution());
     for (const c of g.companies) g.addExecution(new CompanyExecution(c.id));

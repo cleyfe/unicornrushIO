@@ -2,7 +2,7 @@ import type { Lawsuit } from '@unicornrush/engine-api/game/Game';
 import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { money } from '@unicornrush/engine-lib/Format';
-import { neighbors4 } from '@unicornrush/engine-lib/game/GameMap';
+import { neighbors } from '@unicornrush/engine-lib/game/GameMap';
 import type { GameImpl } from '../game/GameImpl';
 import type { Execution } from './Execution';
 
@@ -93,7 +93,7 @@ export class LawsuitExecution implements Execution {
         game.setOwner(t, NEUTRAL);
         taken++;
         lost++;
-        for (const n of neighbors4(game.map, t, nb)) if (game.owner[n] === ownerId) queue.push(n);
+        for (const n of neighbors(game.map, t, nb)) if (game.owner[n] === ownerId) queue.push(n);
       }
     }
     return lost;

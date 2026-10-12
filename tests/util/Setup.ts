@@ -1,8 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import type { CityData } from '@unicornrush/engine-api/game/City';
 import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
 import type { Intent } from '@unicornrush/engine-api/Intents';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
-import { neighbors4 } from '@unicornrush/engine-lib/game/GameMap';
+import { neighbors } from '@unicornrush/engine-lib/game/GameMap';
 import { GameRunner } from '@unicornrush/engine/GameRunner';
 
 export function setup(seed = 42, allBots = false): GameRunner {
@@ -30,11 +33,16 @@ export function act(r: GameRunner, intent: Intent): void {
 export function neutralNeighbour(r: GameRunner, companyId = 0): number {
   const g = r.game;
   for (const b of g.companies[companyId].border) {
-    for (const n of neighbors4(g.map, b, [])) if (g.owner[n] === NEUTRAL) return n;
+    for (const n of neighbors(g.map, b, [])) if (g.owner[n] === NEUTRAL) return n;
   }
   return -1;
 }
 
 export function lastMessage(r: GameRunner, companyId = 0): string | undefined {
   return [...r.game.log].reverse().find((l) => l.recipient === companyId)?.text;
+}
+
+/** Loads a built city from public/cities/. */
+export function loadCity(id: string): CityData {
+  return JSON.parse(readFileSync(join(__dirname, '..', '..', 'public', 'cities', `${id}.json`), 'utf8'));
 }

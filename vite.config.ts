@@ -5,6 +5,7 @@ const pkg = (name: string) => fileURLToPath(new URL(`./packages/${name}/src`, im
 
 export default defineConfig({
   base: './',
+  worker: { format: 'es' },
   resolve: {
     alias: {
       '@unicornrush/engine-api': pkg('engine-api'),

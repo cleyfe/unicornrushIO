@@ -1,4 +1,3 @@
-import { WATER } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { money, pct } from '@unicornrush/engine-lib/Format';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
@@ -10,7 +9,7 @@ export class Leaderboard {
   private land: number;
 
   constructor(private game: GameImpl) {
-    this.land = game.owner.reduce((s, o) => s + (o === WATER ? 0 : 1), 0);
+    this.land = game.map.size;
     this.root = document.createElement('div');
     this.root.className = 'board';
     this.root.innerHTML = `<section class="panel leaders"><h3>Leaderboard</h3><table data-v="leaders"></table></section>

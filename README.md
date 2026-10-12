@@ -9,7 +9,7 @@ npm install
 npm run dev       # play at http://localhost:5173
 npm test          # rules tests
 npm run balance   # simulate bot-only matches
-npm run fairness  # controlled balance experiments
+npm run fairness  # controlled balance experiments (add a city id to test a real city)
 ```
 
 ## How to win
@@ -28,28 +28,41 @@ Investors pay for profit, so a smaller, profitable company can beat a big one th
 
 | Lever | What it does | What it teaches |
 |---|---|---|
-| **Ops / Sales split** | Ops staff serve 6 streets each. Sales staff generate *push* to win new streets. | Resource allocation, opportunity cost |
+| **Ops / Sales split** | Ops staff serve 20 customers each. Sales staff generate *push* to win new streets. | Resource allocation, opportunity cost |
 | **Hire / Fire** | $500 to hire, $100/day salary, 8 days of training before new hires are productive. $300 severance. | Hiring is an investment that pays back over time |
 | **Price** (Low / Medium / High) | $25 / $40 / $55 per customer per day. Lower prices win customers faster and keep them loyal. | Price elasticity, margin vs volume |
-| **Campaigns** | Click a street next to yours to spend half your push winning it and its neighbours. | Customer acquisition cost |
+| **Campaigns** | Click a street (or a building on it) next to yours to spend half your push winning it and its neighbours. | Customer acquisition cost |
 | **Bank loan** | $25K at a time, 24%/year interest, credit limit = 60 days of revenue | Leverage and risk |
 | **Lawsuit** ⚖️ | $250K to sue a rival. See below. | Legal risk |
 
 ### The city
 
-The map is a grid of **streets**, and streets are what companies fight over. Blocks are
-coloured by how wealthy the neighbourhood is, from dark (budget) to gold (luxury):
+You play on a **real city**, built from [OpenStreetMap](https://www.openstreetmap.org). Companies
+fight over **street segments** (a street between two intersections); every building belongs to its
+nearest street, so winning a street wins its buildings' customers. Bigger buildings (footprint ×
+floors) mean more customers. Buildings are coloured by how wealthy the neighbourhood is, from dark
+(budget) to gold (luxury):
 
-| Wealth | Customers spend | Customers per street | Price sensitivity | Prestige |
+| Wealth | Customers spend | Customers | Price sensitivity | Prestige |
 |---|---|---|---|---|
-| $ Budget | ×0.7 | many | high: undercutting works | cheap brands do fine |
+| $ Budget | ×0.7 | more per building | high: undercutting works | cheap brands do fine |
 | $$ Middle | ×1.0 | normal | normal | normal |
-| $$$ Upscale | ×1.5 | fewer | low | premium brands hold customers better |
-| $$$$ Luxury | ×2.2 | few | very low: price barely matters | premium brands are sticky; cheap ones look cheap |
+| $$$ Upscale | ×1.5 | fewer (bigger homes) | low | premium brands hold customers better |
+| $$$$ Luxury | ×2.2 | fewest | very low: price barely matters | premium brands are sticky; cheap ones look cheap |
 
-Serving a customer costs the same everywhere, so rich streets have much fatter margins.
-They also cost more sales push to win. Luxury clusters along the river and next to parks;
-downtown streets are packed with middle-income customers.
+Serving a customer costs the same everywhere, so rich streets have much fatter margins. They
+also cost more sales push to win.
+
+**First city: Paris · Opéra & Monceau**, from Parc Monceau and the Golden Triangle to Pigalle.
+
+#### Adding a city
+
+Add an entry to `scripts/cities.json` (a bounding box plus a few hand-placed wealth hints, since
+OpenStreetMap has no income data), then run:
+
+```bash
+npm run build-city -- <id>   # downloads OSM data and writes public/cities/<id>.json
+```
 
 ### Every day
 
@@ -97,9 +110,10 @@ packages/
   engine-api/   contract: intents and game types
   engine-lib/   config, map generation, PRNG, deterministic math, formatting
   engine/       the simulation: GameImpl, executions, bots, GameRunner
-src/client/     canvas renderer, HUD, input, game loop
+src/client/     MapLibre map, company labels, HUD, input, game loop
+public/cities/  playable cities built from OpenStreetMap
 tests/          rules tests + layer-boundary checks (vitest)
-scripts/        headless balance simulation
+scripts/        city builder (OSM → game map), balance and fairness simulations
 ```
 
 Every action is an **intent** turned into an **execution**, for players and bots
@@ -116,6 +130,7 @@ See [CLAUDE.md](CLAUDE.md) for the architecture rules.
 
 ## License
 
+- **City maps:** © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, [ODbL](https://opendatacommons.org/licenses/odbl/). Base map by [OpenFreeMap](https://openfreemap.org).
 - **Code:** [GNU AGPL v3](LICENSE), with additional terms (keep the "© UnicornRush and Contributors" notice; don't present forks as the official UnicornRush).
 - **Assets:** [CC BY-SA 4.0](LICENSE-ASSETS).
 - The UnicornRush name, unicornrush.io domain and logos are not licensed.

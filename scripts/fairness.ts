@@ -1,9 +1,14 @@
 // Controlled experiments to find where an advantage comes from.
-// Usage: npm run fairness -- [matches per experiment]
+// Usage: npm run fairness -- [matches per experiment] [city id, e.g. paris-opera]
+import { readFileSync } from 'node:fs';
+import type { CityData } from '@unicornrush/engine-api/game/City';
 import type { CompanySpec, Personality, PriceLevel } from '@unicornrush/engine-api/game/Game';
 import { GameRunner } from '@unicornrush/engine/GameRunner';
 
 const N = Number(process.argv[2] ?? 24);
+const cityId = process.argv[3];
+const city: CityData | undefined = cityId ? JSON.parse(readFileSync(`public/cities/${cityId}.json`, 'utf8')) : undefined;
+console.log(`Map: ${city ? city.name : 'synthetic grid city'}`);
 const COLORS: [number, number, number][] = [[52, 152, 219], [231, 76, 60], [46, 204, 113], [155, 89, 182]];
 
 interface Outcome {
@@ -14,7 +19,7 @@ interface Outcome {
 }
 
 function play(seed: number, specs: CompanySpec[]): Outcome {
-  const r = new GameRunner(seed, specs);
+  const r = new GameRunner(seed, specs, city);
   const g = r.game;
   while (!g.result) r.executeNextTick();
   return {

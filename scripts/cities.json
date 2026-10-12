@@ -1,0 +1,98 @@
+{
+  "paris-opera": {
+    "name": "Paris · Opéra & Monceau",
+    "bbox": [
+      48.868,
+      2.3,
+      48.886,
+      2.345
+    ],
+    "_hints": "OpenStreetMap has no income data. These hand-placed hints (weight > 0 = richer, < 0 = more modest, fading to zero at the radius) are blended with OSM signals (shops, parks, building height).",
+    "wealthHints": [
+      {
+        "name": "Champs-Élysées & Golden Triangle",
+        "lat": 48.8712,
+        "lon": 2.304,
+        "radius": 520,
+        "weight": 3
+      },
+      {
+        "name": "Parc Monceau",
+        "lat": 48.8796,
+        "lon": 2.3089,
+        "radius": 650,
+        "weight": 3
+      },
+      {
+        "name": "Plaine Monceau",
+        "lat": 48.8835,
+        "lon": 2.3055,
+        "radius": 500,
+        "weight": 2
+      },
+      {
+        "name": "Madeleine & Faubourg Saint-Honoré",
+        "lat": 48.8702,
+        "lon": 2.3195,
+        "radius": 550,
+        "weight": 2.5
+      },
+      {
+        "name": "Rue de la Paix & Vendôme",
+        "lat": 48.8688,
+        "lon": 2.3305,
+        "radius": 380,
+        "weight": 3
+      },
+      {
+        "name": "Opéra",
+        "lat": 48.8712,
+        "lon": 2.3318,
+        "radius": 400,
+        "weight": 1
+      },
+      {
+        "name": "Nouvelle Athènes",
+        "lat": 48.8788,
+        "lon": 2.3365,
+        "radius": 350,
+        "weight": 0.5
+      },
+      {
+        "name": "Gare Saint-Lazare",
+        "lat": 48.8761,
+        "lon": 2.3252,
+        "radius": 320,
+        "weight": -1
+      },
+      {
+        "name": "Grands Boulevards east",
+        "lat": 48.8718,
+        "lon": 2.343,
+        "radius": 380,
+        "weight": -0.8
+      },
+      {
+        "name": "Pigalle & Boulevard de Clichy",
+        "lat": 48.8826,
+        "lon": 2.337,
+        "radius": 480,
+        "weight": -2.5
+      },
+      {
+        "name": "Rochechouart & Anvers",
+        "lat": 48.883,
+        "lon": 2.3445,
+        "radius": 420,
+        "weight": -2.5
+      },
+      {
+        "name": "Place de Clichy",
+        "lat": 48.8836,
+        "lon": 2.3275,
+        "radius": 380,
+        "weight": -1.2
+      }
+    ]
+  }
+}

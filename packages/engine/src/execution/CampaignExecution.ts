@@ -1,6 +1,6 @@
-import { NEUTRAL, WATER } from '@unicornrush/engine-api/game/GameMap';
+import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
-import { neighbors4 } from '@unicornrush/engine-lib/game/GameMap';
+import { neighbors } from '@unicornrush/engine-lib/game/GameMap';
 import type { GameImpl } from '../game/GameImpl';
 import type { Execution } from './Execution';
 
@@ -30,7 +30,6 @@ export class CampaignExecution implements Execution {
     if (!c.alive) return fail('Your company is closed.');
     if (this.tile < 0 || this.tile >= game.owner.length) return fail('That is off the map.');
     const target = game.owner[this.tile];
-    if (target === WATER) return fail('Nobody lives there.');
     if (target === c.id) return fail('Those are already your customers.');
     if (!game.touches(c, target)) return fail('You can only expand into markets next to yours.');
     const budget = c.push * CONFIG.sales.campaignShare;
@@ -38,8 +37,8 @@ export class CampaignExecution implements Execution {
     c.push -= budget;
     this.target = target;
     this.budget = budget;
-    this.aimX = this.tile % game.map.width;
-    this.aimY = (this.tile / game.map.width) | 0;
+    this.aimX = game.map.x[this.tile];
+    this.aimY = game.map.y[this.tile];
   }
 
   isActive(): boolean {
@@ -63,16 +62,17 @@ export class CampaignExecution implements Execution {
   /** Returns true when the campaign is finished. */
   private advance(game: GameImpl): boolean {
     const c = game.companies[this.companyId];
-    const w = game.map.width;
+    const { x, y } = game.map;
     const seen = new Set<number>();
     const candidates: { tile: number; score: number }[] = [];
     for (const b of c.border) {
-      for (const n of neighbors4(game.map, b, this.nb)) {
+      for (const n of neighbors(game.map, b, this.nb)) {
         if (game.owner[n] !== this.target || seen.has(n)) continue;
         seen.add(n);
-        const dx = (n % w) - this.aimX;
-        const dy = ((n / w) | 0) - this.aimY;
-        candidates.push({ tile: n, score: Math.sqrt(dx * dx + dy * dy) + game.rng.next() * 4 });
+        const dx = x[n] - this.aimX;
+        const dy = y[n] - this.aimY;
+        // Nearest the aim first (metres), with a little randomness for an organic front.
+        candidates.push({ tile: n, score: Math.sqrt(dx * dx + dy * dy) + game.rng.next() * 60 });
       }
     }
     if (candidates.length === 0) return true;

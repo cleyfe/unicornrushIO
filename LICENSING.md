@@ -5,7 +5,8 @@
 | What | License |
 | --- | --- |
 | Code (everything under `packages/`, `src/`, `tests/`, `scripts/`, and config files) | [GNU AGPL v3](LICENSE), with the additional terms at the end of `LICENSE` |
-| Non-code assets (images, sounds, fonts, map data) | [CC BY-SA 4.0](LICENSE-ASSETS) |
+| Non-code assets (images, sounds, fonts) | [CC BY-SA 4.0](LICENSE-ASSETS) |
+| City maps in `public/cities/` (built from OpenStreetMap) | [ODbL](https://opendatacommons.org/licenses/odbl/), © OpenStreetMap contributors |
 | The "UnicornRush" name, the unicornrush.io domain, and logos | Not licensed |
 
 Copyright © 2026 UnicornRush and Contributors.

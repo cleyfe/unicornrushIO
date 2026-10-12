@@ -134,26 +134,16 @@ main {
   overflow: hidden;
   border-radius: 8px;
   border: 1px solid var(--line);
+  height: clamp(420px, calc(100vh - 330px), 900px);
 }
-.map-hint {
-  position: absolute;
-  right: 8px;
-  bottom: 6px;
-  font-size: 11px;
-  color: var(--muted);
-  background: rgba(10, 16, 24, 0.7);
-  padding: 2px 6px;
-  border-radius: 4px;
-  pointer-events: none;
-}
-canvas.map {
-  display: block;
+.map {
+  /* MapLibre makes its container position: relative, so size it explicitly. */
   width: 100%;
-  transform-origin: 0 0;
-  cursor: crosshair;
+  height: 100%;
 }
 .tooltip {
   position: absolute;
+  z-index: 3;
   display: none;
   pointer-events: none;
   background: rgba(10, 16, 24, 0.92);
@@ -530,8 +520,10 @@ button.danger {
 
 .wealth-legend {
   position: absolute;
+  z-index: 2;
   left: 8px;
-  bottom: 6px;
+  top: 8px;
+  align-items: center;
   display: flex;
   gap: 10px;
   font-size: 11px;
@@ -546,4 +538,88 @@ button.danger {
   border: 1px solid #5b6470;
   margin-right: 4px;
   vertical-align: middle;
+}
+
+/* ---------- company labels on the map ---------- */
+
+.company-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.company-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.4s ease-out;
+}
+.company-label .name,
+.company-label .value {
+  white-space: nowrap;
+  transform: translateX(-50%);
+  margin-left: 0;
+  position: relative;
+  left: 50%;
+  text-shadow: 0 1px 3px #000, 0 0 6px #000;
+}
+.company-label .name {
+  font-weight: 700;
+  font-size: 13px;
+}
+.company-label .name i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--company);
+  margin-right: 5px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6);
+}
+.company-label.me .name {
+  font-size: 14px;
+}
+.company-label .value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffd76a;
+  font-variant-numeric: tabular-nums;
+}
+.company-label .pops {
+  position: relative;
+  height: 0;
+}
+.company-label .pop {
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-weight: 700;
+  color: #4ade80;
+  text-shadow: 0 1px 3px #000;
+  animation: pop-up 1.6s ease-out forwards;
+}
+.company-label .pop.losing {
+  color: #f87171;
+}
+@keyframes pop-up {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -28px);
+  }
+}
+.maplibregl-ctrl-attrib {
+  font-size: 11px;
 }

@@ -12,18 +12,27 @@ npm run typecheck  # tsc
 npm run build      # typecheck + production build to dist/
 npm run balance -- 16   # simulate 16 bot-only matches and print outcomes
 npm run fairness -- 48  # controlled experiments: seat bias, price only, AI only, default lineup
+npm run fairness -- 48 paris-opera  # same, on a real city
+npm run build-city -- paris-opera   # rebuild a city from OpenStreetMap (see scripts/cities.json)
 ```
 
 Run one test file: `npx vitest run tests/Lawsuit.test.ts`.
 
 ## Architecture
 
-UnicornRush is a real-time business strategy game. The code is split into a
-deterministic **engine** (packages) and a **client** (`src/client`).
+UnicornRush is a real-time business strategy game played on real cities from
+OpenStreetMap. The code is split into a deterministic **engine** (packages) and a
+**client** (`src/client`, MapLibre).
+
+The map is a **graph of street segments** (`GameMap`: CSR adjacency, midpoints in
+metres, customers, wealth). Real cities are built offline by `scripts/build-city.ts`
+into `public/cities/<id>.json` (`CityData`); tests and balance runs without a city id
+use a synthetic grid city (`generateGridCity`). Staff capacity counts customers, not
+streets, because real streets vary a lot.
 
 | Package | Directory | Contents |
 | --- | --- | --- |
-| `@unicornrush/engine-api` | `packages/engine-api` | The contract: `Intent` types and game data types (`Company`, `Lawsuit`, …), plus a few constants (`Terrain`, `NEUTRAL`). |
+| `@unicornrush/engine-api` | `packages/engine-api` | The contract: `Intent` types, game data types (`Company`, `Lawsuit`, `CityData`, `GameMap`), plus a few constants (`Wealth`, `NEUTRAL`). |
 | `@unicornrush/engine-lib` | `packages/engine-lib` | Code that runs outside the simulation too: `Config` (all tunable numbers), map generation, `PseudoRandom`, `DetMath`, formatting. |
 | `@unicornrush/engine` | `packages/engine` | The simulation: `GameImpl`, executions, bots, `GameRunner`. |
 
@@ -73,7 +82,13 @@ setups across seats, so 48 matches with 4 setups means ~12 wins each is perfectl
   competent and differ in style. A dominant one means a rule rewards one behaviour too much.
 - **Default lineup**: every company should win sometimes; unicorns around day 350–700.
 
+Check both the grid city and every real city (`npm run fairness -- 96 <city>`); real cities
+are uneven, so spawns are picked as the most spread-out set and shuffled between seats.
+
 Bot-only matches don't end when company 0 closes (only a human player's bankruptcy ends
 the match), so results aren't skewed by whoever happens to lead that day.
 
 Engine changes must include tests.
+
+City files are © OpenStreetMap contributors under the ODbL: keep the map attribution
+visible, and keep `public/cities/` under the ODbL (see `LICENSE-ASSETS`).
