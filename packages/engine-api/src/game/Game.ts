@@ -1,5 +1,4 @@
 export type PriceLevel = 'low' | 'medium' | 'high';
-export type BuildingType = 'branch' | 'warehouse' | 'adAgency' | 'legalDept';
 export type Personality = 'discounter' | 'balanced' | 'premium';
 
 export interface CompanySpec {
@@ -15,7 +14,6 @@ export interface Pnl {
   revenue: number;
   variableCost: number;
   salaries: number;
-  rent: number;
   interest: number;
   profit: number;
 }
@@ -34,8 +32,6 @@ export interface Company {
   trainees: { count: number; readyDay: number }[];
   salesShare: number; // 0..1 of productive staff in sales
   price: PriceLevel;
-  buildings: Record<BuildingType, number>;
-  buildingSpend: number;
 
   push: number;
 
@@ -90,7 +86,6 @@ export interface GameResult {
 export interface ValuationBreakdown {
   cash: number;
   debt: number;
-  assets: number;
   earnings: number;
   total: number;
 }

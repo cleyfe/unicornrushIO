@@ -1,17 +1,9 @@
-import type { BuildingType, PriceLevel } from '@unicornrush/engine-api/game/Game';
+import type { PriceLevel } from '@unicornrush/engine-api/game/Game';
 import type { Intent } from '@unicornrush/engine-api/Intents';
-import { BUILDING_TYPES, CONFIG, PRICE_LEVELS } from '@unicornrush/engine-lib/configuration/Config';
+import { CONFIG, PRICE_LEVELS } from '@unicornrush/engine-lib/configuration/Config';
 import { int, money, pct } from '@unicornrush/engine-lib/Format';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import { $ } from './dom';
-
-const B = CONFIG.buildings;
-const BUILDING_INFO: Record<BuildingType, { icon: string; effect: string }> = {
-  branch: { icon: '🏬', effect: `+${B.branch.capacity} street sections served` },
-  warehouse: { icon: '🏭', effect: `Variable costs −${pct(1 - B.warehouse.variableCostMult)}` },
-  adAgency: { icon: '📣', effect: `Sales push +${pct(B.adAgency.pushBonus)}` },
-  legalDept: { icon: '⚖️', effect: `Lets you sue · ${pct(B.legalDept.defense)} chance to dismiss suits` },
-};
 
 type WithoutCompany<T> = T extends unknown ? Omit<T, 'companyId'> : never;
 type Send = (intent: WithoutCompany<Intent>) => void;
@@ -35,16 +27,6 @@ export class ControlPanel {
 
   private template(): string {
     const prices = PRICE_LEVELS.map((p) => `<button data-price="${p}">${CONFIG.prices[p].label}</button>`).join('');
-    const buildings = BUILDING_TYPES.map((t) => {
-      const b = B[t];
-      const info = BUILDING_INFO[t];
-      return `<button class="building" data-build="${t}">
-        <span class="b-icon">${info.icon}</span>
-        <span class="b-main"><b>${b.label}</b> <span data-bcount="${t}"></span><br>
-        <small>${info.effect}</small></span>
-        <span class="b-cost">${money(b.cost)}<br><small>${money(b.rentPerDay)}/day rent</small></span>
-      </button>`;
-    }).join('');
     const L = CONFIG.lawsuit;
 
     return `
@@ -55,8 +37,7 @@ export class ControlPanel {
         <div class="formula">
           <span>Cash <b data-v="vCash"></b></span>
           <span>− Debt <b data-v="vDebt"></b></span>
-          <span>+ Assets <b data-v="vAssets"></b></span>
-          <span>+ 10× yearly profit <b data-v="vEarnings"></b></span>
+          <span>+ ${CONFIG.valuation.earningsMultiple}× yearly profit <b data-v="vEarnings"></b></span>
         </div>
         <p class="tip">💡 Investors pay for <b>profit</b>, not size. Reach $1B to become a unicorn 🦄.</p>
       </section>
@@ -67,7 +48,6 @@ export class ControlPanel {
           <tr><td>Revenue</td><td data-v="revenue" class="pos"></td></tr>
           <tr><td>− Variable costs</td><td data-v="variableCost" class="neg"></td></tr>
           <tr><td>− Salaries</td><td data-v="salaries" class="neg"></td></tr>
-          <tr><td>− Rent</td><td data-v="rent" class="neg"></td></tr>
           <tr><td>− Interest</td><td data-v="interest" class="neg"></td></tr>
           <tr class="total"><td>= Profit</td><td data-v="profit"></td></tr>
           <tr class="cash"><td>Cash</td><td data-v="cash"></td></tr>
@@ -81,7 +61,7 @@ export class ControlPanel {
         <input type="range" min="0" max="100" step="5" data-input="split" aria-label="Share of staff in sales" />
         <div class="meter"><div data-v="coverFill"></div></div>
         <div class="row small"><span>Customers served</span><span data-v="coverage"></span></div>
-        <div class="warn" data-v="overload" hidden>Overloaded! Unserved customers are leaving. Move staff to Operations, hire, or open a Branch.</div>
+        <div class="warn" data-v="overload" hidden>Overloaded! Unserved customers are leaving. Move staff to Operations or hire.</div>
         <div class="buttons">
           <button data-hire="1">Hire +1</button><button data-hire="10">Hire +10</button>
           <button data-fire="1" class="ghost">Fire −1</button><button data-fire="10" class="ghost">Fire −10</button>
@@ -102,20 +82,14 @@ export class ControlPanel {
         <p class="tip">👆 Click a street next to yours to launch a campaign. It spends half your push. Rivals' customers cost more to win, especially if they're cheap or well served.</p>
       </section>
 
-      <section class="panel">
-        <h3>Buildings</h3>
-        ${buildings}
-      </section>
-
       <section class="panel lawsuit-panel">
         <h3>Lawsuits ⚖️</h3>
         <div class="sue-row">
           <select data-input="sueTarget" aria-label="Company to sue"></select>
           <button data-action="sue" class="danger">Sue · ${money(L.cost)}</button>
         </div>
-        <div class="row small"><span>Your chance to get a suit dismissed</span><span data-v="defense"></span></div>
         <div data-v="cases" class="cases"></div>
-        <p class="tip">💡 A class action costs ${money(L.cost)} in legal fees and takes ${L.courtDays} days. If it isn't dismissed, the defendant loses ${pct(L.customerLoss)} of its customers all over its territory and pays you ${L.damagesRevenueDays} days of its revenue. If it's dismissed, you pay their costs. Legal risk is a real business cost.</p>
+        <p class="tip">💡 A class action costs ${money(L.cost)} in legal fees and takes ${L.courtDays} days. If it isn't dismissed, the defendant loses ${pct(L.customerLoss)} of its customers all over its territory and pays you ${L.damagesRevenueDays} days of its revenue. Courts dismiss ${pct(L.dismissChance)} of cases, and then you pay their costs. Legal risk is a real business cost.</p>
       </section>
 
       <section class="panel">
@@ -146,9 +120,6 @@ export class ControlPanel {
     r.querySelectorAll<HTMLButtonElement>('[data-fire]').forEach((b) =>
       b.addEventListener('click', () => send({ type: 'fire', count: Number(b.dataset.fire) })),
     );
-    r.querySelectorAll<HTMLButtonElement>('[data-build]').forEach((b) =>
-      b.addEventListener('click', () => send({ type: 'build', building: b.dataset.build as BuildingType })),
-    );
     $(r, '[data-bank="borrow"]').addEventListener('click', () => send({ type: 'borrow' }));
     $(r, '[data-bank="repay"]').addEventListener('click', () => send({ type: 'repay' }));
     $(r, '[data-action="sue"]').addEventListener('click', () => {
@@ -176,14 +147,12 @@ export class ControlPanel {
     this.set('unicornText', `🦄 ${money(Math.max(0, v.total))} / $1B unicorn`);
     this.set('vCash', money(v.cash));
     this.set('vDebt', money(v.debt));
-    this.set('vAssets', money(v.assets));
     this.set('vEarnings', money(v.earnings));
 
     const p = c.pnl;
     this.set('revenue', money(p.revenue));
     this.set('variableCost', money(p.variableCost));
     this.set('salaries', money(p.salaries));
-    this.set('rent', money(p.rent));
     this.set('interest', money(p.interest));
     this.set('profit', money(p.profit), p.profit >= 0 ? 'pos' : 'neg');
     this.set('cash', money(c.cash), c.cash >= 0 ? '' : 'neg');
@@ -215,7 +184,7 @@ export class ControlPanel {
     this.root
       .querySelectorAll<HTMLButtonElement>('[data-price]')
       .forEach((b) => b.classList.toggle('active', b.dataset.price === c.price));
-    const margin = CONFIG.prices[c.price].revenue * g.revenueMult() - CONFIG.variableCostPerCustomer * g.variableCostMult(c);
+    const margin = CONFIG.prices[c.price].revenue * g.revenueMult() - CONFIG.variableCostPerCustomer * g.variableCostMult();
     this.set('margin', `${money(margin)} / day`);
     this.set(
       'priceTip',
@@ -228,12 +197,6 @@ export class ControlPanel {
 
     this.set('pushRate', `+${g.pushPerDay(c).toFixed(1)}/day`);
     $(this.root, '[data-v="pushFill"]').style.width = pct(c.push / g.maxPush(c));
-
-    for (const t of BUILDING_TYPES) {
-      const n = c.buildings[t];
-      $(this.root, `[data-bcount="${t}"]`).textContent = n ? `×${n}` : '';
-      $<HTMLButtonElement>(this.root, `[data-build="${t}"]`).disabled = n >= B[t].max || c.cash < B[t].cost;
-    }
 
     this.updateLawsuits();
 
@@ -256,16 +219,15 @@ export class ControlPanel {
     }
     const sueBtn = $<HTMLButtonElement>(this.root, '[data-action="sue"]');
     const busy = g.activeLawsuitBy(c);
-    sueBtn.disabled = c.buildings.legalDept === 0 || !!busy || c.cash < CONFIG.lawsuit.cost || rivals.length === 0;
-    sueBtn.title = c.buildings.legalDept === 0 ? 'Open a Legal Dept first' : busy ? 'Your lawyers are busy' : '';
-    this.set('defense', pct(g.legalDefense(c)));
+    sueBtn.disabled = !!busy || c.cash < CONFIG.lawsuit.cost || rivals.length === 0;
+    sueBtn.title = busy ? 'Your lawyers are busy' : '';
     const mine = g.lawsuits.filter((l) => l.plaintiff === c.id || l.defendant === c.id);
     $(this.root, '[data-v="cases"]').innerHTML = mine
       .map((l) => {
         const days = Math.ceil(l.rulingDay - g.day);
         return l.plaintiff === c.id
           ? `<div class="case attack">You v. ${g.companies[l.defendant].name}: ruling in ${days}d</div>`
-          : `<div class="case defend">${g.companies[l.plaintiff].name} is suing you! Ruling in ${days}d. A Legal Dept improves your odds.</div>`;
+          : `<div class="case defend">${g.companies[l.plaintiff].name} is suing you! Ruling in ${days}d.</div>`;
       })
       .join('');
   }

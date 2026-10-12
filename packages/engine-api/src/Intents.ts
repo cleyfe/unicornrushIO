@@ -1,4 +1,4 @@
-import type { BuildingType, PriceLevel } from './game/Game';
+import type { PriceLevel } from './game/Game';
 
 /**
  * Everything a company can decide. Players and bots both act only through
@@ -11,7 +11,6 @@ export type Intent =
   | { type: 'setPrice'; companyId: number; price: PriceLevel }
   | { type: 'hire'; companyId: number; count: number }
   | { type: 'fire'; companyId: number; count: number }
-  | { type: 'build'; companyId: number; building: BuildingType }
   | { type: 'borrow'; companyId: number }
   | { type: 'repay'; companyId: number }
   | { type: 'lawsuit'; companyId: number; targetId: number };

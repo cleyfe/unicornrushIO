@@ -12,12 +12,11 @@ import type {
 } from '@unicornrush/engine-api/game/Game';
 import { NEUTRAL, WATER, type GameMap } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
-import { powInt } from '@unicornrush/engine-lib/DetMath';
 import { generateMap, neighbors4 } from '@unicornrush/engine-lib/game/GameMap';
 import { PseudoRandom } from '@unicornrush/engine-lib/PseudoRandom';
 import type { Execution } from '../execution/Execution';
 
-const emptyPnl = (): Pnl => ({ revenue: 0, variableCost: 0, salaries: 0, rent: 0, interest: 0, profit: 0 });
+const emptyPnl = (): Pnl => ({ revenue: 0, variableCost: 0, salaries: 0, interest: 0, profit: 0 });
 
 /**
  * The whole simulation state plus the rules everyone reads from it.
@@ -104,7 +103,7 @@ export class GameImpl {
   }
 
   capacity(c: Company): number {
-    return this.opsStaff(c) * CONFIG.staff.tilesPerOps + c.buildings.branch * CONFIG.buildings.branch.capacity;
+    return this.opsStaff(c) * CONFIG.staff.tilesPerOps;
   }
 
   /** Capacity relative to streets, capped: above 1 means spare staff and better service. */
@@ -122,8 +121,7 @@ export class GameImpl {
   }
 
   pushPerDay(c: Company): number {
-    const ad = 1 + c.buildings.adAgency * CONFIG.buildings.adAgency.pushBonus;
-    return this.salesStaff(c) * CONFIG.sales.pushPerRepPerDay * CONFIG.prices[c.price].push * ad;
+    return this.salesStaff(c) * CONFIG.sales.pushPerRepPerDay * CONFIG.prices[c.price].push;
   }
 
   maxPush(c: Company): number {
@@ -134,20 +132,11 @@ export class GameImpl {
     return Math.max(CONFIG.bank.loanChunk, c.pnl.revenue * CONFIG.bank.maxDebtRevenueDays);
   }
 
-  rentPerDay(c: Company): number {
-    let rent = 0;
-    for (const [type, n] of Object.entries(c.buildings)) {
-      rent += n * CONFIG.buildings[type as keyof typeof CONFIG.buildings].rentPerDay;
-    }
-    return rent;
-  }
-
   valuation(c: Company): ValuationBreakdown {
-    if (!c.alive) return { cash: 0, debt: 0, assets: 0, earnings: 0, total: 0 };
+    if (!c.alive) return { cash: 0, debt: 0, earnings: 0, total: 0 };
     const v = CONFIG.valuation;
-    const assets = c.buildingSpend * v.assetRecovery;
     const earnings = Math.max(0, c.avgProfit) * 365 * v.earningsMultiple;
-    return { cash: c.cash, debt: c.debt, assets, earnings, total: c.cash - c.debt + assets + earnings };
+    return { cash: c.cash, debt: c.debt, earnings, total: c.cash - c.debt + earnings };
   }
 
   revenueMult(): number {
@@ -159,8 +148,8 @@ export class GameImpl {
     return m;
   }
 
-  variableCostMult(c: Company): number {
-    let m = powInt(CONFIG.buildings.warehouse.variableCostMult, c.buildings.warehouse);
+  variableCostMult(): number {
+    let m = 1;
     for (const e of this.events) if (e.kind === 'supplierHike') m *= 2;
     return m;
   }
@@ -184,11 +173,6 @@ export class GameImpl {
     if (ar < dr) mult *= 1 - 0.25 * sens;
     if (ar > dr) mult *= 1 + 0.25 * sens;
     return CONFIG.sales.rivalTileCost * d * mult;
-  }
-
-  /** Chance that a lawsuit against `c` gets dismissed. */
-  legalDefense(c: Company): number {
-    return 1 - powInt(1 - CONFIG.buildings.legalDept.defense, c.buildings.legalDept);
   }
 
   activeLawsuitBy(c: Company): Lawsuit | undefined {
@@ -330,8 +314,6 @@ function newCompany(id: number, s: CompanySpec): Company {
     trainees: [],
     salesShare: CONFIG.start.salesShare,
     price: s.price ?? (s.personality === 'discounter' ? 'low' : s.personality === 'premium' ? 'high' : 'medium'),
-    buildings: { branch: 0, warehouse: 0, adAgency: 0, legalDept: 0 },
-    buildingSpend: 0,
     push: 0,
     tiles: 0,
     customers: 0,

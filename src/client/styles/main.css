@@ -336,29 +336,6 @@ input[type='range'] {
   gap: 4px;
 }
 
-.building {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  text-align: left;
-  margin-bottom: 6px;
-}
-.b-icon {
-  font-size: 22px;
-}
-.b-main {
-  flex: 1;
-  font-size: 13px;
-}
-.b-main small,
-.b-cost small {
-  color: var(--muted);
-}
-.b-cost {
-  text-align: right;
-  font-size: 13px;
-}
 
 .leaders td,
 .leaders th,
@@ -565,7 +542,8 @@ button.danger {
 .wealth-legend i {
   display: inline-block;
   width: 12px;
-  height: 3px;
+  height: 10px;
+  border: 1px solid #5b6470;
   margin-right: 4px;
   vertical-align: middle;
 }

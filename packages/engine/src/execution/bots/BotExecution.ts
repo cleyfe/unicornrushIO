@@ -22,7 +22,7 @@ interface Persona {
 const PERSONAS: Record<Personality, Persona> = {
   // Equally competent players with different styles: they only differ in
   // price, which streets they want, and how they balance attack and defence.
-  discounter: { maxSales: 0.65, salesRatio: 0.9, reserveDays: 10, borrows: true, aggression: 1, litigious: 1, service: 1.05, pushReserve: 0.3, taste: 'volume' },
+  discounter: { maxSales: 0.65, salesRatio: 0.9, reserveDays: 10, borrows: true, aggression: 0.8, litigious: 1, service: 1.05, pushReserve: 0.3, taste: 'volume' },
   balanced: { maxSales: 0.6, salesRatio: 0.8, reserveDays: 10, borrows: true, aggression: 0.6, litigious: 0.5, service: 1.15, pushReserve: 0.4, taste: 'mixed' },
   premium: { maxSales: 0.6, salesRatio: 0.8, reserveDays: 10, borrows: true, aggression: 0.5, litigious: 0.3, service: 1.25, pushReserve: 0.45, taste: 'wealth' },
 };
@@ -66,16 +66,14 @@ export class BotExecution implements Execution {
     const c = this.c;
     const p = this.p;
     const s = CONFIG.staff;
-    const b = CONFIG.buildings;
     const id = c.id;
-    const fixedPerDay = c.pnl.salaries + c.pnl.rent + c.pnl.interest;
+    const fixedPerDay = c.pnl.salaries + c.pnl.interest;
     const reserve = Math.max(5_000, fixedPerDay * p.reserveDays);
     // Track what this day's decisions will spend so they don't overlap.
     let cash = c.cash;
 
     // 1. Staff split: enough operations to serve every customer, the rest sells.
-    const branchCap = c.buildings.branch * b.branch.capacity;
-    const opsNeeded = Math.ceil(Math.max(0, c.tiles * p.service - branchCap) / s.tilesPerOps);
+    const opsNeeded = Math.ceil((c.tiles * p.service) / s.tilesPerOps);
     const share = c.employees > 0 ? 1 - opsNeeded / c.employees : 0;
     this.act(g, { type: 'setSalesShare', companyId: id, share: Math.min(p.maxSales, Math.max(0.05, share)) });
 
@@ -105,41 +103,21 @@ export class BotExecution implements Execution {
       this.act(g, { type: 'fire', companyId: id, count: Math.ceil(c.employees * 0.1) });
     }
 
-    // 3. Legal: defend when sued, and keep lawyers if planning to sue.
-    const sued = g.lawsuits.some((l) => l.defendant === id);
-    const wantsLawyers = sued || (p.litigious >= 0.5 && cash > b.legalDept.cost + CONFIG.lawsuit.cost + reserve);
-    if (wantsLawyers && c.buildings.legalDept < (sued ? b.legalDept.max : 1) && cash > b.legalDept.cost + reserve) {
-      this.act(g, { type: 'build', companyId: id, building: 'legalDept' });
-      cash -= b.legalDept.cost;
-    }
+    // 3. Sue the leader now and then.
     const target = this.lawsuitTarget(g);
     if (target !== null && cash > CONFIG.lawsuit.cost + reserve * 2) {
       this.act(g, { type: 'lawsuit', companyId: id, targetId: target });
       cash -= CONFIG.lawsuit.cost;
     }
 
-    // 4. Buildings, when they pay for themselves.
-    const varCost = c.customers * CONFIG.variableCostPerCustomer * g.variableCostMult(c);
-    const warehouseSaves = varCost * (1 - b.warehouse.variableCostMult);
-    if (c.buildings.warehouse < b.warehouse.max && warehouseSaves > b.warehouse.rentPerDay * 2.5 && cash > b.warehouse.cost + reserve) {
-      this.act(g, { type: 'build', companyId: id, building: 'warehouse' });
-      cash -= b.warehouse.cost;
-    } else if (g.coverage(c) < 1 && c.tiles > 80 && c.buildings.branch < b.branch.max && cash > b.branch.cost + reserve) {
-      this.act(g, { type: 'build', companyId: id, building: 'branch' });
-      cash -= b.branch.cost;
-    } else if (g.salesStaff(c) >= 20 && c.buildings.adAgency < b.adAgency.max && cash > b.adAgency.cost + reserve * 1.5) {
-      this.act(g, { type: 'build', companyId: id, building: 'adAgency' });
-      cash -= b.adAgency.cost;
-    }
-
-    // 5. Hiring, from surplus cash only, up to the staff the business needs.
+    // 4. Hiring, from surplus cash only, up to the staff the business needs.
     if (staff < wanted && cash > reserve + s.hireCost * 2) {
       const affordable = Math.floor((cash - reserve) / (s.hireCost + s.salaryPerDay * 20));
       const n = Math.min(affordable, wanted - staff, Math.ceil(c.employees * 0.2) + 1);
       if (n > 0) this.act(g, { type: 'hire', companyId: id, count: n });
     }
 
-    // 6. Sales campaigns.
+    // 5. Sales campaigns.
     if (c.push >= Math.max(5, g.maxPush(c) * p.pushReserve)) {
       let tile = -1;
       if (f.neutral > 8 || (f.neutral > 0 && f.cheapestRivalTile < 0)) tile = f.bestNeutral;
@@ -152,7 +130,7 @@ export class BotExecution implements Execution {
   /** Sue the market leader when it is pulling away, now and then. */
   private lawsuitTarget(g: GameImpl): number | null {
     const c = this.c;
-    if (c.buildings.legalDept === 0 || g.activeLawsuitBy(c)) return null;
+    if (g.activeLawsuitBy(c)) return null;
     const leader = g.leaderId();
     if (leader === null || leader === c.id) return null;
     if (g.valuation(g.companies[leader]).total < g.valuation(c).total * 1.3) return null;

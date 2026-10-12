@@ -30,9 +30,8 @@ export function showGameOver(game: GameImpl, r: GameResult, onAgain: () => void)
     lessons.push('You grew big but lost much of it. Growth needs capacity to serve customers.');
   }
   if (me.price === 'low') lessons.push('Low prices win market share, but thin margins make valuation hard to grow.');
-  if (me.buildings.warehouse === 0) lessons.push('A Warehouse cuts variable costs: scale makes each customer cheaper to serve.');
-  if (me.buildings.legalDept === 0) lessons.push('Without a Legal Dept, every lawsuit against you sticks. Compliance is insurance.');
-  lessons.push('Valuation = cash − debt + assets + 10× yearly profit. Profit drives value more than size does.');
+  if (me.debt === 0 && me.alive) lessons.push('You never borrowed. Debt can speed up growth when each new customer earns more than the interest.');
+  lessons.push(`Valuation = cash − debt + ${CONFIG.valuation.earningsMultiple}× yearly profit. Profit drives value more than size does.`);
 
   const rows = [...game.companies]
     .sort((a, b) => b.peakValuation - a.peakValuation)

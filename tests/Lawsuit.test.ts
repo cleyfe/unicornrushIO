@@ -8,17 +8,16 @@ function suingSetup(seed = 42) {
   const r = quietSetup(seed);
   const me = r.game.player;
   me.cash = 1e7;
-  act(r, { type: 'build', companyId: 0, building: 'legalDept' });
   return r;
 }
 
 describe('lawsuits', () => {
-  it('need a Legal Dept to file', () => {
+  it('need enough cash for the legal fees', () => {
     const r = quietSetup();
-    r.game.player.cash = 1e7;
+    r.game.player.cash = L.cost - 1;
     act(r, { type: 'lawsuit', companyId: 0, targetId: 1 });
     expect(r.game.lawsuits).toHaveLength(0);
-    expect(lastMessage(r)).toMatch(/Legal Dept/);
+    expect(lastMessage(r)).toMatch(/Legal fees/);
   });
 
   it('charge legal fees and go to court', () => {
@@ -37,7 +36,7 @@ describe('lawsuits', () => {
     expect(lastMessage(r)).toMatch(/busy/);
   });
 
-  it('cost an undefended defendant customers all over its territory, plus damages', () => {
+  it('cost a losing defendant customers all over its territory, plus damages', () => {
     const r = suingSetup();
     const d = r.game.companies[1];
     runDays(r, 5);
@@ -49,15 +48,10 @@ describe('lawsuits', () => {
     expect(r.game.log.some((l) => l.text.includes('lost the lawsuit'))).toBe(true);
   });
 
-  it('can be dismissed by the defendant’s legal team', () => {
-    // With two Legal Depts the dismissal chance is 1 − 0.65² ≈ 58%; across
-    // seeds both outcomes must occur.
+  it('are sometimes dismissed by the court', () => {
     const outcomes = new Set<string>();
     for (let seed = 1; seed <= 12; seed++) {
       const r = suingSetup(seed);
-      const d = r.game.companies[1];
-      d.cash = 1e7;
-      d.buildings.legalDept = 2;
       act(r, { type: 'lawsuit', companyId: 0, targetId: 1 });
       runDays(r, L.courtDays + 1);
       outcomes.add(r.game.log.some((l) => l.text.includes('dismissed')) ? 'dismissed' : 'lost');

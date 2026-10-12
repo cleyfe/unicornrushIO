@@ -22,7 +22,7 @@ for (let m = 0; m < matches; m++) {
   console.log(`match ${m}: ${w} wins by ${res.reason} on day ${res.day.toFixed(0)}`);
   for (const c of g.companies) {
     console.log(
-      `    ${c.name.padEnd(12)} ${c.alive ? 'alive ' : `closed d${c.closedDay?.toFixed(0)}`} areas=${c.tiles} peak=${c.peakTiles} staff=${c.employees} cash=${money(c.cash)} debt=${money(c.debt)} profit/d=${money(c.avgProfit)} peakVal=${money(c.peakValuation)} legal=${c.buildings.legalDept}`,
+      `    ${c.name.padEnd(12)} ${c.alive ? 'alive ' : `closed d${c.closedDay?.toFixed(0)}`} areas=${c.tiles} peak=${c.peakTiles} staff=${c.employees} cash=${money(c.cash)} debt=${money(c.debt)} profit/d=${money(c.avgProfit)} peakVal=${money(c.peakValuation)}`,
     );
   }
 }

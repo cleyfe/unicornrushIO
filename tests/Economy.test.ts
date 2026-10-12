@@ -11,7 +11,7 @@ describe('profit and loss', () => {
     const before = me.cash;
     runDays(r, 1);
     const p = me.pnl;
-    expect(p.profit).toBeCloseTo(p.revenue - p.variableCost - p.salaries - p.rent - p.interest);
+    expect(p.profit).toBeCloseTo(p.revenue - p.variableCost - p.salaries - p.interest);
     expect(me.cash - before).toBeCloseTo(p.profit, 0);
   });
 
@@ -44,16 +44,6 @@ describe('profit and loss', () => {
     expect(me.pnl.interest).toBeCloseTo((me.debt * CONFIG.bank.interestPerYear) / 365);
   });
 
-  it('caps the number of each building and tells the player why', () => {
-    const r = quietSetup();
-    r.game.player.cash = 1e9;
-    for (let i = 0; i < CONFIG.buildings.warehouse.max; i++) act(r, { type: 'build', companyId: 0, building: 'warehouse' });
-    expect(r.game.player.buildings.warehouse).toBe(CONFIG.buildings.warehouse.max);
-    act(r, { type: 'build', companyId: 0, building: 'warehouse' });
-    expect(r.game.player.buildings.warehouse).toBe(CONFIG.buildings.warehouse.max);
-    expect(lastMessage(r)).toMatch(/maximum/);
-  });
-
   it('rejects hiring without cash', () => {
     const r = quietSetup();
     r.game.player.cash = 100;
@@ -70,6 +60,6 @@ describe('valuation', () => {
     me.avgProfit = 1000;
     const v = r.game.valuation(me);
     expect(v.earnings).toBe(1000 * 365 * CONFIG.valuation.earningsMultiple);
-    expect(v.total).toBeCloseTo(v.cash - v.debt + v.assets + v.earnings);
+    expect(v.total).toBeCloseTo(v.cash - v.debt + v.earnings);
   });
 });

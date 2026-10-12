@@ -35,9 +35,9 @@ function startGame(name: string): void {
   const legend = document.createElement('div');
   legend.className = 'wealth-legend';
   legend.innerHTML = CONFIG.wealth
-    .map((t, i) => `<span><i style="background:${WEALTH_COLORS[i as Wealth]}"></i>${t.label} ×${t.spend}</span>`)
+    .map((t, i) => `<span><i style="background:${WEALTH_COLORS[i as Wealth]}"></i>${'$'.repeat(i + 1)} ${t.label} ×${t.spend}</span>`)
     .join('');
-  legend.title = 'Street wealth (curb colour): how much each customer spends';
+  legend.title = 'Neighbourhood wealth (block colour): how much each customer spends';
   mapWrap.append(renderer.canvas, tooltip, hint, legend);
   const left = document.createElement('div');
   left.className = 'left';

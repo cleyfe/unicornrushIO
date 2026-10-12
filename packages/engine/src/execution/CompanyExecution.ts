@@ -69,13 +69,12 @@ export class CompanyExecution implements Execution {
     const p = {
       // Revenue depends on how much customers spend; serving them costs the same everywhere.
       revenue: c.spend * coverage * CONFIG.prices[c.price].revenue * game.revenueMult(),
-      variableCost: c.customers * coverage * CONFIG.variableCostPerCustomer * game.variableCostMult(c),
+      variableCost: c.customers * coverage * CONFIG.variableCostPerCustomer * game.variableCostMult(),
       salaries: (c.employees + game.traineeCount(c)) * CONFIG.staff.salaryPerDay,
-      rent: game.rentPerDay(c),
       interest: (c.debt * CONFIG.bank.interestPerYear) / 365,
       profit: 0,
     };
-    p.profit = p.revenue - p.variableCost - p.salaries - p.rent - p.interest;
+    p.profit = p.revenue - p.variableCost - p.salaries - p.interest;
     c.pnl = p;
     c.cash += p.profit * DT;
     c.avgProfit += (p.profit - c.avgProfit) * (DT / CONFIG.valuation.profitWindowDays);

@@ -8,8 +8,7 @@ import type { Execution } from './Execution';
 
 /**
  * A class action lawsuit. The plaintiff pays heavy legal fees, the case goes
- * to court, and unless the defendant's legal team gets it dismissed, the
- * defendant loses customers all over its territory and pays damages.
+ * to court, and unless it is dismissed, the defendant loses customers all over its territory and pays damages.
  */
 export class LawsuitExecution implements Execution {
   private active = true;
@@ -30,7 +29,6 @@ export class LawsuitExecution implements Execution {
     };
     if (!c.alive) return fail('Your company is closed.');
     if (!d || !d.alive || d.id === c.id) return fail('Pick a rival that is still in business.');
-    if (c.buildings.legalDept === 0) return fail('You need a Legal Dept to file a lawsuit.');
     if (game.activeLawsuitBy(c)) return fail('Your lawyers are already busy with a case.');
     if (c.cash < L.cost) return fail(`Legal fees are ${money(L.cost)}: not enough cash.`);
     c.cash -= L.cost;
@@ -60,7 +58,7 @@ export class LawsuitExecution implements Execution {
     const p = game.companies[suit.plaintiff];
     const d = game.companies[suit.defendant];
     const L = CONFIG.lawsuit;
-    if (game.rng.chance(game.legalDefense(d))) {
+    if (game.rng.chance(L.dismissChance)) {
       p.cash -= L.dismissedCounterCost;
       d.cash += L.dismissedCounterCost;
       game.news(`⚖️ Case dismissed! ${p.name} pays ${d.name}'s legal costs (${money(L.dismissedCounterCost)}).`, 'good');

@@ -1,4 +1,4 @@
-import type { BuildingType, PriceLevel } from '@unicornrush/engine-api/game/Game';
+import type { PriceLevel } from '@unicornrush/engine-api/game/Game';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import type { GameImpl } from '../game/GameImpl';
 import { InstantExecution } from './Execution';
@@ -61,28 +61,6 @@ export class FireExecution extends InstantExecution {
     if (n <= 0) return game.message(c.id, 'You need at least one employee.');
     c.employees -= n;
     c.cash -= n * CONFIG.staff.fireCost;
-  }
-}
-
-export class BuildExecution extends InstantExecution {
-  constructor(
-    private companyId: number,
-    private building: BuildingType,
-  ) {
-    super();
-  }
-  protected apply(game: GameImpl): void {
-    const c = game.companies[this.companyId];
-    const b = CONFIG.buildings[this.building];
-    if (!b) return;
-    if (c.buildings[this.building] >= b.max) {
-      return game.message(c.id, `You already have the maximum of ${b.max} × ${b.label}.`);
-    }
-    if (c.cash < b.cost) return game.message(c.id, `Not enough cash for a ${b.label}.`);
-    c.cash -= b.cost;
-    c.buildings[this.building]++;
-    c.buildingSpend += b.cost;
-    if (!c.isBot) game.message(c.id, `You opened a ${b.label}.`, 'good');
   }
 }
 
