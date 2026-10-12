@@ -463,6 +463,7 @@ function newCompany(id: number, s: CompanySpec): Company {
     color: s.color,
     isBot: s.isBot,
     personality: s.personality ?? 'balanced',
+    difficulty: s.difficulty ?? 'normal',
     alive: true,
     cash: CONFIG.start.cash,
     debt: 0,

@@ -1,11 +1,14 @@
 export type PriceLevel = 'low' | 'medium' | 'high';
 export type Personality = 'discounter' | 'balanced' | 'premium';
+/** How well bots play: easy bots invest cautiously, hard ones like a skilled player. */
+export type Difficulty = 'easy' | 'normal' | 'hard';
 
 export interface CompanySpec {
   name: string;
   color: [number, number, number];
   isBot: boolean;
   personality?: Personality;
+  difficulty?: Difficulty;
   /** Starting price; defaults to the personality's usual price. */
   price?: PriceLevel;
 }
@@ -31,6 +34,7 @@ export interface Company {
   color: [number, number, number];
   isBot: boolean;
   personality: Personality;
+  difficulty: Difficulty;
   alive: boolean;
 
   cash: number;

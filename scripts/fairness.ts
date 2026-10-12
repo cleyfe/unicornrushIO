@@ -42,7 +42,8 @@ function experiment(title: string, setups: { label: string; personality: Persona
   for (let m = 0; m < N; m++) {
     const rot = m % setups.length;
     const seats = setups.map((_, i) => setups[(i + rot) % setups.length]);
-    const specs = seats.map((s, i) => ({ name: `${s.label}#${i}`, color: COLORS[i], isBot: true, personality: s.personality, price: s.price }));
+    // Bot-vs-bot balance is tuned at Hard, where bots play like a skilled human.
+    const specs = seats.map((s, i) => ({ name: `${s.label}#${i}`, color: COLORS[i], isBot: true, personality: s.personality, price: s.price, difficulty: 'hard' as const }));
     const o = play(5000 + Math.floor(m / setups.length), specs);
     const w = o.winner === null ? 'none' : seats[o.winner].label;
     wins[w] = (wins[w] ?? 0) + 1;
@@ -60,7 +61,7 @@ function experiment(title: string, setups: { label: string; personality: Persona
 function seatBias(): void {
   const wins: number[] = [0, 0, 0, 0];
   for (let m = 0; m < N; m++) {
-    const specs = COLORS.map((color, i) => ({ name: `S${i}`, color, isBot: true, personality: 'balanced' as const, price: 'medium' as const }));
+    const specs = COLORS.map((color, i) => ({ name: `S${i}`, color, isBot: true, personality: 'balanced' as const, price: 'medium' as const, difficulty: 'hard' as const }));
     const o = play(7000 + m, specs);
     if (o.winner !== null) wins[o.winner]++;
   }
@@ -126,13 +127,13 @@ function blitzTurn(r: GameRunner, g: GameImpl): void {
   }
 }
 
-function skilledHuman(): void {
+function skilledHuman(difficulty: 'easy' | 'normal' | 'hard'): void {
   let wins = 0;
   let days = 0;
   let unicornDays = 0;
   let unicorns = 0;
   for (let m = 0; m < N; m++) {
-    const specs = defaultCompanies('Blitz');
+    const specs = defaultCompanies('Blitz', false, difficulty);
     const r = new GameRunner(9000 + m, specs, city);
     const g = r.game;
     while (!g.result) {
@@ -143,6 +144,6 @@ function skilledHuman(): void {
     if (g.result.reason === 'unicorn') (unicorns++, (unicornDays += g.result.day));
     days += g.result.day;
   }
-  console.log(`\nSkilled human (scripted blitz) vs default bots: wins ${wins}/${N}, unicorns ${unicorns} at avg day ${Math.round(unicornDays / Math.max(1, unicorns))}, avg end day ${Math.round(days / N)}`);
+  console.log(`\nSkilled human (scripted blitz) vs ${difficulty} bots: wins ${wins}/${N}, unicorns ${unicorns} at avg day ${Math.round(unicornDays / Math.max(1, unicorns))}, avg end day ${Math.round(days / N)}`);
 }
-skilledHuman();
+for (const d of ['easy', 'normal', 'hard'] as const) skilledHuman(d);

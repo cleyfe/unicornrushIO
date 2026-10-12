@@ -81,7 +81,8 @@ export class BotExecution implements Execution {
     const f = this.scanFrontier(g);
     const canGrow = f.neutral > 0 || f.cheapestRival <= this.rivalThreshold();
     // Reinvest surplus cash in sales staff: recruiting plus about three weeks of salary each.
-    const surplusReps = Math.floor(Math.max(0, cash - reserve) / (s.hireCost + s.salaryPerDay * 20));
+    const level = CONFIG.difficulty[c.difficulty];
+    const surplusReps = Math.floor(Math.max(0, cash - reserve * level.reserveMult) / (s.hireCost + s.salaryPerDay * level.repDays));
     const salesWanted = canGrow
       ? Math.max(4, Math.ceil(opsNeeded * p.salesRatio), Math.min(surplusReps, opsNeeded * 4 + 20))
       : 2;
@@ -113,12 +114,12 @@ export class BotExecution implements Execution {
     // 4. Hiring, from surplus cash only, up to the staff the business needs.
     if (staff < wanted && cash > reserve + s.hireCost * 2) {
       const affordable = Math.floor((cash - reserve) / (s.hireCost + s.salaryPerDay * 20));
-      const n = Math.min(affordable, wanted - staff, Math.ceil(c.employees * 0.5) + 5);
+      const n = Math.min(affordable, wanted - staff, Math.ceil(c.employees * level.growth) + 3);
       if (n > 0) this.act(g, { type: 'hire', companyId: id, count: n });
     }
 
     // 5. Sales campaigns.
-    if (c.push >= Math.max(5, g.maxPush(c) * p.pushReserve)) {
+    if (c.push >= Math.max(5, g.maxPush(c) * (p.pushReserve + CONFIG.difficulty[c.difficulty].extraPushReserve))) {
       let tile = -1;
       if (f.neutral > 8 || (f.neutral > 0 && f.cheapestRivalTile < 0)) tile = f.bestNeutral;
       else if (f.cheapestRival <= this.rivalThreshold()) tile = f.cheapestRivalTile;
@@ -193,7 +194,7 @@ export class BotExecution implements Execution {
       let cost = g.tileCost(c, owner, tile) / g.map.spend[tile];
       // Competitors focus on a runaway leader, as real rivals do.
       const leader = g.leaderId();
-      if (owner === leader && g.valuation(g.companies[owner]).total > g.valuation(c).total * 1.5) cost *= 0.6;
+      if (CONFIG.difficulty[c.difficulty].leaderFocus && owner === leader && g.valuation(g.companies[owner]).total > g.valuation(c).total * 1.5) cost *= 0.6;
       if (cost < f.cheapestRival) {
         f.cheapestRival = cost;
         f.cheapestRivalTile = tile;

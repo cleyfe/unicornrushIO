@@ -1,5 +1,6 @@
 import './styles/main.css';
 import type { CityData } from '@unicornrush/engine-api/game/City';
+import type { Difficulty } from '@unicornrush/engine-api/game/Game';
 import type { Wealth } from '@unicornrush/engine-api/game/GameMap';
 import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
@@ -30,7 +31,7 @@ async function loadCity(id: CityId): Promise<CityData> {
   return res.json();
 }
 
-async function startGame(name: string, cityId: CityId): Promise<void> {
+async function startGame(name: string, cityId: CityId, difficulty: Difficulty): Promise<void> {
   const info = CITIES.find((c) => c.id === cityId)!;
   app.innerHTML = `<div class="overlay intro-bg"><div class="card loading"><h2>${info.flag} Loading ${info.name}…</h2><p>Mapping streets and buildings</p></div></div>`;
   let city: CityData;
@@ -41,7 +42,7 @@ async function startGame(name: string, cityId: CityId): Promise<void> {
     return;
   }
 
-  const client = new ClientGameRunner(Math.floor(Math.random() * 1e9), defaultCompanies(name), city);
+  const client = new ClientGameRunner(Math.floor(Math.random() * 1e9), defaultCompanies(name, false, difficulty), city);
   const game = client.game;
   // The match starts paused; your first move (or the play button) starts the clock.
   client.speed = 0;

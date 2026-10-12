@@ -104,6 +104,16 @@ export const CONFIG = {
     cooldownDays: 120,
   },
 
+  // How bots invest at each difficulty. reserveMult: cash kept back (× their usual
+  // reserve) before hiring; repDays: days of salary they want in hand per new sales
+  // rep; growth: max new hires per day as a share of staff; leaderFocus: gang up on
+  // a runaway leader.
+  difficulty: {
+    easy: { reserveMult: 3, repDays: 90, growth: 0.2, extraPushReserve: 0.2, leaderFocus: false },
+    normal: { reserveMult: 2, repDays: 45, growth: 0.35, extraPushReserve: 0.1, leaderFocus: true },
+    hard: { reserveMult: 1, repDays: 20, growth: 0.5, extraPushReserve: 0, leaderFocus: true },
+  },
+
   events: { firstDay: 150, minGap: 120, maxGap: 180 },
 
   valuation: {

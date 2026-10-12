@@ -960,6 +960,9 @@ table {
   background: rgba(59, 130, 246, 0.18);
   border-color: var(--accent);
 }
+.difficulty button {
+  padding: 8px 4px;
+}
 .intro-actions {
   display: flex;
   gap: 8px;
