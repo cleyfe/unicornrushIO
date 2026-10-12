@@ -1,8 +1,8 @@
-import type { Lawsuit } from '@marketfront/engine-api/game/Game';
-import { NEUTRAL } from '@marketfront/engine-api/game/GameMap';
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
-import { money } from '@marketfront/engine-lib/Format';
-import { neighbors4 } from '@marketfront/engine-lib/game/GameMap';
+import type { Lawsuit } from '@unicornrush/engine-api/game/Game';
+import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { money } from '@unicornrush/engine-lib/Format';
+import { neighbors4 } from '@unicornrush/engine-lib/game/GameMap';
 import type { GameImpl } from '../game/GameImpl';
 import type { Execution } from './Execution';
 
@@ -71,7 +71,7 @@ export class LawsuitExecution implements Execution {
     d.cash -= damages;
     p.cash += damages;
     game.news(
-      `⚖️ ${d.name} lost the lawsuit: ${lost} customer areas walk away and it pays ${money(damages)} in damages to ${p.name}.`,
+      `⚖️ ${d.name} lost the lawsuit: ${lost} customer buildings walk away and it pays ${money(damages)} in damages to ${p.name}.`,
       'bad',
     );
   }

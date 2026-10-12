@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
-import { exp } from '@marketfront/engine-lib/DetMath';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { exp } from '@unicornrush/engine-lib/DetMath';
 import { runDays, setup } from './util/Setup';
 
 describe('determinism', () => {

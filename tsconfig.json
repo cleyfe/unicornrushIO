@@ -13,9 +13,9 @@
     "types": ["vite/client", "node"],
     "baseUrl": ".",
     "paths": {
-      "@marketfront/engine-api/*": ["packages/engine-api/src/*"],
-      "@marketfront/engine-lib/*": ["packages/engine-lib/src/*"],
-      "@marketfront/engine/*": ["packages/engine/src/*"]
+      "@unicornrush/engine-api/*": ["packages/engine-api/src/*"],
+      "@unicornrush/engine-lib/*": ["packages/engine-lib/src/*"],
+      "@unicornrush/engine/*": ["packages/engine/src/*"]
     }
   },
   "include": ["src", "packages", "tests", "scripts"]

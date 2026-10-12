@@ -1,8 +1,8 @@
-import type { CompanySpec, LogEntry } from '@marketfront/engine-api/game/Game';
-import type { Intent } from '@marketfront/engine-api/Intents';
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
-import { GameRunner } from '@marketfront/engine/GameRunner';
-import type { GameImpl } from '@marketfront/engine/game/GameImpl';
+import type { CompanySpec, LogEntry } from '@unicornrush/engine-api/game/Game';
+import type { Intent } from '@unicornrush/engine-api/Intents';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { GameRunner } from '@unicornrush/engine/GameRunner';
+import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 
 /** Drives the engine in real time and relays the player's intents to it. */
 export class ClientGameRunner {

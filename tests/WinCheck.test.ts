@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { quietSetup, runDays, setup } from './util/Setup';
 
 describe('ending the game', () => {

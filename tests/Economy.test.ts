@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { act, lastMessage, quietSetup, runDays } from './util/Setup';
 
 describe('profit and loss', () => {

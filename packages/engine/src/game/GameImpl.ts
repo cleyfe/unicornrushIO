@@ -9,12 +9,12 @@ import type {
   Pnl,
   ValuationBreakdown,
   WinReason,
-} from '@marketfront/engine-api/game/Game';
-import { NEUTRAL, WATER, type GameMap } from '@marketfront/engine-api/game/GameMap';
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
-import { powInt } from '@marketfront/engine-lib/DetMath';
-import { generateMap, neighbors4 } from '@marketfront/engine-lib/game/GameMap';
-import { PseudoRandom } from '@marketfront/engine-lib/PseudoRandom';
+} from '@unicornrush/engine-api/game/Game';
+import { NEUTRAL, WATER, type GameMap } from '@unicornrush/engine-api/game/GameMap';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { powInt } from '@unicornrush/engine-lib/DetMath';
+import { generateMap, neighbors4 } from '@unicornrush/engine-lib/game/GameMap';
+import { PseudoRandom } from '@unicornrush/engine-lib/PseudoRandom';
 import type { Execution } from '../execution/Execution';
 
 const emptyPnl = (): Pnl => ({ revenue: 0, variableCost: 0, salaries: 0, rent: 0, interest: 0, profit: 0 });

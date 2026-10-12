@@ -1,12 +1,12 @@
 // All tunable numbers live here. Money is in dollars, time is in game days.
 // 1 game day = 1 real second at 1x speed.
-import type { BuildingType, PriceLevel } from '@marketfront/engine-api/game/Game';
+import type { BuildingType, PriceLevel } from '@unicornrush/engine-api/game/Game';
 
 export const CONFIG = {
   ticksPerDay: 10,
   matchDays: 900, // ~2.5 years, 15 minutes at 1x
 
-  map: { width: 160, height: 100, cities: 9 },
+  map: { width: 160, height: 100, blockSize: 4, downtowns: 6, parkShare: 0.07, bridgeEveryBlocks: 5 },
 
   start: { cash: 60_000, employees: 10, radius: 3, salesShare: 0.5 },
 

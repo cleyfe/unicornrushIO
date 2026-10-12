@@ -1,9 +1,9 @@
-import { NEUTRAL } from '@marketfront/engine-api/game/GameMap';
-import type { Intent } from '@marketfront/engine-api/Intents';
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
-import { defaultCompanies } from '@marketfront/engine-lib/configuration/Companies';
-import { neighbors4 } from '@marketfront/engine-lib/game/GameMap';
-import { GameRunner } from '@marketfront/engine/GameRunner';
+import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
+import type { Intent } from '@unicornrush/engine-api/Intents';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
+import { neighbors4 } from '@unicornrush/engine-lib/game/GameMap';
+import { GameRunner } from '@unicornrush/engine/GameRunner';
 
 export function setup(seed = 42, allBots = false): GameRunner {
   return new GameRunner(seed, defaultCompanies('Tester', allBots));

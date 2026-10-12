@@ -1,5 +1,5 @@
-import type { BuildingType, PriceLevel } from '@marketfront/engine-api/game/Game';
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
+import type { BuildingType, PriceLevel } from '@unicornrush/engine-api/game/Game';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import type { GameImpl } from '../game/GameImpl';
 import { InstantExecution } from './Execution';
 

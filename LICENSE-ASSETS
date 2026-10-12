@@ -1,0 +1,21 @@
+# Asset License
+
+## Open assets: Creative Commons BY-SA 4.0
+
+Non-code assets in this repository (images, icons, sprites, sounds, music,
+fonts, and map or level data), including anything in `public/` other than the
+legal pages, are licensed under Creative Commons Attribution-ShareAlike 4.0
+International (CC BY-SA 4.0).
+
+Attribution required: "UnicornRush" or "UnicornRush and Contributors".
+
+Full license: https://creativecommons.org/licenses/by-sa/4.0/
+
+## Not covered
+
+- The "UnicornRush" name, the "unicornrush.io" domain, and logos are not
+  licensed for use (see the Section 7 terms in `LICENSE`).
+- The legal pages (`public/terms-of-service.html`, `public/privacy-policy.html`)
+  describe how the official unicornrush.io service is run. They are not
+  licensed as reusable assets.
+- Any assets hosted outside this repository.

@@ -131,14 +131,25 @@ main {
 }
 .map-wrap {
   position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+.map-hint {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  background: rgba(10, 16, 24, 0.7);
+  padding: 2px 6px;
+  border-radius: 4px;
+  pointer-events: none;
 }
 canvas.map {
   display: block;
   width: 100%;
-  aspect-ratio: 160 / 100;
-  image-rendering: pixelated;
-  border-radius: 8px;
-  border: 1px solid var(--line);
+  transform-origin: 0 0;
   cursor: crosshair;
 }
 .tooltip {
@@ -522,4 +533,20 @@ button.danger {
   border: 1px solid var(--neg);
   color: var(--neg);
   background: rgba(255, 107, 91, 0.1);
+}
+
+/* ---------- legal ---------- */
+
+.legal {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 12px 0 0;
+}
+.legal a {
+  color: var(--muted);
+}
+.topbar .legal {
+  margin: 0;
+  width: 100%;
+  text-align: right;
 }

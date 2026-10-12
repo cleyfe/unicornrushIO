@@ -1,4 +1,4 @@
-# MarketFront 🦄
+# UnicornRush.io 🦄
 
 A real-time business strategy game that teaches how a company makes (and loses) money.
 Inspired by territory games like [OpenFront](https://github.com/openfrontio/OpenFrontIO), but the map is a **market**, territory is
@@ -92,3 +92,11 @@ See [CLAUDE.md](CLAUDE.md) for the architecture rules.
 - R&D and product quality
 - Placing buildings on the map
 - Stock market / fundraising rounds
+
+## License
+
+- **Code:** [GNU AGPL v3](LICENSE), with additional terms (keep the "© UnicornRush and Contributors" notice; don't present forks as the official UnicornRush).
+- **Assets:** [CC BY-SA 4.0](LICENSE-ASSETS).
+- The UnicornRush name, unicornrush.io domain and logos are not licensed.
+
+See [LICENSING.md](LICENSING.md) for details, and the [Terms of Service](public/terms-of-service.html) and [Privacy Policy](public/privacy-policy.html) for the hosted game.

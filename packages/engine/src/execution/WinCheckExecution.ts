@@ -1,4 +1,4 @@
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import type { GameImpl } from '../game/GameImpl';
 import type { Execution } from './Execution';
 

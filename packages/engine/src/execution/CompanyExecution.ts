@@ -1,6 +1,6 @@
-import type { Company } from '@marketfront/engine-api/game/Game';
-import { NEUTRAL } from '@marketfront/engine-api/game/GameMap';
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
+import type { Company } from '@unicornrush/engine-api/game/Game';
+import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import type { GameImpl } from '../game/GameImpl';
 import type { Execution } from './Execution';
 

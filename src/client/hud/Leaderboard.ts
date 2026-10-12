@@ -1,7 +1,7 @@
-import { WATER } from '@marketfront/engine-api/game/GameMap';
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
-import { money, pct } from '@marketfront/engine-lib/Format';
-import type { GameImpl } from '@marketfront/engine/game/GameImpl';
+import { WATER } from '@unicornrush/engine-api/game/GameMap';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { money, pct } from '@unicornrush/engine-lib/Format';
+import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import { $, rgb } from './dom';
 
 /** Leaderboard plus the news feed, shown under the map. */

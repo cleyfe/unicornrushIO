@@ -1,5 +1,5 @@
 import './styles/main.css';
-import { defaultCompanies } from '@marketfront/engine-lib/configuration/Companies';
+import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
 import { ClientGameRunner } from './ClientGameRunner';
 import { ControlPanel } from './hud/ControlPanel';
 import { showGameOver } from './hud/GameOverModal';
@@ -27,7 +27,10 @@ function startGame(name: string): void {
   mapWrap.className = 'map-wrap';
   const tooltip = document.createElement('div');
   tooltip.className = 'tooltip';
-  mapWrap.append(renderer.canvas, tooltip);
+  const hint = document.createElement('div');
+  hint.className = 'map-hint';
+  hint.textContent = 'Scroll to zoom · drag to pan';
+  mapWrap.append(renderer.canvas, tooltip, hint);
   const left = document.createElement('div');
   left.className = 'left';
   left.append(mapWrap, board.root);

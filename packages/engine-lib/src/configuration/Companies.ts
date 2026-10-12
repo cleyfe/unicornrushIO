@@ -1,4 +1,4 @@
-import type { CompanySpec } from '@marketfront/engine-api/game/Game';
+import type { CompanySpec } from '@unicornrush/engine-api/game/Game';
 
 export const RIVALS: CompanySpec[] = [
   { name: 'BudgetMart', color: [231, 76, 60], isBot: true, personality: 'discounter' },

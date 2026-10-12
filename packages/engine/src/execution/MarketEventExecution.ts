@@ -1,6 +1,6 @@
-import type { MarketEventKind } from '@marketfront/engine-api/game/Game';
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
-import { EVENT_INFO } from '@marketfront/engine-lib/configuration/MarketEvents';
+import type { MarketEventKind } from '@unicornrush/engine-api/game/Game';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { EVENT_INFO } from '@unicornrush/engine-lib/configuration/MarketEvents';
 import type { GameImpl } from '../game/GameImpl';
 import type { Execution } from './Execution';
 

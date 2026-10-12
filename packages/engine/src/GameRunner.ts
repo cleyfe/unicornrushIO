@@ -1,5 +1,5 @@
-import type { CompanySpec } from '@marketfront/engine-api/game/Game';
-import type { Intent } from '@marketfront/engine-api/Intents';
+import type { CompanySpec } from '@unicornrush/engine-api/game/Game';
+import type { Intent } from '@unicornrush/engine-api/Intents';
 import { BotExecution } from './execution/bots/BotExecution';
 import { CompanyExecution } from './execution/CompanyExecution';
 import { createExecution } from './execution/ExecutionManager';

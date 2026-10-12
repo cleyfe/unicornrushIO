@@ -17,23 +17,23 @@ Run one test file: `npx vitest run tests/Lawsuit.test.ts`.
 
 ## Architecture
 
-MarketFront is a real-time business strategy game. The code is split into a
+UnicornRush is a real-time business strategy game. The code is split into a
 deterministic **engine** (packages) and a **client** (`src/client`).
 
 | Package | Directory | Contents |
 | --- | --- | --- |
-| `@marketfront/engine-api` | `packages/engine-api` | The contract: `Intent` types and game data types (`Company`, `Lawsuit`, …). Types only. |
-| `@marketfront/engine-lib` | `packages/engine-lib` | Code that runs outside the simulation too: `Config` (all tunable numbers), map generation, `PseudoRandom`, `DetMath`, formatting. |
-| `@marketfront/engine` | `packages/engine` | The simulation: `GameImpl`, executions, bots, `GameRunner`. |
+| `@unicornrush/engine-api` | `packages/engine-api` | The contract: `Intent` types and game data types (`Company`, `Lawsuit`, …), plus a few constants (`Terrain`, `NEUTRAL`). |
+| `@unicornrush/engine-lib` | `packages/engine-lib` | Code that runs outside the simulation too: `Config` (all tunable numbers), map generation, `PseudoRandom`, `DetMath`, formatting. |
+| `@unicornrush/engine` | `packages/engine` | The simulation: `GameImpl`, executions, bots, `GameRunner`. |
 
-Import them as `@marketfront/<pkg>/<path>` (aliases in `tsconfig.json` and
+Import them as `@unicornrush/<pkg>/<path>` (aliases in `tsconfig.json` and
 `vite.config.ts`). `tests/LayerBoundaries.test.ts` enforces:
 
 - `engine-api` imports nothing; `engine-lib` adds `engine-api`; `engine` adds `engine-lib`.
 - Engine packages never use `Math.random`, `Date.now`, `new Date`, `Math.exp`/`Math.pow`,
   `**` with an exponent other than 2, or the DOM. Use `game.rng` and `engine-lib/DetMath`.
   This keeps every match replayable from its seed (and ready for lockstep multiplayer).
-- `src/client` loads the engine at runtime only through `@marketfront/engine/GameRunner`
+- `src/client` loads the engine at runtime only through `@unicornrush/engine/GameRunner`
   (type-only imports of engine classes are fine).
 
 ### Simulation flow (Intent → Execution)

@@ -1,4 +1,4 @@
-import type { Intent } from '@marketfront/engine-api/Intents';
+import type { Intent } from '@unicornrush/engine-api/Intents';
 import { CampaignExecution } from './CampaignExecution';
 import {
   BorrowExecution,

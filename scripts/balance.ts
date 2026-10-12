@@ -1,9 +1,9 @@
 // Headless balance check: runs bot-only matches and prints how they end.
 // Usage: npm run balance -- [matches]
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
-import { defaultCompanies } from '@marketfront/engine-lib/configuration/Companies';
-import { money } from '@marketfront/engine-lib/Format';
-import { GameRunner } from '@marketfront/engine/GameRunner';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
+import { money } from '@unicornrush/engine-lib/Format';
+import { GameRunner } from '@unicornrush/engine/GameRunner';
 
 const matches = Number(process.argv[2] ?? 8);
 const wins: Record<string, number> = {};

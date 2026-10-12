@@ -7,9 +7,9 @@ export default defineConfig({
   base: './',
   resolve: {
     alias: {
-      '@marketfront/engine-api': pkg('engine-api'),
-      '@marketfront/engine-lib': pkg('engine-lib'),
-      '@marketfront/engine': pkg('engine'),
+      '@unicornrush/engine-api': pkg('engine-api'),
+      '@unicornrush/engine-lib': pkg('engine-lib'),
+      '@unicornrush/engine': pkg('engine'),
     },
   },
 });

@@ -1,13 +1,13 @@
-import type { BuildingType, PriceLevel } from '@marketfront/engine-api/game/Game';
-import type { Intent } from '@marketfront/engine-api/Intents';
-import { BUILDING_TYPES, CONFIG, PRICE_LEVELS } from '@marketfront/engine-lib/configuration/Config';
-import { int, money, pct } from '@marketfront/engine-lib/Format';
-import type { GameImpl } from '@marketfront/engine/game/GameImpl';
+import type { BuildingType, PriceLevel } from '@unicornrush/engine-api/game/Game';
+import type { Intent } from '@unicornrush/engine-api/Intents';
+import { BUILDING_TYPES, CONFIG, PRICE_LEVELS } from '@unicornrush/engine-lib/configuration/Config';
+import { int, money, pct } from '@unicornrush/engine-lib/Format';
+import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import { $ } from './dom';
 
 const B = CONFIG.buildings;
 const BUILDING_INFO: Record<BuildingType, { icon: string; effect: string }> = {
-  branch: { icon: '🏬', effect: `+${B.branch.capacity} customer areas served` },
+  branch: { icon: '🏬', effect: `+${B.branch.capacity} buildings served` },
   warehouse: { icon: '🏭', effect: `Variable costs −${pct(1 - B.warehouse.variableCostMult)}` },
   adAgency: { icon: '📣', effect: `Sales push +${pct(B.adAgency.pushBonus)}` },
   legalDept: { icon: '⚖️', effect: `Lets you sue · ${pct(B.legalDept.defense)} chance to dismiss suits` },
@@ -209,7 +209,7 @@ export class ControlPanel {
     const coverFill = $(this.root, '[data-v="coverFill"]');
     coverFill.style.width = pct(cover);
     coverFill.className = cover < 1 ? 'bad' : '';
-    this.set('coverage', `${int(Math.min(cap, c.tiles))} / ${int(c.tiles)} areas (capacity ${int(cap)})`);
+    this.set('coverage', `${int(Math.min(cap, c.tiles))} / ${int(c.tiles)} buildings (capacity ${int(cap)})`);
     $(this.root, '[data-v="overload"]').hidden = cover >= 1;
 
     this.root

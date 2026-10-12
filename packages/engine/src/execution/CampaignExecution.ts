@@ -1,6 +1,6 @@
-import { NEUTRAL, WATER } from '@marketfront/engine-api/game/GameMap';
-import { CONFIG } from '@marketfront/engine-lib/configuration/Config';
-import { neighbors4 } from '@marketfront/engine-lib/game/GameMap';
+import { NEUTRAL, WATER } from '@unicornrush/engine-api/game/GameMap';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { neighbors4 } from '@unicornrush/engine-lib/game/GameMap';
 import type { GameImpl } from '../game/GameImpl';
 import type { Execution } from './Execution';
 

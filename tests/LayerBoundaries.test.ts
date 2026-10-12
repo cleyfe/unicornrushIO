@@ -37,7 +37,7 @@ describe('layer boundaries', () => {
     it(`${pkg} imports only ${deps.join(', ') || 'itself'}`, () => {
       for (const f of files(join(root, 'packages', pkg, 'src'))) {
         for (const { spec } of imports(f)) {
-          const m = spec.match(/^@marketfront\/([^/]+)/);
+          const m = spec.match(/^@unicornrush\/([^/]+)/);
           if (m) expect(deps, `${relative(root, f)} imports ${spec}`).toContain(m[1]);
           else expect(spec.startsWith('.'), `${relative(root, f)} imports ${spec}`).toBe(true);
         }
@@ -58,8 +58,8 @@ describe('layer boundaries', () => {
   it('client loads the engine at runtime only through GameRunner', () => {
     for (const f of files(join(root, 'src', 'client'))) {
       for (const { spec, typeOnly } of imports(f)) {
-        if (spec.startsWith('@marketfront/engine/') && !typeOnly) {
-          expect(spec, relative(root, f)).toBe('@marketfront/engine/GameRunner');
+        if (spec.startsWith('@unicornrush/engine/') && !typeOnly) {
+          expect(spec, relative(root, f)).toBe('@unicornrush/engine/GameRunner');
         }
       }
     }
