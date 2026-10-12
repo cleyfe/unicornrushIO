@@ -107,6 +107,8 @@ function blitzTurn(r: GameRunner, g: GameImpl): void {
   const n = Math.min(room, Math.floor((me.cash - reserve) / (CONFIG.staff.hireCost + CONFIG.staff.salaryPerDay * 15)));
   if (n > 0) send({ type: 'hire', count: Math.min(n, 100) });
   if (room < -10 && me.pnl.profit < 0) send({ type: 'fire', count: Math.ceil(-room / 4) });
+  const ad = g.adOffer(me);
+  if (me.push < g.maxPush(me) * 0.5 && me.cash > ad.cost + reserve * 3) send({ type: 'advertise' });
   if (me.push >= 10) {
     let best = -1;
     let bestScore = -Infinity;

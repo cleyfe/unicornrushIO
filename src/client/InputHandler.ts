@@ -65,7 +65,13 @@ export class InputHandler {
       }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // A focused button would also be "clicked" by Space; drop focus after clicks.
+    const blurButtons = (e: MouseEvent) => (e.target as HTMLElement).closest('button')?.blur();
+    window.addEventListener('click', blurButtons, true);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('click', blurButtons, true);
+    };
   }
 }
 

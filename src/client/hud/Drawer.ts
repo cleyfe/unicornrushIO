@@ -68,7 +68,8 @@ export class Drawer {
       <table class="pnl">
         <tr><td>Recruiting <small>${money(CONFIG.staff.hireCost)} per hire</small></td><td data-v="ooHiring"></td></tr>
         <tr><td>Severance <small>${money(CONFIG.staff.fireCost)} per person let go</small></td><td data-v="ooSeverance"></td></tr>
-        <tr><td>Legal fees</td><td data-v="ooLegal"></td></tr>
+        <tr><td>Advertising <small>cash turned into sales push</small></td><td data-v="ooAds"></td></tr>
+        <tr><td>Legal fees and fines</td><td data-v="ooLegal"></td></tr>
         <tr><td>Lawsuit damages <small>received (+) or paid (−)</small></td><td data-v="ooDamages"></td></tr>
       </table>
       <h3>Bank</h3>
@@ -78,7 +79,7 @@ export class Drawer {
         <button data-bank="borrow">Borrow ${money(b.loanChunk)}</button>
         <button data-bank="repay" class="ghost">Repay ${money(b.loanChunk)}</button>
       </div>
-      <p class="tip">💡 A loan pays for growth now, but interest is due every day, even in a recession.</p>`;
+      <p class="tip">💡 A loan pays for growth now (more staff, more ads), but interest is due every day, even in a recession. Borrow when each dollar earns more than ${pct(CONFIG.bank.interestPerYear)} a year.</p>`;
   }
 
   private lawsuitHtml(): string {
@@ -86,10 +87,9 @@ export class Drawer {
     return `<h2>⚖️ Unfair-competition lawsuit</h2>
       <p>Sue a rival that hurt your business unfairly. The court looks at the <b>evidence</b>: streets they took from you recently (poaching your customers), and predatory pricing if they sell cheap. Legal fees: <b>${money(L.cost)}</b>; ruling in <b>${L.courtDays} days</b>.</p>
       <table class="cases-table">
-        <tr><th>Rival</th><th title="Streets they took from you recently (older ones count less)">Evidence</th><th>Win chance</th><th title="Your lost profits on those streets">Damages</th><th title="Average result after fees and risk">Worth it?</th></tr>
+        <tr><th>Rival</th><th title="Streets they took from you recently (older ones count less)">Evidence</th><th>Win chance</th><th title="Your lost profits on those streets">Damages</th><th title="Average result after fees and risk">Worth it?</th><th></th></tr>
         <tbody data-v="caseRows"></tbody>
       </table>
-      <div class="sue-row"><select data-input="target" aria-label="Rival to sue"></select><button data-act="sue" class="danger">Sue for ${money(L.cost)}</button></div>
       <ul class="facts">
         <li>✅ If you win: they pay your lost profits as damages, and bad press drives away ${pct(L.customerLoss)} of their customers.</li>
         <li>❌ If you lose: you pay their ${money(L.dismissedCounterCost)} legal costs on top of your fees.</li>
@@ -103,9 +103,10 @@ export class Drawer {
     this.root.querySelectorAll<HTMLButtonElement>('[data-bank]').forEach((b) =>
       b.addEventListener('click', () => send({ type: b.dataset.bank })),
     );
-    this.root.querySelector('[data-act="sue"]')?.addEventListener('click', () => {
-      const target = Number($<HTMLSelectElement>(this.root, '[data-input="target"]').value);
-      if (!Number.isNaN(target)) send({ type: 'lawsuit', targetId: target });
+    // Rows are redrawn, so listen on the drawer itself.
+    this.root.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-sue]');
+      if (b && !b.disabled) send({ type: 'lawsuit', targetId: Number(b.dataset.sue) });
     });
   }
 
@@ -140,6 +141,7 @@ export class Drawer {
       this.set('ooHiring', ...signed(c.oneOff.hiring));
       this.set('ooSeverance', ...signed(c.oneOff.severance));
       this.set('ooLegal', ...signed(c.oneOff.legalFees));
+      this.set('ooAds', ...signed(c.oneOff.advertising));
       this.set('ooDamages', ...signed(c.oneOff.damages));
       if (g.tick % 10 === 0) {
         this.valueChart.update(this.history.valuation);
@@ -147,7 +149,6 @@ export class Drawer {
       }
       return;
     }
-    const select = $<HTMLSelectElement>(this.root, '[data-input="target"]');
     const L = CONFIG.lawsuit;
     const rivals = g.companies.filter((r) => r.alive && r.id !== c.id);
     const cases = rivals
@@ -157,24 +158,23 @@ export class Drawer {
         return { r, p, damages, value: p * damages - (1 - p) * L.dismissedCounterCost - L.cost, evidence: g.streetsTaken(r.id, c.id) };
       })
       .sort((a, b) => b.value - a.value);
-    $(this.root, '[data-v="caseRows"]').innerHTML = cases
+    const busy = g.activeLawsuitBy(c);
+    const blocked = busy ? 'Your lawyers are busy with a case' : c.cash < L.cost ? `Legal fees are ${money(L.cost)}` : '';
+    const rowsHtml = cases
       .map(
         (k) => `<tr><td><i style="background:rgb(${k.r.color.join(',')})"></i>${k.r.name}</td>
           <td>${k.evidence >= 0.5 ? `took ${Math.round(k.evidence)} streets` : 'none'}${k.r.price === 'low' ? ' · cheap' : ''}</td>
           <td>${pct(k.p)}</td><td>${money(k.damages)}</td>
-          <td class="${k.value > 0 ? 'pos' : 'neg'}">${k.value > 0 ? '+' : ''}${money(k.value)}</td></tr>`,
+          <td class="${k.value > 0 ? 'pos' : 'neg'}">${k.value > 0 ? '+' : ''}${money(k.value)}</td>
+          <td><button class="danger sue-btn" data-sue="${k.r.id}" ${blocked ? 'disabled' : ''} title="${blocked || `Sue ${k.r.name} for ${money(L.cost)} in fees`}">Sue</button></td></tr>`,
       )
       .join('');
-    const key = rivals.map((r) => r.id).join(',');
-    if (select.dataset.key !== key) {
-      // Best case first: that's usually who you want to sue.
-      select.innerHTML = cases.map((k) => `<option value="${k.r.id}">${k.r.name} · ${pct(k.p)} chance</option>`).join('');
-      select.dataset.key = key;
+    // Only redraw when something changed, so buttons don't flicker under the mouse.
+    const rows = $(this.root, '[data-v="caseRows"]');
+    if (rows.dataset.html !== rowsHtml) {
+      rows.dataset.html = rowsHtml;
+      rows.innerHTML = rowsHtml;
     }
-    const sue = $<HTMLButtonElement>(this.root, '[data-act="sue"]');
-    const busy = g.activeLawsuitBy(c);
-    sue.disabled = !!busy || c.cash < CONFIG.lawsuit.cost || rivals.length === 0;
-    sue.title = busy ? 'Your lawyers are busy with a case' : c.cash < CONFIG.lawsuit.cost ? 'Not enough cash for the legal fees' : '';
     const mine = g.lawsuits.filter((l) => l.plaintiff === c.id || l.defendant === c.id);
     $(this.root, '[data-v="cases"]').innerHTML = mine
       .map((l) => {

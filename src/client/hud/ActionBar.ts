@@ -36,7 +36,8 @@ export class ActionBar {
       `<div class="ab-block push" data-tip="push">
         <div class="ab-label">🤝 Sales push <span data-v="pushRate"></span></div>
         <div class="push-meter"><div data-v="pushFill"></div><span data-v="pushText"></span></div>
-        <div class="ab-hint" data-v="pushHint"></div>
+        <div class="push-row"><div class="ab-hint" data-v="pushHint"></div>
+          <button data-act="advertise" class="ad-btn" title="Buy sales push with cash. Each ad makes the next one pricier for a while.">📢 Ads</button></div>
       </div>
       <div class="ab-block team" data-tip="team">
         <div class="ab-label">👥 Team <span data-v="team"></span></div>
@@ -55,6 +56,7 @@ export class ActionBar {
             <button data-hire="10" title="Hire 10: ${money(CONFIG.staff.hireCost * 10)} now + ${money(CONFIG.staff.salaryPerDay * 10)}/day">+10</button>
             <button data-hire="100" title="Hire 100: ${money(CONFIG.staff.hireCost * 100)} now + ${money(CONFIG.staff.salaryPerDay * 100)}/day">+100</button>
             <button data-fire="1" class="ghost" title="Fire 1: ${money(CONFIG.staff.fireCost)} severance">−1</button>
+            <button data-fire="10" class="ghost" title="Fire 10: ${money(CONFIG.staff.fireCost * 10)} severance">−10</button>
           </span>
         </div>
       </div>
@@ -100,6 +102,7 @@ export class ActionBar {
     r.querySelectorAll<HTMLButtonElement>('[data-fire]').forEach((b) =>
       b.addEventListener('click', () => this.send({ type: 'fire', count: Number(b.dataset.fire) })),
     );
+    $(r, '[data-act="advertise"]').addEventListener('click', () => this.send({ type: 'advertise' }));
     r.querySelectorAll<HTMLButtonElement>('[data-open]').forEach((b) =>
       b.addEventListener('click', () => this.open(b.dataset.open as 'finances' | 'lawsuit')),
     );
@@ -125,7 +128,12 @@ export class ActionBar {
 
     const fill = c.push / g.maxPush(c);
     $(r, '[data-v="pushFill"]').style.width = pct(fill);
-    $(r, '[data-v="pushText"]').textContent = `${Math.floor(c.push)} / ${Math.floor(g.maxPush(c))} · next click spends ${Math.floor(c.push * CONFIG.sales.campaignShare)}`;
+    const committed = c.pushCommitted >= 1 ? ` · ${Math.floor(c.pushCommitted)} at work` : '';
+    $(r, '[data-v="pushText"]').textContent = `${Math.floor(c.push)} / ${Math.floor(g.maxPush(c))} · next click ${Math.floor(c.push * CONFIG.sales.campaignShare)}${committed}`;
+    const ad = g.adOffer(c);
+    const adBtn = $<HTMLButtonElement>(r, '[data-act="advertise"]');
+    adBtn.textContent = `📢 +${ad.push} for ${money(ad.cost)}`;
+    adBtn.disabled = c.cash < ad.cost || c.push + ad.push > g.maxPush(c) * CONFIG.sales.maxAdPushMult;
     $(r, '[data-v="pushRate"]').textContent = `+${g.pushPerDay(c).toFixed(1)}/day`;
     const hint = $(r, '[data-v="pushHint"]');
     if (g.salesStaff(c) === 0) hint.textContent = 'No sales staff: move the slider toward Sales.';

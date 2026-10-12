@@ -39,7 +39,7 @@ export class YouCard {
     const v = g.valuation(c).total;
     $(this.root, '[data-v="value"]').textContent = money(v);
     $(this.root, '[data-v="bar"]').style.width = pct(unicornProgress(v));
-    $(this.root, '[data-v="barText"]').textContent = `🦄 ${money(Math.max(0, v))} of $1B`;
+    $(this.root, '[data-v="barText"]').textContent = `🦄 ${money(Math.max(0, v))} of $1B${c.peakValuation > v * 1.15 ? ` · peak ${money(c.peakValuation)}` : ''}`;
     $(this.root, '[data-v="cash"]').textContent = money(c.cash);
     $(this.root, '[data-v="cash"]').className = c.cash < 0 ? 'neg' : '';
     const p = $(this.root, '[data-v="profit"]');

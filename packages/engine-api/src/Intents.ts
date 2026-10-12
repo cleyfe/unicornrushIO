@@ -13,6 +13,7 @@ export type Intent =
   | { type: 'fire'; companyId: number; count: number }
   | { type: 'borrow'; companyId: number }
   | { type: 'repay'; companyId: number }
+  | { type: 'advertise'; companyId: number }
   | { type: 'lawsuit'; companyId: number; targetId: number };
 
 export type IntentType = Intent['type'];

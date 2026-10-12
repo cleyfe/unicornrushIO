@@ -118,7 +118,14 @@ export class BotExecution implements Execution {
       if (n > 0) this.act(g, { type: 'hire', companyId: id, count: n });
     }
 
-    // 5. Sales campaigns.
+    // 5. Advertising: turn idle cash into sales push, while it pays back.
+    const ad = g.adOffer(c);
+    if (canGrow && c.push < g.maxPush(c) * 0.5 && cash > ad.cost + reserve * 1.5 * CONFIG.difficulty[c.difficulty].reserveMult) {
+      this.act(g, { type: 'advertise', companyId: id });
+      cash -= ad.cost;
+    }
+
+    // 6. Sales campaigns.
     if (c.push >= Math.max(5, g.maxPush(c) * (p.pushReserve + CONFIG.difficulty[c.difficulty].extraPushReserve))) {
       let tile = -1;
       if (f.neutral > 8 || (f.neutral > 0 && f.cheapestRivalTile < 0)) tile = f.bestNeutral;

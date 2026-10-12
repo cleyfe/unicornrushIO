@@ -1,6 +1,7 @@
 import type { Intent } from '@unicornrush/engine-api/Intents';
 import { CampaignExecution } from './CampaignExecution';
 import {
+  AdvertiseExecution,
   BorrowExecution,
   FireExecution,
   HireExecution,
@@ -28,6 +29,8 @@ export function createExecution(intent: Intent): Execution {
       return new BorrowExecution(intent.companyId);
     case 'repay':
       return new RepayExecution(intent.companyId);
+    case 'advertise':
+      return new AdvertiseExecution(intent.companyId);
     case 'lawsuit':
       return new LawsuitExecution(intent.companyId, intent.targetId);
   }

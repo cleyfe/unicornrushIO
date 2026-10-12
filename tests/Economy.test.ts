@@ -63,3 +63,39 @@ describe('valuation', () => {
     expect(v.total).toBeCloseTo(v.cash - v.debt + v.earnings);
   });
 });
+
+describe('advertising', () => {
+  it('turns cash into sales push', () => {
+    const r = quietSetup();
+    const me = r.game.player;
+    me.cash = 1e6;
+    me.push = 0;
+    const offer = r.game.adOffer(me);
+    act(r, { type: 'advertise', companyId: 0 });
+    expect(me.push).toBeGreaterThanOrEqual(offer.push);
+    expect(me.cash).toBeCloseTo(1e6 - offer.cost, -3);
+    expect(me.oneOff.advertising).toBeCloseTo(-offer.cost);
+  });
+
+  it('gets pricier with each purchase, then cools down', () => {
+    const r = quietSetup();
+    const me = r.game.player;
+    me.cash = 1e7;
+    me.push = 0;
+    const first = r.game.adOffer(me).cost;
+    act(r, { type: 'advertise', companyId: 0 });
+    me.push = 0;
+    const second = r.game.adOffer(me).cost;
+    expect(second).toBeGreaterThan(first);
+    runDays(r, 60);
+    me.push = 0;
+    expect(r.game.adOffer(me).cost).toBeLessThan(second);
+  });
+
+  it('is refused without cash', () => {
+    const r = quietSetup();
+    r.game.player.cash = 10;
+    act(r, { type: 'advertise', companyId: 0 });
+    expect(lastMessage(r)).toMatch(/not enough cash/);
+  });
+});

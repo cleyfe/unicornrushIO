@@ -17,6 +17,7 @@ export interface OneOffFlows {
   hiring: number; // recruiting costs paid (negative)
   severance: number; // firing costs paid (negative)
   legalFees: number; // lawsuit fees and costs paid (negative)
+  advertising: number; // ad purchases (negative)
   damages: number; // lawsuit damages received (+) or paid (−)
 }
 
@@ -45,6 +46,10 @@ export interface Company {
   price: PriceLevel;
 
   push: number;
+  /** Push committed to campaigns still running. */
+  pushCommitted: number;
+  /** Recent advertising (makes the next ad pricier). */
+  adHeat: number;
 
   tiles: number;
   customers: number; // customers on owned streets

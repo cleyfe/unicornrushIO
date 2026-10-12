@@ -150,6 +150,13 @@ export class GameImpl {
     return Math.max(10, this.salesStaff(c) * CONFIG.sales.maxPushDaysStored);
   }
 
+  /** The next ad purchase: how much push it buys and what it costs. */
+  adOffer(c: Company): { push: number; cost: number } {
+    const S = CONFIG.sales;
+    const push = Math.max(20, Math.round(this.maxPush(c) * S.adPackShare));
+    return { push, cost: push * S.adCostPerPush * (1 + S.adPriceStep * c.adHeat) };
+  }
+
   maxDebt(c: Company): number {
     return Math.max(CONFIG.bank.loanChunk, c.pnl.revenue * CONFIG.bank.maxDebtRevenueDays);
   }
@@ -472,6 +479,8 @@ function newCompany(id: number, s: CompanySpec): Company {
     salesShare: CONFIG.start.salesShare,
     price: s.price ?? (s.personality === 'discounter' ? 'low' : s.personality === 'premium' ? 'high' : 'medium'),
     push: CONFIG.start.push, // enough for a first expansion right away
+    pushCommitted: 0,
+    adHeat: 0,
     tiles: 0,
     customers: 0,
     spend: 0,
@@ -479,7 +488,7 @@ function newCompany(id: number, s: CompanySpec): Company {
     tierSpend: [0, 0, 0, 0],
     border: new Set(),
     pnl: emptyPnl(),
-    oneOff: { hiring: 0, severance: 0, legalFees: 0, damages: 0 },
+    oneOff: { hiring: 0, severance: 0, legalFees: 0, damages: 0, advertising: 0 },
     avgProfit: 0,
     churnCarry: 0,
     negativeCashDays: 0,

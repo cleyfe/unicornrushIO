@@ -23,7 +23,10 @@ export class CompanyExecution implements Execution {
   tick(game: GameImpl): void {
     const c = this.c;
     this.graduateTrainees(game);
-    c.push = Math.min(game.maxPush(c), c.push + game.pushPerDay(c) * DT);
+    // Sales staff fill the pool up to its cap; ads can push it higher, and that isn't clawed back.
+    const cap = game.maxPush(c);
+    if (c.push < cap) c.push = Math.min(cap, c.push + game.pushPerDay(c) * DT);
+    c.adHeat *= 1 - CONFIG.sales.adHeatDecayPerDay * DT;
     this.churn(game);
     this.economy(game);
     c.peakTiles = Math.max(c.peakTiles, c.tiles);

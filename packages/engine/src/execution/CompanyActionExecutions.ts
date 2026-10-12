@@ -93,3 +93,22 @@ export class RepayExecution extends InstantExecution {
     c.cash -= amount;
   }
 }
+
+/** Buys sales push with cash. */
+export class AdvertiseExecution extends InstantExecution {
+  constructor(private companyId: number) {
+    super();
+  }
+  protected apply(game: GameImpl): void {
+    const c = game.companies[this.companyId];
+    const offer = game.adOffer(c);
+    if (c.cash < offer.cost) return game.message(c.id, `An ad campaign costs ${money(offer.cost)}: not enough cash.`);
+    if (c.push + offer.push > game.maxPush(c) * CONFIG.sales.maxAdPushMult) {
+      return game.message(c.id, 'Your sales push is already full: spend it on streets first.');
+    }
+    c.cash -= offer.cost;
+    c.oneOff.advertising -= offer.cost;
+    c.push += offer.push;
+    c.adHeat += 1;
+  }
+}

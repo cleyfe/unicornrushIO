@@ -72,6 +72,13 @@ export class Coach {
         done: (g) => g.player.employees + g.traineeCount(g.player) > this.startEmployees,
       },
       {
+        id: 'ads',
+        anchor: '.action-bar .push',
+        text: '📢 Cash piling up? <b>Ads</b> turn cash into sales push, so you win streets faster. Each ad costs more than the last for a while, and a loan can pay for them if they earn more than the interest.',
+        when: (g) => g.day > 90 && g.player.cash > g.adOffer(g.player).cost * 3,
+        done: (g) => g.player.oneOff.advertising < 0,
+      },
+      {
         id: 'wealth',
         anchor: '.wealth-legend',
         text: '💎 <b>Golden buildings</b> are rich neighbourhoods: customers there spend up to ×' + CONFIG.wealth[3].spend + ' more, and cost the same to serve. Hover a street to see its numbers.',

@@ -35,6 +35,7 @@ export class CampaignExecution implements Execution {
     const budget = c.push * CONFIG.sales.campaignShare;
     if (budget < 1) return fail('Not enough sales push yet: put more staff in Sales.');
     c.push -= budget;
+    c.pushCommitted += budget;
     this.target = target;
     this.budget = budget;
     this.aimX = game.map.x[this.tile];
@@ -54,7 +55,8 @@ export class CampaignExecution implements Execution {
     if (this.target >= 0 && !game.companies[this.target].alive) this.target = NEUTRAL;
     if (this.advance(game)) {
       // Unspent push goes back to the pool.
-      c.push = Math.min(game.maxPush(c), c.push + this.budget);
+      c.push = Math.min(Math.max(game.maxPush(c), c.push), c.push + this.budget);
+      c.pushCommitted = Math.max(0, c.pushCommitted - this.budget);
       this.active = false;
     }
   }
@@ -83,6 +85,7 @@ export class CampaignExecution implements Execution {
       const cost = game.tileCost(c, this.target, tile);
       if (this.budget < cost) return true;
       this.budget -= cost;
+      c.pushCommitted = Math.max(0, c.pushCommitted - cost);
       if (this.target >= 0) {
         // The defender's retention effort is spent fighting back.
         const def = game.companies[this.target];

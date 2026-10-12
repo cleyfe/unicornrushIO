@@ -66,6 +66,13 @@ export const CONFIG = {
     retentionPerPush: 0.15,
     maxRetention: 2, // a push reserve can at most double the cost of stealing a street
     retentionDrain: 0.3,
+    // Advertising: buy sales push with cash. Each purchase makes the next one
+    // pricier (the cheapest ad slots go first); the extra cost fades over time.
+    adPackShare: 0.4, // push bought per purchase, as a share of your push cap (min 20)
+    adCostPerPush: 5000,
+    adPriceStep: 0.5, // +50% per recent purchase
+    adHeatDecayPerDay: 0.03,
+    maxAdPushMult: 2, // ads can fill the push pool up to twice its normal cap
     maxServiceLevel: 1.5, // spare operations capacity makes customers loyal, up to this
   },
 

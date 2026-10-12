@@ -1,5 +1,4 @@
 import type { CityData } from '@unicornrush/engine-api/game/City';
-import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { money } from '@unicornrush/engine-lib/Format';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import type { Map as MapLibreMap } from 'maplibre-gl';
@@ -67,7 +66,7 @@ export class CompanyLabels {
       const p = this.map.project(l.at);
       l.root.style.transform = `translate(${p.x}px, ${p.y}px)`;
       const v = g.valuation(c).total;
-      l.value.textContent = `${money(v)}${v >= CONFIG.valuation.unicorn * 0.5 ? ' 🦄' : ''}`;
+      l.value.textContent = money(v);
       if (pop) this.popMoney(l, c.pnl.revenue * (g.day - l.lastDay), c.pnl.profit * (g.day - l.lastDay));
       if (pop) l.lastDay = g.day;
     });

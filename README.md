@@ -32,6 +32,7 @@ Investors pay for profit, so a smaller, profitable company can beat a big one th
 | **Hire / Fire** | $500 to hire, $100/day salary, 8 days of training before new hires are productive. $300 severance. | Hiring is an investment that pays back over time |
 | **Price** (Low / Medium / High) | $28 / $40 / $55 per purchase. Middle-income customers buy ×1.4 / ×1 / ×0.8 as much; budget customers react more, luxury ones barely. Low prices also win and keep customers more easily. | Price elasticity of demand, margin vs volume |
 | **Campaigns** | Click a street (or a building on it) next to yours to spend half your push winning it and its neighbours. | Customer acquisition cost |
+| **Advertising** 📢 | Buy sales push with cash ($5,000 per push point at first). Each ad makes the next one 50% pricier, fading over a month. | Customer acquisition cost, diminishing returns |
 | **Bank loan** | $25K at a time, 24%/year interest, credit limit = 60 days of revenue | Leverage and risk |
 | **Lawsuit** ⚖️ | $250K to sue a rival for unfair competition; the court decides on evidence. See below. | Legal risk, damages as lost profits |
 
