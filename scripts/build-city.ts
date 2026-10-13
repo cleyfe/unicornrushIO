@@ -27,7 +27,8 @@ const POI_CUSTOMERS = 0.4; // extra foot traffic per shop, café or restaurant
 const TOTAL_CUSTOMERS = 18_000;
 const MAX_SEGMENT_CUSTOMERS = 45; // one giant building (a station, a mall) shouldn't make a super-street
 const MAX_ASSIGN_DISTANCE = 70; // metres from a building to its street
-const WEALTH_SHARES = [0.3, 0.35, 0.22, 0.13]; // Budget, Middle, Upscale, Luxury
+// Share of streets at each wealth level (Budget, Middle, Upscale, Luxury), unless the city sets its own.
+const DEFAULT_WEALTH_SHARES = [0.3, 0.35, 0.22, 0.13];
 
 interface OsmElement {
   type: 'node' | 'way';
@@ -50,11 +51,14 @@ interface CityConfig {
   name: string;
   bbox: [number, number, number, number]; // south, west, north, east
   wealthHints?: WealthHint[];
+  /** Each city's own mix of street wealth: it decides which strategies pay there. */
+  wealthShares?: [number, number, number, number];
 }
 
 const id = process.argv[2];
 const configs: Record<string, CityConfig> = JSON.parse(readFileSync('scripts/cities.json', 'utf8'));
 const config = configs[id];
+const WEALTH_SHARES = config?.wealthShares ?? DEFAULT_WEALTH_SHARES;
 if (!config) {
   console.error(`Usage: npm run build-city -- <id>, where id is one of: ${Object.keys(configs).join(', ')}`);
   process.exit(1);

@@ -7,6 +7,12 @@
       48.886,
       2.345
     ],
+    "wealthShares": [
+      0.3,
+      0.35,
+      0.22,
+      0.13
+    ],
     "_hints": "OpenStreetMap has no income data. These hand-placed hints (weight > 0 = richer, < 0 = more modest, fading to zero at the radius) are blended with OSM signals (shops, parks, building height).",
     "wealthHints": [
       {
@@ -103,6 +109,12 @@
       46.216,
       6.168
     ],
+    "wealthShares": [
+      0.15,
+      0.3,
+      0.3,
+      0.25
+    ],
     "wealthHints": [
       {
         "name": "Rue du Rhône & Rive (luxury shopping)",
@@ -198,6 +210,12 @@
       40.744,
       -73.98
     ],
+    "wealthShares": [
+      0.35,
+      0.35,
+      0.18,
+      0.12
+    ],
     "wealthHints": [
       {
         "name": "Tribeca",
@@ -278,6 +296,12 @@
       -0.152,
       51.52,
       -0.112
+    ],
+    "wealthShares": [
+      0.2,
+      0.3,
+      0.28,
+      0.22
     ],
     "wealthHints": [
       {
@@ -367,6 +391,12 @@
       52.538,
       13.425
     ],
+    "wealthShares": [
+      0.45,
+      0.35,
+      0.15,
+      0.05
+    ],
     "wealthHints": [
       {
         "name": "Gendarmenmarkt & Friedrichstraße",
@@ -447,6 +477,12 @@
       -122.428,
       37.8,
       -122.388
+    ],
+    "wealthShares": [
+      0.35,
+      0.3,
+      0.2,
+      0.15
     ],
     "wealthHints": [
       {
@@ -535,6 +571,12 @@
       -79.41,
       43.672,
       -79.37
+    ],
+    "wealthShares": [
+      0.35,
+      0.35,
+      0.2,
+      0.1
     ],
     "wealthHints": [
       {
