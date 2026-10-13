@@ -115,5 +115,18 @@
    0.2
   ],
   "streets": 2696
+ },
+ {
+  "id": "amsterdam",
+  "flag": "🇳🇱",
+  "city": "Amsterdam",
+  "area": "Centrum",
+  "mix": [
+   0.2,
+   0.35,
+   0.28,
+   0.17
+  ],
+  "streets": 3833
  }
 ]
