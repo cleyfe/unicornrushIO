@@ -67,7 +67,7 @@ export class CompanyLabels {
       l.root.style.transform = `translate(${p.x}px, ${p.y}px)`;
       const v = g.valuation(c).total;
       l.value.textContent = money(v);
-      if (pop) this.popMoney(l, c.pnl.revenue * (g.day - l.lastDay), c.pnl.profit * (g.day - l.lastDay));
+      if (pop) this.popMoney(l, c.pnl.profit * (g.day - l.lastDay));
       if (pop) l.lastDay = g.day;
     });
   }
@@ -102,16 +102,16 @@ export class CompanyLabels {
     g.companies.forEach((c, i) => count[i] === 0 && c.alive && (this.labels[i].at = null));
   }
 
-  /** Sales pop up in green; a company losing money shows its loss in red instead. */
-  private popMoney(l: Label, sales: number, profit: number): void {
+  /** Profit pops up in green as it comes in (the same profit/day as the cards); a loss pops in red. */
+  private popMoney(l: Label, profit: number): void {
     const losing = profit < 0;
-    const amount = losing ? -profit : sales;
+    const amount = Math.abs(profit);
     if (amount < 1) return;
     const el = document.createElement('div');
     el.className = `pop${losing ? ' losing' : ''}`;
     el.textContent = `${losing ? '−' : '+'}${money(amount)}`;
-    el.title = losing ? 'Losing money' : 'Sales';
-    // Bigger sales, bigger numbers.
+    el.title = losing ? 'Losing money' : 'Profit';
+    // Bigger profit, bigger numbers.
     el.style.fontSize = `${Math.min(18, 10 + Math.log10(amount) * 1.6)}px`;
     l.pops.append(el);
     el.addEventListener('animationend', () => el.remove());

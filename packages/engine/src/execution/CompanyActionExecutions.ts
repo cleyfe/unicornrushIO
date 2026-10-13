@@ -87,12 +87,15 @@ export class FireExecution extends InstantExecution {
 }
 
 export class BorrowExecution extends InstantExecution {
-  constructor(private companyId: number) {
+  constructor(
+    private companyId: number,
+    private wanted: number = CONFIG.bank.loanChunk,
+  ) {
     super();
   }
   protected apply(game: GameImpl): void {
     const c = game.companies[this.companyId];
-    const amount = Math.min(CONFIG.bank.loanChunk, game.maxDebt(c) - c.debt);
+    const amount = Math.min(Math.max(0, this.wanted), game.maxDebt(c) - c.debt);
     if (amount < 1000) return game.message(c.id, 'The bank will not lend more: grow revenue first.');
     c.debt += amount;
     c.cash += amount;

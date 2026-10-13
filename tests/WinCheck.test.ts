@@ -36,17 +36,18 @@ describe('ending the game', () => {
 });
 
 describe('after a big bill', () => {
-  it('the bank covers a profitable company with an overdraft instead of closing it', async () => {
+  it('borrowing what you need keeps a company open', async () => {
     const { quietSetup, runDays } = await import('./util/Setup');
     const r = quietSetup();
     const me = r.game.player;
     runDays(r, 5);
     me.pnl.revenue = 50_000; // credit limit = 60 days of revenue
     me.cash = -200_000;
+    r.addIntent({ type: 'borrow', companyId: 0, amount: 210_000 });
     runDays(r, 1);
     expect(me.alive).toBe(true);
     expect(me.cash).toBeGreaterThanOrEqual(0);
-    expect(me.debt).toBeGreaterThan(190_000);
+    expect(me.debt).toBe(210_000);
   });
 });
 

@@ -37,7 +37,7 @@ export function createExecution(intent: Intent): Execution {
     case 'fire':
       return new FireExecution(intent.companyId, intent.count);
     case 'borrow':
-      return new BorrowExecution(intent.companyId);
+      return new BorrowExecution(intent.companyId, intent.amount);
     case 'repay':
       return new RepayExecution(intent.companyId);
     case 'advertise':

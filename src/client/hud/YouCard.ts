@@ -1,3 +1,4 @@
+import type { Intent } from '@unicornrush/engine-api/Intents';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { money, pct } from '@unicornrush/engine-lib/Format';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
@@ -18,6 +19,7 @@ export class YouCard {
   constructor(
     private game: GameImpl,
     onLocate: () => void,
+    private sendIntent: (intent: Intent) => void = () => {},
   ) {
     const me = game.player;
     this.root = el(
@@ -37,9 +39,13 @@ export class YouCard {
         <div class="flow-legend" data-v="flowLegend"></div>
       </div>
       <div class="you-stake" data-v="stake" hidden></div>
-      <div class="alert" data-v="alert" hidden></div>`,
+      <div class="alert" data-v="alert" hidden><span data-v="alertText"></span><button data-act="borrow" hidden></button></div>`,
     );
     $(this.root, '[data-act="locate"]').addEventListener('click', onLocate);
+    $(this.root, '[data-act="borrow"]').addEventListener('click', (e) => {
+      const amount = Number((e.currentTarget as HTMLElement).dataset.amount);
+      if (amount > 0) this.sendIntent({ type: 'borrow', companyId: 0, amount });
+    });
     this.spentSoFar = this.spent();
   }
 
@@ -81,7 +87,15 @@ export class YouCard {
     else if (g.onStrike(c) && g.coverage(c) < 1) msg = '✊ On strike: customers going unserved';
     else if (g.coverage(c) < 1) msg = `Overloaded: ${pct(1 - g.coverage(c))} of customers unserved`;
     alert.hidden = !msg;
-    alert.textContent = msg;
+    $(this.root, '[data-v="alertText"]').textContent = msg;
+    // Out of cash: offer the loan that covers the gap (your call: interest runs on it).
+    const borrow = $<HTMLButtonElement>(this.root, '[data-act="borrow"]');
+    const room = Math.max(0, g.maxDebt(c) - c.debt);
+    const need = Math.min(room, Math.ceil((-c.cash + 10_000) / 25_000) * 25_000);
+    borrow.hidden = !(c.cash < 0 && need >= 1000);
+    borrow.dataset.amount = String(need);
+    borrow.textContent = `🏦 Borrow ${money(need)}`;
+    borrow.title = `Loan at ${pct(CONFIG.bank.interestPerYear)} a year. Credit left: ${money(room)}.`;
   }
 
   private drawFlow(): void {

@@ -17,7 +17,8 @@ export type Intent =
   | { type: 'setPrice'; companyId: number; price: PriceLevel }
   | { type: 'hire'; companyId: number; count: number }
   | { type: 'fire'; companyId: number; count: number }
-  | { type: 'borrow'; companyId: number }
+  /** Borrows `amount` (default one loan chunk), up to the credit limit. */
+  | { type: 'borrow'; companyId: number; amount?: number }
   | { type: 'repay'; companyId: number }
   /** An ad campaign aimed at a street: its push wins streets toward it until spent. */
   | { type: 'advertise'; companyId: number; tile: number }
