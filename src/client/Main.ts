@@ -131,6 +131,9 @@ async function startGame(name: string, info: CityInfo, difficulty: Difficulty, r
   input.onHotkey = (key) => actions.hotkey(key);
   input.onEscape = () => drawer.close();
 
+  // Dev builds only: lets scripts (trailer capture, screenshots) drive a match.
+  if (import.meta.env.DEV) Object.assign(window, { __unicornrush: { client, game, view, setSpeed, drawer, CONFIG } });
+
   let last = performance.now();
   let uiTimer = Infinity;
   let drawnVersion = -1;
