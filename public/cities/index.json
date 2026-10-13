@@ -154,5 +154,31 @@
    0.12
   ],
   "streets": 3744
+ },
+ {
+  "id": "rome",
+  "flag": "🇮🇹",
+  "city": "Roma",
+  "area": "Centro Storico",
+  "mix": [
+   0.25,
+   0.35,
+   0.25,
+   0.15
+  ],
+  "streets": 3141
+ },
+ {
+  "id": "chicago",
+  "flag": "🇺🇸",
+  "city": "Chicago",
+  "area": "Loop & Gold Coast",
+  "mix": [
+   0.35,
+   0.3,
+   0.2,
+   0.15
+  ],
+  "streets": 2421
  }
 ]
