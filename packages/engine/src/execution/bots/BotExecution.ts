@@ -76,7 +76,7 @@ export class BotExecution implements Execution {
     let cash = c.cash;
 
     // 1. Staff split: enough operations to serve every customer, the rest sells.
-    const opsNeeded = Math.ceil((c.customers * p.service) / s.customersPerOps);
+    const opsNeeded = Math.ceil((c.customers * (p.service + CONFIG.difficulty[c.difficulty].serviceBonus)) / s.customersPerOps);
     const share = c.employees > 0 ? 1 - opsNeeded / c.employees : 0;
     this.act(g, { type: 'setSalesShare', companyId: id, share: Math.min(p.maxSales, Math.max(0.05, share)) });
 
@@ -228,7 +228,10 @@ export class BotExecution implements Execution {
           f.neutral++;
           if (seen++ < 120) {
             // Value per push spent, like a good player, with a little variety.
-            const d = (this.streetAppeal(g, n) / g.tileCost(c, NEUTRAL, n)) * (0.85 + 0.3 * g.rng.next());
+            const judgement = CONFIG.difficulty[c.difficulty].streetJudgement;
+            const value = this.streetAppeal(g, n) / g.tileCost(c, NEUTRAL, n);
+            // Weaker bots judge street value poorly: their pick is partly random.
+            const d = value * (0.85 + 0.3 * g.rng.next()) * judgement + g.rng.next() * (1 - judgement);
             if (d > bestDemand) {
               bestDemand = d;
               f.bestNeutral = n;
