@@ -117,9 +117,9 @@ export class BotExecution implements Execution {
     }
 
     // 3a. With lots of idle cash, buy a block of the cheapest rival streets next door, now and then.
-    if (advanced && f.cheapestRivalTile >= 0 && g.rng.chance(0.05)) {
+    if (advanced && f.cheapestRivalTile >= 0 && g.rng.chance(level.dealAppetite)) {
       const deal = g.streetDeal(c, f.cheapestRivalTile);
-      if (deal && cash > deal.cost * 4 + reserve * 2) {
+      if (deal && cash > deal.cost * 2 + reserve * 2) {
         this.act(g, { type: 'buyStreets', companyId: id, tile: f.cheapestRivalTile });
         cash -= deal.cost;
       }
