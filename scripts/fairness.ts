@@ -7,6 +7,7 @@ import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
 import { GameRunner } from '@unicornrush/engine/GameRunner';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
+import { cardValue } from '@unicornrush/engine/execution/OpportunityExecution';
 
 const N = Number(process.argv[2] ?? 24);
 const cityId = process.argv[3];
@@ -19,13 +20,20 @@ interface Outcome {
   reason: string;
   day: number;
   closed: number[];
+  /** Who led at day 200: a comeback is a match someone else won. */
+  leaderAt200: number | null;
 }
 
 function play(seed: number, specs: CompanySpec[]): Outcome {
   const r = new GameRunner(seed, specs, city);
   const g = r.game;
-  while (!g.result) r.executeNextTick();
+  let leaderAt200: number | null = null;
+  while (!g.result) {
+    r.executeNextTick();
+    if (g.tick === 200 * CONFIG.ticksPerDay) leaderAt200 = g.leaderId();
+  }
   return {
+    leaderAt200,
     winner: g.result.winnerId,
     reason: g.result.reason,
     day: Math.round(g.result.day),
@@ -39,6 +47,8 @@ function experiment(title: string, setups: { label: string; personality: Persona
   const closes: Record<string, number> = {};
   const reasons: Record<string, number> = {};
   let days = 0;
+  let comebacks = 0;
+  let decided = 0;
   for (let m = 0; m < N; m++) {
     const rot = m % setups.length;
     const seats = setups.map((_, i) => setups[(i + rot) % setups.length]);
@@ -50,11 +60,13 @@ function experiment(title: string, setups: { label: string; personality: Persona
     for (const id of o.closed) closes[seats[id].label] = (closes[seats[id].label] ?? 0) + 1;
     reasons[o.reason] = (reasons[o.reason] ?? 0) + 1;
     days += o.day;
+    if (o.leaderAt200 !== null && o.winner !== null) (decided++, o.winner !== o.leaderAt200 && comebacks++);
   }
   console.log(`\n${title}`);
   console.log(`  wins:   ${JSON.stringify(wins)}`);
   console.log(`  closed: ${JSON.stringify(closes)}`);
   console.log(`  ends:   ${JSON.stringify(reasons)}  avg day ${Math.round(days / N)}`);
+  console.log(`  comebacks (day-200 leader didn't win): ${comebacks}/${decided}`);
 }
 
 /** Same setup in every seat: wins by seat reveal spawn or update-order bias. */
@@ -123,8 +135,12 @@ function blitzTurn(r: GameRunner, g: GameImpl): void {
     }
     if (best >= 0) send({ type: 'campaign', tile: best });
   }
+  if (me.offer) {
+    const values = me.offer.cards.map((c) => cardValue(me, c));
+    send({ type: 'pickCard', index: values.indexOf(Math.max(...values)) });
+  }
   const leader = g.leaderId();
-  if (leader !== null && leader !== 0 && !g.activeLawsuitBy(me) && me.cash > CONFIG.lawsuit.cost * 3) {
+  if (leader !== null && leader !== 0 && !g.activeLawsuitBy(me) && me.cash > g.lawsuitFee(me) * 3) {
     send({ type: 'lawsuit', targetId: leader });
   }
 }

@@ -497,7 +497,7 @@ h1 b {
 }
 .news-feed {
   left: 10px;
-  bottom: 150px;
+  bottom: 172px;
   width: 300px;
   display: flex;
   flex-direction: column;
@@ -1225,4 +1225,126 @@ td i {
   top: 0;
   float: right;
   z-index: 1;
+}
+
+/* ---------- opportunity cards ---------- */
+
+.stage > .card-picker {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: 148px;
+  transform: translateX(-50%);
+  width: min(620px, calc(100vw - 24px));
+  padding: 10px 12px;
+  animation: cp-in 0.35s ease-out;
+  border: 1px solid rgba(255, 215, 106, 0.45);
+  box-shadow: 0 0 0 1px rgba(255, 215, 106, 0.15), 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+@keyframes cp-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
+}
+.cp-head,
+.cp-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.cp-head b {
+  color: var(--gold);
+}
+.cp-head span,
+.cp-foot small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.cp-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+.cp-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s, background 0.12s;
+}
+.cp-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--gold);
+  background: rgba(255, 215, 106, 0.08);
+}
+.cp-card .cp-icon {
+  font-size: 22px;
+}
+.cp-card span {
+  font-size: 13px;
+}
+.cp-card small {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ---------- forecast, local-event and company status chips ---------- */
+
+.chip.forecast {
+  background: rgba(148, 163, 184, 0.18);
+  border: 1px dashed rgba(148, 163, 184, 0.6);
+}
+.chip.zone-metro {
+  background: rgba(52, 211, 153, 0.18);
+}
+.chip.zone-roadworks {
+  background: rgba(251, 146, 60, 0.2);
+}
+.chip.zone-festival {
+  background: rgba(244, 114, 182, 0.2);
+}
+.chip.strike {
+  background: rgba(248, 113, 113, 0.25);
+}
+.chip.perk {
+  background: rgba(74, 222, 128, 0.18);
+}
+.you-stake {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.seg button small.pending {
+  color: var(--warn);
+}
+.wealth-legend .legend-note {
+  font-size: 11px;
+  color: var(--muted);
+}
+.wealth-legend i.rim {
+  background: transparent;
+  border: 2px solid #fcd34d;
+}
+@media (max-width: 760px) {
+  .cp-cards {
+    grid-template-columns: 1fr;
+  }
+  .stage > .card-picker {
+    bottom: auto;
+    top: 70px;
+  }
+}
+
+.cases-table td:nth-child(n + 3) {
+  white-space: nowrap;
 }

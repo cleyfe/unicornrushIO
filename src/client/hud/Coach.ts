@@ -79,6 +79,13 @@ export class Coach {
         done: (g) => g.player.oneOff.advertising < 0,
       },
       {
+        id: 'cards',
+        anchor: '.card-picker',
+        text: '🎁 <b>Opportunity!</b> Pick one card. The further behind you are, the more often they come and the bigger they are.',
+        when: (g) => g.player.offer !== null,
+        done: (g) => g.player.offer === null,
+      },
+      {
         id: 'wealth',
         anchor: '.wealth-legend',
         text: '💎 <b>Golden buildings</b> are rich neighbourhoods: customers there spend up to ×' + CONFIG.wealth[3].spend + ' more, and cost the same to serve. Hover a street to see its numbers.',

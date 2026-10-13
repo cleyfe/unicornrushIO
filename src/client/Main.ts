@@ -7,6 +7,7 @@ import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { CITIES, type CityId } from './cities';
 import { ClientGameRunner } from './ClientGameRunner';
 import { ActionBar } from './hud/ActionBar';
+import { CardPicker } from './hud/CardPicker';
 import { Coach } from './hud/Coach';
 import { Drawer } from './hud/Drawer';
 import { el } from './hud/dom';
@@ -81,11 +82,17 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty): 
     }
   };
   let speedBeforeHelp = 1;
-  const top = new TopBar(game, `${info.flag} ${info.name} · ${info.area}`, setSpeed, () => {
-    speedBeforeHelp = client.speed;
-    client.speed = 0;
-    showHelp(() => (client.speed = started ? speedBeforeHelp : 0));
-  });
+  const top = new TopBar(
+    game,
+    `${info.flag} ${info.name} · ${info.area}`,
+    setSpeed,
+    () => {
+      speedBeforeHelp = client.speed;
+      client.speed = 0;
+      showHelp(() => (client.speed = started ? speedBeforeHelp : 0));
+    },
+    (street) => view.map.flyTo({ center: view.zoneCenter(street), zoom: 15, duration: 1200 }),
+  );
   const you = new YouCard(
     game,
     () => drawer.toggle('finances'),
@@ -93,6 +100,7 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty): 
   );
   const race = new RaceBoard(game);
   const actions = new ActionBar(game, (i) => client.send(i), (d) => drawer.toggle(d));
+  const cards = new CardPicker(game, (i) => client.send(i));
   const news = new NewsFeed();
   const coach = new Coach(game);
   const legend = el(
@@ -101,11 +109,12 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty): 
     CONFIG.wealth
       .map((t, i) => `<span><i style="background:${WEALTH_COLORS[i as Wealth]}"></i>${'$'.repeat(i + 1)} ${t.label} ×${t.spend}</span>`)
       .join('') +
+      `<span title="Owned buildings take the owner's colour: brighter on richer streets, with a gold rim on the richest"><i class="rim"></i>Owned: brighter = richer</span>` +
       `<span class="legend-sep"><i class="line frontier"></i>Streets you can win</span><span><i class="line court"></i>Company on trial</span>`,
   );
-  legend.title = 'Building colour = neighbourhood wealth: how much each customer spends';
+  legend.title = 'Building colour = neighbourhood wealth: how much each customer spends. Owned buildings take the owner colour, brighter on richer streets, and rich ones get a gold rim.';
   const paused = el('div', 'paused-badge', '⏸ Paused: click a glowing street to start');
-  stage.append(labels.root, top.root, you.root, race.root, legend, actions.root, news.root, drawer.root, coach.root, paused);
+  stage.append(labels.root, top.root, you.root, race.root, legend, actions.root, cards.root, news.root, drawer.root, coach.root, paused);
   const detach = new InputHandler(client, view, city, tooltip, setSpeed, firstMove).attach();
 
   let last = performance.now();
@@ -136,6 +145,8 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty): 
       you.update();
       race.update();
       actions.update();
+      cards.update();
+      view.updateZones();
       drawer.update();
       coach.update(now);
       paused.hidden = started;

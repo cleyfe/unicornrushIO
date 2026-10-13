@@ -23,6 +23,7 @@ export class CompanyExecution implements Execution {
   tick(game: GameImpl): void {
     const c = this.c;
     this.graduateTrainees(game);
+    this.rollOutPrice(game);
     // Sales staff fill the pool up to its cap; ads can push it higher, and that isn't clawed back.
     const cap = game.maxPush(c);
     if (c.push < cap) c.push = Math.min(cap, c.push + game.pushPerDay(c) * DT);
@@ -43,6 +44,14 @@ export class CompanyExecution implements Execution {
       c.employees += t.count;
       return false;
     });
+  }
+
+  private rollOutPrice(game: GameImpl): void {
+    const c = this.c;
+    if (!c.pendingPrice || c.pendingPrice.day > game.day) return;
+    c.price = c.pendingPrice.price;
+    c.pendingPrice = null;
+    if (!c.isBot) game.message(c.id, `Your new ${CONFIG.prices[c.price].label} prices are now in every shop.`, 'info');
   }
 
   /** Customers the operations team cannot serve drift away. */
@@ -88,7 +97,7 @@ export class CompanyExecution implements Execution {
     }
     const p = {
       revenue: soldSpend * coverage * price.revenue * game.revenueMult(),
-      variableCost: soldUnits * coverage * CONFIG.variableCostPerCustomer * game.variableCostMult(),
+      variableCost: soldUnits * coverage * CONFIG.variableCostPerCustomer * game.variableCostMult(c),
       salaries: (c.employees + game.traineeCount(c)) * CONFIG.staff.salaryPerDay,
       interest: (c.debt * CONFIG.bank.interestPerYear) / 365,
       profit: 0,

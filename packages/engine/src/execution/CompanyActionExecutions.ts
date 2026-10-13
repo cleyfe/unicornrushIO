@@ -25,9 +25,26 @@ export class SetPriceExecution extends InstantExecution {
   }
   protected apply(game: GameImpl): void {
     const c = game.companies[this.companyId];
-    if (c.price === this.price || !(this.price in CONFIG.prices)) return;
-    c.price = this.price;
-    if (!c.isBot) game.message(c.id, `You set prices to ${CONFIG.prices[this.price].label}.`, 'info');
+    if (!(this.price in CONFIG.prices)) return;
+    const label = CONFIG.prices[this.price].label;
+    if (c.price === this.price) {
+      // Going back to the current price cancels a change still rolling out.
+      if (c.pendingPrice && !c.isBot) game.message(c.id, `Price change cancelled: you stay at ${label}.`, 'info');
+      c.pendingPrice = null;
+      return;
+    }
+    // Big companies are slower: new prices take a while to reach every shop.
+    const delay = game.priceDelayDays(c);
+    if (delay === 0) {
+      c.price = this.price;
+      c.pendingPrice = null;
+      if (!c.isBot) game.message(c.id, `You set prices to ${label}.`, 'info');
+      return;
+    }
+    c.pendingPrice = { price: this.price, day: game.day + delay };
+    if (!c.isBot) {
+      game.message(c.id, `With ${c.employees} staff, switching to ${label} prices takes ${delay} days. Small companies move faster.`, 'info');
+    }
   }
 }
 

@@ -6,6 +6,7 @@ import { neighbors } from '@unicornrush/engine-lib/game/GameMap';
 import type { GameImpl } from '../../game/GameImpl';
 import type { Execution } from '../Execution';
 import { createExecution } from '../ExecutionManager';
+import { cardValue } from '../OpportunityExecution';
 
 interface Persona {
   maxSales: number; // highest share of staff in sales
@@ -106,9 +107,10 @@ export class BotExecution implements Execution {
 
     // 3. Sue the leader now and then.
     const target = this.lawsuitTarget(g);
-    if (target !== null && cash > CONFIG.lawsuit.cost + reserve * 2) {
+    const fee = g.lawsuitFee(c);
+    if (target !== null && cash > fee + reserve * 2) {
       this.act(g, { type: 'lawsuit', companyId: id, targetId: target });
-      cash -= CONFIG.lawsuit.cost;
+      cash -= fee;
     }
 
     // 4. Hiring, from surplus cash only, up to the staff the business needs.
@@ -125,7 +127,13 @@ export class BotExecution implements Execution {
       cash -= ad.cost;
     }
 
-    // 6. Sales campaigns.
+    // 6. Opportunity cards: take the one worth the most.
+    if (c.offer) {
+      const values = c.offer.cards.map((card) => cardValue(c, card));
+      this.act(g, { type: 'pickCard', companyId: id, index: values.indexOf(Math.max(...values)) });
+    }
+
+    // 7. Sales campaigns.
     if (c.push >= Math.max(5, g.maxPush(c) * (p.pushReserve + CONFIG.difficulty[c.difficulty].extraPushReserve))) {
       let tile = -1;
       if (f.neutral > 8 || (f.neutral > 0 && f.cheapestRivalTile < 0)) tile = f.bestNeutral;
@@ -135,20 +143,17 @@ export class BotExecution implements Execution {
     }
   }
 
-  /** Sue the market leader when it is pulling away, now and then. */
   /** Sue the rival with the best case (evidence × damages), when it's worth the fees. */
   private lawsuitTarget(g: GameImpl): number | null {
     const c = this.c;
     if (g.activeLawsuitBy(c)) return null;
-    const L = CONFIG.lawsuit;
     let best: number | null = null;
     let bestValue = 0;
     for (const r of g.companies) {
       if (!r.alive || r.id === c.id) continue;
-      const p = g.lawsuitWinChance(c.id, r.id);
-      if (p < 0.45) continue;
-      // Expected payoff: damages if we win, minus their costs if we lose, minus fees.
-      const value = p * g.lawsuitDamages(c.id, r.id) - (1 - p) * L.dismissedCounterCost - L.cost;
+      if (g.lawsuitWinChance(c.id, r.id) < 0.45) continue;
+      // Expected payoff: our share of damages if we win, minus their costs if we lose, minus fees.
+      const value = g.lawsuitValue(c.id, r.id);
       if (value > bestValue) (bestValue = value), (best = r.id);
     }
     return best !== null && g.rng.chance(0.1 + this.p.litigious * 0.2) ? best : null;

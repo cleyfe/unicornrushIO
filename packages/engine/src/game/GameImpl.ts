@@ -1,6 +1,8 @@
 import type {
   ActiveEvent,
   Company,
+  Forecast,
+  LocalEvent,
   CompanySpec,
   GameResult,
   Lawsuit,
@@ -29,9 +31,15 @@ export class GameImpl {
   readonly owner: Int16Array;
   readonly companies: Company[] = [];
   readonly rng: PseudoRandom;
+  /** Street name per segment ('' when unknown, and on the grid city). */
+  readonly streetNames: string[];
   readonly log: LogEntry[] = [];
   tick = 0;
   events: ActiveEvent[] = [];
+  /** Market events announced but not started yet. */
+  forecasts: Forecast[] = [];
+  /** Local events, announced, running, or permanent. */
+  localEvents: LocalEvent[] = [];
   lawsuits: Lawsuit[] = [];
   result: GameResult | null = null;
   /** Bumped whenever tile ownership changes, so renderers can skip redraws. */
@@ -52,6 +60,7 @@ export class GameImpl {
   constructor(seed: number, specs: CompanySpec[], city?: CityData) {
     this.rng = new PseudoRandom(seed);
     this.map = city ? mapFromCity(city) : generateGridCity(this.rng);
+    this.streetNames = city ? city.segments.names : [];
     this.owner = new Int16Array(this.map.size).fill(NEUTRAL);
     specs.forEach((s, id) => this.companies.push(newCompany(id, s)));
     this.placeSpawns();
@@ -116,9 +125,14 @@ export class GameImpl {
     return c.trainees.reduce((s, t) => s + t.count, 0);
   }
 
+  onStrike(c: Company): boolean {
+    return this.day >= c.strikeFrom && this.day < c.strikeUntil;
+  }
+
   /** Customers the operations team can serve. */
   capacity(c: Company): number {
-    return this.opsStaff(c) * CONFIG.staff.customersPerOps;
+    const strike = this.onStrike(c) ? CONFIG.scrutiny.strikeCapacity : 1;
+    return this.opsStaff(c) * CONFIG.staff.customersPerOps * strike;
   }
 
   /** Capacity relative to customers, capped: above 1 means spare staff and better service. */
@@ -182,9 +196,11 @@ export class GameImpl {
     return m;
   }
 
-  variableCostMult(): number {
+  /** Variable cost multiplier for everyone, or for company `c` including its own supplier deal. */
+  variableCostMult(c?: Company): number {
     let m = 1;
     for (const e of this.events) if (e.kind === 'supplierHike') m *= 2;
+    if (c && this.day < c.supplierDealUntil) m *= CONFIG.cards.supplierDealMult;
     return m;
   }
 
@@ -260,6 +276,105 @@ export class GameImpl {
     let p = L.baseWinChance + L.winChancePerStolenStreet * this.streetsTaken(defendant, plaintiff);
     if (this.companies[defendant].price === 'low') p += L.predatoryPricingBonus;
     return Math.min(L.maxWinChance, p);
+  }
+
+  /** Legal fees to file a lawsuit: they scale with the plaintiff's size. */
+  lawsuitFee(c: Company): number {
+    const L = CONFIG.lawsuit;
+    return Math.max(L.minFee, c.pnl.revenue * L.feeRevenueDays);
+  }
+
+  /** What a lawsuit is worth to `plaintiff` on average: its share of damages if it wins, minus fees and the risk of paying costs. */
+  lawsuitValue(plaintiff: number, defendant: number): number {
+    const L = CONFIG.lawsuit;
+    const fee = this.lawsuitFee(this.companies[plaintiff]);
+    const p = this.lawsuitWinChance(plaintiff, defendant);
+    return p * this.lawsuitDamages(plaintiff, defendant) * (1 - L.lawyerShare) - (1 - p) * fee * L.dismissedCostShare - fee;
+  }
+
+  /** Days a price change takes to roll out: big companies are slower. */
+  priceDelayDays(c: Company): number {
+    const A = CONFIG.agility;
+    return Math.min(A.maxDelayDays, Math.floor(c.employees / A.employeesPerDelayDay));
+  }
+
+  /** Companies alive, best valuation first. */
+  ranking(): Company[] {
+    return this.companies.filter((c) => c.alive).sort((a, b) => this.valuation(b).total - this.valuation(a).total || a.id - b.id);
+  }
+
+  /**
+   * How lucky a company's opportunities are: from leaderLuck for the leader to
+   * lastLuck for the last, like item boxes in a kart race.
+   */
+  luck(c: Company): number {
+    const K = CONFIG.cards;
+    const rank = this.ranking();
+    const i = rank.indexOf(c);
+    if (rank.length <= 1 || i < 0) return 1;
+    return K.leaderLuck + ((K.lastLuck - K.leaderLuck) * i) / (rank.length - 1);
+  }
+
+  /**
+   * Changes how many customers live on some streets and how much they spend
+   * (a new metro station, roadworks…), keeping every owner's totals right.
+   */
+  scaleStreets(streets: number[], demandMult: number, spendMult: number): void {
+    const m = this.map;
+    for (const t of streets) {
+      const o = this.owner[t];
+      const w = m.wealth[t];
+      const dd = m.demand[t] * (demandMult - 1);
+      const ds = m.spend[t] * (spendMult * demandMult - 1);
+      m.demand[t] += dd;
+      m.spend[t] += ds;
+      if (o < 0) continue;
+      const c = this.companies[o];
+      c.customers += dd;
+      c.spend += ds;
+      c.tierCustomers[w] += dd;
+      c.tierSpend[w] += ds;
+    }
+  }
+
+  /** Streets whose midpoint is within `radius` metres of street `center`. */
+  streetsNear(center: number, radius: number): number[] {
+    const m = this.map;
+    const out: number[] = [];
+    const r2 = radius * radius;
+    for (let i = 0; i < m.size; i++) {
+      const dx = m.x[i] - m.x[center];
+      const dy = m.y[i] - m.y[center];
+      if (dx * dx + dy * dy <= r2) out.push(i);
+    }
+    return out;
+  }
+
+  /** "near Rue X", or where in the city, for news about a place. */
+  placeName(street: number): string {
+    const name = this.streetNames[street];
+    if (name) return `near ${name}`;
+    const m = this.map;
+    let sx = 0;
+    let sy = 0;
+    for (let i = 0; i < m.size; i++) (sx += m.x[i]), (sy += m.y[i]);
+    const dx = m.x[street] - sx / m.size;
+    const dy = m.y[street] - sy / m.size;
+    const w = this.cityWidth();
+    const ns = dy > w * 0.1 ? 'north' : dy < -w * 0.1 ? 'south' : '';
+    const ew = dx > w * 0.1 ? 'east' : dx < -w * 0.1 ? 'west' : '';
+    return ns || ew ? `in the ${[ns, ew].filter(Boolean).join('-')}` : 'downtown';
+  }
+
+  /** Width of the city in metres. */
+  cityWidth(): number {
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (let i = 0; i < this.map.size; i++) {
+      lo = Math.min(lo, this.map.x[i]);
+      hi = Math.max(hi, this.map.x[i]);
+    }
+    return hi - lo;
   }
 
   /** Damages if `plaintiff` wins: its lost profits on the streets `defendant` took. */
@@ -478,6 +593,12 @@ function newCompany(id: number, s: CompanySpec): Company {
     trainees: [],
     salesShare: CONFIG.start.salesShare,
     price: s.price ?? (s.personality === 'discounter' ? 'low' : s.personality === 'premium' ? 'high' : 'medium'),
+    pendingPrice: null,
+    stake: 1,
+    offer: null,
+    supplierDealUntil: 0,
+    strikeFrom: 0,
+    strikeUntil: 0,
     push: CONFIG.start.push, // enough for a first expansion right away
     pushCommitted: 0,
     adHeat: 0,

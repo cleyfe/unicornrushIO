@@ -5,7 +5,10 @@ import { BotExecution } from './execution/bots/BotExecution';
 import { CompanyExecution } from './execution/CompanyExecution';
 import { CompetitionAuthorityExecution } from './execution/CompetitionAuthorityExecution';
 import { createExecution } from './execution/ExecutionManager';
+import { LocalEventExecution } from './execution/LocalEventExecution';
 import { MarketEventExecution } from './execution/MarketEventExecution';
+import { OpportunityExecution } from './execution/OpportunityExecution';
+import { ScrutinyExecution } from './execution/ScrutinyExecution';
 import { WinCheckExecution } from './execution/WinCheckExecution';
 import { GameImpl } from './game/GameImpl';
 
@@ -23,7 +26,10 @@ export class GameRunner {
     this.game = new GameImpl(seed, companies, city);
     const g = this.game;
     g.addExecution(new MarketEventExecution());
+    g.addExecution(new LocalEventExecution());
     g.addExecution(new CompetitionAuthorityExecution());
+    g.addExecution(new ScrutinyExecution());
+    g.addExecution(new OpportunityExecution());
     for (const c of g.companies) g.addExecution(new CompanyExecution(c.id));
     for (const c of g.companies) if (c.isBot) g.addExecution(new BotExecution(c.id));
     g.addExecution(new WinCheckExecution());

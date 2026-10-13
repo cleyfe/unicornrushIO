@@ -152,9 +152,17 @@ export class ActionBar {
     cap.textContent = `Serving ${int(Math.min(g.capacity(c), c.customers))} / ${int(c.customers)} customers`;
     cap.className = `capacity ${cover < 1 ? 'bad' : 'good'}`;
 
-    r.querySelectorAll<HTMLButtonElement>('[data-price]').forEach((b) => b.classList.toggle('active', b.dataset.price === c.price));
+    r.querySelectorAll<HTMLButtonElement>('[data-price]').forEach((b) => {
+      b.classList.toggle('active', b.dataset.price === c.price);
+      const pending = c.pendingPrice?.price === b.dataset.price;
+      b.classList.toggle('pending', pending);
+      const small = b.querySelector('small')!;
+      const text = pending ? `switching in ${Math.ceil(c.pendingPrice!.day - g.day)}d` : `customers buy ×${CONFIG.prices[b.dataset.price as PriceLevel].volume}`;
+      if (small.textContent !== text) small.textContent = text;
+      small.classList.toggle('pending', pending);
+    });
     const price = CONFIG.prices[c.price];
-    const margin = price.volume * (price.revenue * g.revenueMult() - CONFIG.variableCostPerCustomer * g.variableCostMult());
+    const margin = price.volume * (price.revenue * g.revenueMult() - CONFIG.variableCostPerCustomer * g.variableCostMult(c));
     $(r, '[data-v="margin"]').textContent = `profit ${money(margin)} per customer/day`;
     $(r, '[data-v="margin"]').title = 'Before staff costs, for a middle-income customer';
     r.querySelectorAll<HTMLButtonElement>('[data-hire]').forEach(

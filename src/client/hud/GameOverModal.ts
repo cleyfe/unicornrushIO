@@ -39,6 +39,9 @@ export function showGameOver(game: GameImpl, r: GameResult, onAgain: () => void)
   if (me.oneOff.legalFees < 0 && me.oneOff.damages + me.oneOff.legalFees < 0) {
     lessons.push(`Lawsuits cost you ${money(-(me.oneOff.damages + me.oneOff.legalFees))} net: legal battles are expensive bets.`);
   }
+  if (me.stake < 0.999) {
+    lessons.push(`You sold ${pct(1 - me.stake)} of your company to investors: you own ${pct(me.stake)}, a stake worth ${money(Math.max(0, game.valuation(me).total) * me.stake)}. Raising money speeds growth, at the price of a smaller slice.`);
+  }
   if (me.debt === 0 && me.alive && !won) lessons.push('You never borrowed. Debt can speed up growth when each new customer earns more than the interest.');
   lessons.push(`Valuation = cash − debt + ${CONFIG.valuation.earningsMultiple}× yearly profit.`);
 

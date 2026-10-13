@@ -34,7 +34,8 @@ Investors pay for profit, so a smaller, profitable company can beat a big one th
 | **Campaigns** | Click a street (or a building on it) next to yours to spend half your push winning it and its neighbours. | Customer acquisition cost |
 | **Advertising** 📢 | Buy sales push with cash ($5,000 per push point at first). Each ad makes the next one 50% pricier, fading over a month. | Customer acquisition cost, diminishing returns |
 | **Bank loan** | $25K at a time, 24%/year interest, credit limit = 60 days of revenue | Leverage and risk |
-| **Lawsuit** ⚖️ | $250K to sue a rival for unfair competition; the court decides on evidence. See below. | Legal risk, damages as lost profits |
+| **Lawsuit** ⚖️ | Sue a rival for unfair competition. Fees scale with your size (10 days of revenue, at least $25K); the court decides on evidence. See below. | Legal risk, damages as lost profits, contingency fees |
+| **Opportunity cards** 🎁 | Every couple of months, pick one of three cards. See below. | Fundraising and dilution, grants, supplier deals |
 
 ### The city
 
@@ -42,7 +43,9 @@ You play on a **real city**, built from [OpenStreetMap](https://www.openstreetma
 fight over **street segments** (a street between two intersections); every building belongs to its
 nearest street, so winning a street wins its buildings' customers. Bigger buildings (footprint ×
 floors) mean more customers. Buildings are coloured by how wealthy the neighbourhood is, from dark
-(budget) to gold (luxury):
+(budget) to gold (luxury). Once a company owns them, they take its colour but keep showing their
+wealth: darker on budget streets, brighter on rich ones, with a gold rim on upscale and luxury
+buildings.
 
 | Wealth | Customers spend | Customers | Price sensitivity | Prestige |
 |---|---|---|---|---|
@@ -96,14 +99,16 @@ Stealing a rival's street costs more when the rival:
 
 ### Unfair-competition lawsuits ⚖️
 
-Sue a rival that hurt your business unfairly, for **$250K** in legal fees. The court decides on
+Sue a rival that hurt your business unfairly. Legal fees scale with **your** size: 10 days of
+your revenue, at least $25K, so a small company can afford to take on a giant. In return the
+lawyers keep **30% of any damages** (a contingency fee). The court decides on
 **evidence**: every street the rival took from you recently counts (poaching your customers),
 plus a predatory-pricing claim if it sells cheap. With no evidence you have about a 10% chance;
 a strong case reaches 85%. Old grievances fade (half-life 70 days).
 
 - **If you win:** the rival pays your **lost profits** on the streets it took (45 days' worth), and
   the bad press drives away **15% of its customers** all over its territory.
-- **If you lose:** you pay the rival's $150K legal costs on top of your fees.
+- **If you lose:** you also pay the rival's legal costs: 60% of your own fee.
 
 The lawsuit drawer shows your case against each rival: evidence, win chance, damages and whether
 it's worth it on average. Bots only sue when they have a good case. Fees and damages are listed
@@ -115,11 +120,50 @@ A company serving more than **35%** of the city's customers gets a warning. If i
 **40%** for 30 days, it is fined **20 days of revenue** and must give up **10% of its streets**,
 as regulators do with monopolies. It can happen again after 120 days.
 
-### Market events (every ~4–6 months)
+### Market events (every ~4–6 months, forecast 10 days ahead)
 
 - **Recession**: revenue −30% for 60 days
 - **Supplier price hike**: variable costs ×2 for 45 days
 - **Consumer boom**: revenue +25% for 60 days
+
+Economists announce each one 10 days before it starts, so you can prepare: save cash before a
+recession, hire before a boom.
+
+### Local events (every ~2–3 months, announced 15 days ahead)
+
+Something happens in one part of the city, shown as a circle on the map:
+
+- **🚇 New metro station**: +40% customers on nearby streets, for good. Race to be there first.
+- **🚧 Roadworks**: customers nearby spend −40% for 40 days.
+- **🎪 Street festival**: customers nearby spend +50% for 20 days.
+
+### Opportunity cards 🎁 (catch-up, kart-race style)
+
+Every 2–4 months each company is offered three cards and picks one within 30 days:
+
+| Card | Effect |
+| --- | --- |
+| 📣 Viral review | Free sales push |
+| 🌟 Star team | A few experienced people join, trained and ready |
+| 📦 Supplier deal | Variable costs −40% for a few weeks |
+| 💼 Investor offer | Cash for 15% of your company (not for the leader). Your stake is shown on your card |
+| 🏛️ Small-business grant | Cash, for companies worth less than half the leader |
+| 🧲 Unhappy customers | A few of a neighbouring rival's streets switch to you |
+
+Like item boxes in a kart race, **companies further behind get offers more often, and bigger
+ones** (×1.6 for last place, ×0.6 for the leader). A well-played leader still wins; it just has
+to work for it.
+
+### Being big
+
+Size has costs as well as advantages:
+
+- **Scrutiny:** when the leader is worth 1.4× the runner-up, unions, journalists and hackers come
+  after it every few months: a **strike** (announced a week ahead: operations run at 60% for 8
+  days, so keep spare Ops staff), a **newspaper exposé** (5% of its streets walk away), or a
+  **data breach** (a fine of 5 days of revenue).
+- **Slower decisions:** a price change takes one day per 40 employees to reach every shop (up to
+  15 days). Small companies switch at once.
 
 ### Rivals
 

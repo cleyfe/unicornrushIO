@@ -2,6 +2,7 @@ import type { MapMouseEvent } from 'maplibre-gl';
 import type { CityData } from '@unicornrush/engine-api/game/City';
 import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { LOCAL_EVENT_INFO } from '@unicornrush/engine-lib/configuration/MarketEvents';
 import { money } from '@unicornrush/engine-lib/Format';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import type { ClientGameRunner } from './ClientGameRunner';
@@ -84,7 +85,7 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
   const street = city.segments.names[seg] || 'Unnamed street';
   const vol = g.volume(me, level);
   const perDay =
-    vol * (g.map.spend[seg] * CONFIG.prices[me.price].revenue * g.revenueMult() - g.map.demand[seg] * CONFIG.variableCostPerCustomer * g.variableCostMult());
+    vol * (g.map.spend[seg] * CONFIG.prices[me.price].revenue * g.revenueMult() - g.map.demand[seg] * CONFIG.variableCostPerCustomer * g.variableCostMult(me));
   const owner =
     o === NEUTRAL ? 'Untapped' : o === 0 ? 'Yours' : `<i style="background:rgb(${g.companies[o].color.join(',')})"></i>${g.companies[o].name}`;
   let action = '';
@@ -94,8 +95,16 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
     else if (me.push * CONFIG.sales.campaignShare >= cost) action = `<div class="hc-action ok">✓ Click to win it · ${cost.toFixed(0)} push</div>`;
     else action = `<div class="hc-action wait">Needs ${cost.toFixed(0)} push · your next click spends ${Math.floor(me.push * CONFIG.sales.campaignShare)}</div>`;
   }
+  const events = g.localEvents
+    .filter((e) => e.streets.includes(seg))
+    .map((e) => {
+      const info = LOCAL_EVENT_INFO[e.kind];
+      const when = !e.active && g.day < e.startsDay ? ` in ${Math.ceil(e.startsDay - g.day)} days` : '';
+      return `<div class="hc-row hc-event">${info.icon} ${info.title}${when}: ${info.effect}</div>`;
+    })
+    .join('');
   return `<div class="hc-title">${street}</div>
     <div class="hc-row"><span class="w${level}">${'$'.repeat(level + 1)} ${tier.label}</span><span>${owner}</span></div>
     <div class="hc-row"><span>${g.map.demand[seg].toFixed(1)} customers × ${tier.spend} spend</span><span>≈ ${money(perDay)} profit/day</span></div>
-    ${action}`;
+    ${events}${action}`;
 }

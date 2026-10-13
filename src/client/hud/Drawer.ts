@@ -85,14 +85,15 @@ export class Drawer {
   private lawsuitHtml(): string {
     const L = CONFIG.lawsuit;
     return `<h2>⚖️ Unfair-competition lawsuit</h2>
-      <p>Sue a rival that hurt your business unfairly. The court looks at the <b>evidence</b>: streets they took from you recently (poaching your customers), and predatory pricing if they sell cheap. Legal fees: <b>${money(L.cost)}</b>; ruling in <b>${L.courtDays} days</b>.</p>
+      <p>Sue a rival that hurt your business unfairly. The court looks at the <b>evidence</b>: streets they took from you recently (poaching your customers), and predatory pricing if they sell cheap. Ruling in <b>${L.courtDays} days</b>.</p>
+      <p class="fee-line">Your legal fees: <b data-v="fee"></b> <small>(${L.feeRevenueDays} days of your revenue, at least ${money(L.minFee)}: small companies pay less up front). If you win, your lawyers keep ${pct(L.lawyerShare)} of the damages.</small></p>
       <table class="cases-table">
-        <tr><th>Rival</th><th title="Streets they took from you recently (older ones count less)">Evidence</th><th>Win chance</th><th title="Your lost profits on those streets">Damages</th><th title="Average result after fees and risk">Worth it?</th><th></th></tr>
+        <tr><th>Rival</th><th title="Streets they took from you recently (older ones count less)">Evidence</th><th>Win chance</th><th title="Your lost profits on those streets, after your lawyers' share">You'd get</th><th title="Average result after fees and risk">Worth it?</th><th></th></tr>
         <tbody data-v="caseRows"></tbody>
       </table>
       <ul class="facts">
         <li>✅ If you win: they pay your lost profits as damages, and bad press drives away ${pct(L.customerLoss)} of their customers.</li>
-        <li>❌ If you lose: you pay their ${money(L.dismissedCounterCost)} legal costs on top of your fees.</li>
+        <li>❌ If you lose: you also pay their legal costs, ${pct(L.dismissedCostShare)} of your fee (<span data-v="counter"></span>).</li>
       </ul>
       <div data-v="cases"></div>
       <p class="tip">💡 Courts decide on evidence, not on who is winning. Suing without a case is an expensive bet.</p>`;
@@ -125,8 +126,9 @@ export class Drawer {
       const p = c.pnl;
       this.set('revenue', money(p.revenue));
       this.set('variableCost', money(p.variableCost));
-      const unit = CONFIG.variableCostPerCustomer * g.variableCostMult();
-      this.set('varNote', `${money(unit)} per purchase${g.variableCostMult() > 1 ? ' (supplier price hike!)' : ''}`);
+      const mult = g.variableCostMult(c);
+      const why = mult > 1 ? ' (supplier price hike!)' : mult < 1 ? ' (supplier deal)' : '';
+      this.set('varNote', `${money(CONFIG.variableCostPerCustomer * mult)} per purchase${why}`);
       this.set('salaries', money(p.salaries));
       this.set('interest', money(p.interest));
       this.set('profit', money(p.profit), p.profit >= 0 ? 'pos' : 'neg');
@@ -155,18 +157,21 @@ export class Drawer {
       .map((r) => {
         const p = g.lawsuitWinChance(c.id, r.id);
         const damages = g.lawsuitDamages(c.id, r.id);
-        return { r, p, damages, value: p * damages - (1 - p) * L.dismissedCounterCost - L.cost, evidence: g.streetsTaken(r.id, c.id) };
+        return { r, p, damages: damages * (1 - L.lawyerShare), value: g.lawsuitValue(c.id, r.id), evidence: g.streetsTaken(r.id, c.id) };
       })
       .sort((a, b) => b.value - a.value);
     const busy = g.activeLawsuitBy(c);
-    const blocked = busy ? 'Your lawyers are busy with a case' : c.cash < L.cost ? `Legal fees are ${money(L.cost)}` : '';
+    const fee = g.lawsuitFee(c);
+    this.set('fee', money(fee));
+    this.set('counter', money(fee * L.dismissedCostShare));
+    const blocked = busy ? 'Your lawyers are busy with a case' : c.cash < fee ? `Legal fees are ${money(fee)}` : '';
     const rowsHtml = cases
       .map(
         (k) => `<tr><td><i style="background:rgb(${k.r.color.join(',')})"></i>${k.r.name}</td>
           <td>${k.evidence >= 0.5 ? `took ${Math.round(k.evidence)} streets` : 'none'}${k.r.price === 'low' ? ' · cheap' : ''}</td>
           <td>${pct(k.p)}</td><td>${money(k.damages)}</td>
           <td class="${k.value > 0 ? 'pos' : 'neg'}">${k.value > 0 ? '+' : ''}${money(k.value)}</td>
-          <td><button class="danger sue-btn" data-sue="${k.r.id}" ${blocked ? 'disabled' : ''} title="${blocked || `Sue ${k.r.name} for ${money(L.cost)} in fees`}">Sue</button></td></tr>`,
+          <td><button class="danger sue-btn" data-sue="${k.r.id}" ${blocked ? 'disabled' : ''} title="${blocked || `Sue ${k.r.name} for ${money(fee)} in fees`}">Sue</button></td></tr>`,
       )
       .join('');
     // Only redraw when something changed, so buttons don't flicker under the mouse.

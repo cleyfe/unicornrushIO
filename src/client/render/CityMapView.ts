@@ -28,6 +28,12 @@ const expr = (e: unknown) => e as ExpressionSpecification;
 const rgb = (c: [number, number, number]) => `rgb(${c.join(',')})`;
 const lighten = ([r, g, b]: [number, number, number], k: number) =>
   `rgb(${Math.round(r + (255 - r) * k)},${Math.round(g + (255 - g) * k)},${Math.round(b + (255 - b) * k)})`;
+const darken = ([r, g, b]: [number, number, number], k: number) =>
+  `rgb(${Math.round(r * (1 - k))},${Math.round(g * (1 - k))},${Math.round(b * (1 - k))})`;
+/** Owned buildings keep showing wealth: the company's colour, darker on budget streets and brighter on rich ones. */
+const shadeByWealth = (c: [number, number, number], w: number) =>
+  [darken(c, 0.55), darken(c, 0.25), lighten(c, 0.15), lighten(c, 0.45)][w];
+const ZONE_COLORS = { metro: '#34d399', roadworks: '#fb923c', festival: '#f472b6' } as const;
 
 /**
  * The real city on a MapLibre map. Streets and building footprints are drawn
@@ -122,14 +128,36 @@ export class CityMapView {
       ...Object.entries(WEALTH_COLORS).flatMap(([k, v]) => [Number(k), v]),
       '#333333',
     ];
+    // Owned buildings: the owner's colour, shaded by wealth, so you still see where the money is.
+    const ownedColor = [
+      'match',
+      ['coalesce', ['feature-state', 'owner'], NEUTRAL],
+      ...this.game.companies.flatMap((c) => [
+        c.id,
+        ['match', ['get', 'w'], ...[0, 1, 2, 3].flatMap((w) => [w, shadeByWealth(c.color, w)]), rgb(c.color)],
+      ]),
+      '#000000',
+    ];
     map.addLayer({
       id: 'buildings',
       type: 'fill',
       source: 'buildings',
       paint: {
-        'fill-color': expr(['case', owned, this.ownerColor(), wealthColor]),
-        'fill-opacity': expr(['case', owned, 0.55, 0.85]),
+        'fill-color': expr(['case', owned, ownedColor, wealthColor]),
+        'fill-opacity': expr(['case', owned, ['match', ['get', 'w'], 0, 0.45, 1, 0.6, 2, 0.75, 0.9], 0.85]),
         'fill-outline-color': 'rgba(0,0,0,0.35)',
+      },
+    });
+    // Owned rich buildings get a gold rim, so the wealth still shows under the owner's colour.
+    map.addLayer({
+      id: 'buildings-rich',
+      type: 'line',
+      source: 'buildings',
+      filter: expr(['>=', ['get', 'w'], 2]),
+      paint: {
+        'line-color': expr(['match', ['get', 'w'], 3, '#fcd34d', '#b8964a']),
+        'line-width': expr(['interpolate', ['linear'], ['zoom'], 13, ['match', ['get', 'w'], 3, 0.8, 0.4], 17, ['match', ['get', 'w'], 3, 2, 1]]),
+        'line-opacity': expr(['case', owned, 0.9, 0]),
       },
     });
 
@@ -180,6 +208,20 @@ export class CityMapView {
           0.5,
         ]),
       },
+    });
+    // Local events (a new metro station, roadworks, a festival): a tinted circle over the area.
+    map.addSource('zones', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({
+      id: 'zones-fill',
+      type: 'fill',
+      source: 'zones',
+      paint: { 'fill-color': expr(['get', 'color']), 'fill-opacity': expr(['case', ['get', 'active'], 0.16, 0.08]) },
+    });
+    map.addLayer({
+      id: 'zones-line',
+      type: 'line',
+      source: 'zones',
+      paint: { 'line-color': expr(['get', 'color']), 'line-width': 2, 'line-dasharray': [2, 2], 'line-opacity': 0.9 },
     });
     // A wide invisible line makes streets easy to click.
     map.addLayer({ id: 'streets-hit', type: 'line', source: 'streets', paint: { 'line-width': 16, 'line-opacity': 0 } });
@@ -241,6 +283,39 @@ export class CityMapView {
       }
     }
     this.updateFrontier();
+    this.updateZones();
+  }
+
+  private drawnZones = '';
+
+  /** Redraws the local-event circles when they change. */
+  updateZones(): void {
+    if (!this.ready) return;
+    const events = this.game.localEvents;
+    const key = events.map((e) => `${e.kind}${e.center}${e.active}`).join(',');
+    if (key === this.drawnZones) return;
+    this.drawnZones = key;
+    const features = events.map((e) => {
+      const [lon, lat] = this.zoneCenter(e.center);
+      const dLat = e.radius / 111_320;
+      const dLon = dLat / Math.cos((lat * Math.PI) / 180);
+      const ring = Array.from({ length: 49 }, (_, k) => {
+        const a = (k / 48) * 2 * Math.PI;
+        return [lon + Math.cos(a) * dLon, lat + Math.sin(a) * dLat];
+      });
+      return {
+        type: 'Feature' as const,
+        properties: { color: ZONE_COLORS[e.kind], active: e.active },
+        geometry: { type: 'Polygon' as const, coordinates: [ring] },
+      };
+    });
+    (this.map.getSource('zones') as maplibregl.GeoJSONSource).setData({ type: 'FeatureCollection', features });
+  }
+
+  /** [lon, lat] of a street's midpoint. */
+  zoneCenter(street: number): [number, number] {
+    const c = this.city.segments.coords[street];
+    return c[Math.floor(c.length / 2)];
   }
 
   /** Marks the streets next to the player's territory that it could win. */

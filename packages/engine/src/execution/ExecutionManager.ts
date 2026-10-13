@@ -11,6 +11,7 @@ import {
 } from './CompanyActionExecutions';
 import type { Execution } from './Execution';
 import { LawsuitExecution } from './LawsuitExecution';
+import { PickCardExecution } from './OpportunityExecution';
 
 /** Turns an intent (from a player or a bot) into the execution that applies it. */
 export function createExecution(intent: Intent): Execution {
@@ -33,5 +34,7 @@ export function createExecution(intent: Intent): Execution {
       return new AdvertiseExecution(intent.companyId);
     case 'lawsuit':
       return new LawsuitExecution(intent.companyId, intent.targetId);
+    case 'pickCard':
+      return new PickCardExecution(intent.companyId, intent.index);
   }
 }

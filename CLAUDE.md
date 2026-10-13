@@ -59,7 +59,10 @@ Rejected actions report back with `game.message(companyId, text)`; the client sh
 the player's errors as toasts.
 
 Long-running executions: `CompanyExecution` (per company: staff, churn, P&L,
-solvency), `MarketEventExecution`, `BotExecution`, `WinCheckExecution`.
+solvency), `MarketEventExecution` (forecast, then global shocks), `LocalEventExecution`
+(metro stations, roadworks, festivals), `OpportunityExecution` (cards, luckier for companies
+behind), `ScrutinyExecution` (strikes, exposés, breaches for a runaway leader),
+`CompetitionAuthorityExecution`, `BotExecution`, `WinCheckExecution`.
 Intent executions: `CampaignExecution` (winning customers), `LawsuitExecution`
 (class action), and the instant ones in `CompanyActionExecutions.ts`.
 
@@ -68,7 +71,7 @@ Intent executions: `CampaignExecution` (winning customers), `LawsuitExecution`
 1. Add the intent to `packages/engine-api/src/Intents.ts`.
 2. Write `XxxExecution` in `packages/engine/src/execution/` and map it in `ExecutionManager.ts`.
 3. Put any numbers in `packages/engine-lib/src/configuration/Config.ts`.
-4. Add a test in `tests/`, a control in `src/client/hud/ControlPanel.ts`, and
+4. Add a test in `tests/`, a control in `src/client/hud/ActionBar.ts` (or a drawer), and
    check balance (below).
 
 ### Balance checks
@@ -81,6 +84,9 @@ setups across seats, so 48 matches with 4 setups means ~12 wins each is perfectl
 - **AI only** (same price, different personalities): personalities should be equally
   competent and differ in style. A dominant one means a rule rewards one behaviour too much.
 - **Default lineup**: every company should win sometimes; unicorns around day 350–700.
+- **Comebacks**: how often the leader at day 200 doesn't win. Catch-up mechanics (opportunity
+  cards, scrutiny of the leader, size-based lawsuit fees) keep this high in bot-only matches; check
+  they don't stop the skilled human from winning.
 - **Skilled human** (a scripted strong player vs the bots at each difficulty): should win
   almost always on Easy, most of the time on Normal, and about half the time on Hard, with
   unicorns around day 400–600. If it wins almost always on Hard, or very early, the bots are

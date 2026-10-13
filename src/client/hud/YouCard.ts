@@ -26,6 +26,7 @@ export class YouCard {
         <div title="Revenue minus all costs, per day"><small>Profit / day</small><b data-v="profit"></b></div>
         <div title="Share of your customers your operations team can serve"><small>Served</small><b data-v="served"></b></div>
       </div>
+      <div class="you-stake" data-v="stake" hidden></div>
       <div class="note" data-v="note" hidden></div>
       <div class="alert" data-v="alert" hidden></div>`,
     );
@@ -50,6 +51,9 @@ export class YouCard {
     served.textContent = pct(cover);
     served.className = cover < 1 ? 'neg' : 'pos';
 
+    const stake = $(this.root, '[data-v="stake"]');
+    stake.hidden = c.stake > 0.999;
+    stake.textContent = `💼 You own ${pct(c.stake)} of the company: your stake is worth ${money(Math.max(0, v) * c.stake)}`;
     const trainees = g.traineeCount(c);
     const note = $(this.root, '[data-v="note"]');
     note.hidden = trainees === 0;
@@ -58,6 +62,7 @@ export class YouCard {
     let msg = '';
     if (c.cash < 0) msg = `Out of cash! Bankrupt in ${Math.max(0, CONFIG.bankruptcyGraceDays - c.negativeCashDays).toFixed(0)} days. Borrow, fire staff or raise prices.`;
     else if (c.pnl.profit < 0 && c.cash / -c.pnl.profit < 30) msg = `Losing money: cash runs out in ~${Math.floor(c.cash / -c.pnl.profit)} days.`;
+    else if (g.onStrike(c) && cover < 1) msg = '✊ On strike: operations run short. Hire or move staff to ⚙️ Ops until it ends.';
     else if (cover < 1) msg = 'Overloaded: unserved customers are leaving. Slide left toward ⚙️ Ops, turn on Auto, or hire.';
     alert.hidden = !msg;
     alert.textContent = msg;

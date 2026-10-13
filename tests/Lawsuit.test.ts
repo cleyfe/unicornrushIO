@@ -16,7 +16,7 @@ function suingSetup(seed = 42, stolenStreets = 0) {
 describe('lawsuits', () => {
   it('need enough cash for the legal fees', () => {
     const r = quietSetup();
-    r.game.player.cash = L.cost - 1;
+    r.game.player.cash = L.minFee - 1;
     act(r, { type: 'lawsuit', companyId: 0, targetId: 1 });
     expect(r.game.lawsuits).toHaveLength(0);
     expect(lastMessage(r)).toMatch(/Legal fees/);
@@ -25,9 +25,10 @@ describe('lawsuits', () => {
   it('charge legal fees and go to court', () => {
     const r = suingSetup();
     const cash = r.game.player.cash;
+    const fee = r.game.lawsuitFee(r.game.player);
     act(r, { type: 'lawsuit', companyId: 0, targetId: 1 });
     expect(r.game.lawsuits).toHaveLength(1);
-    expect(r.game.player.cash).toBeCloseTo(cash - L.cost, -3);
+    expect(r.game.player.cash).toBeCloseTo(cash - fee, -3);
   });
 
   it('allow only one case at a time per plaintiff', () => {

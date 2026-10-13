@@ -85,7 +85,11 @@ export const CONFIG = {
   // The unfair-competition lawsuit: an expensive strike that hits a rival's
   // customers all over its territory, unless the court dismisses the case.
   lawsuit: {
-    cost: 250_000, // legal fees, paid when filing
+    // Legal fees scale with the plaintiff's size: lawyers charge a small company
+    // little up front and take a share of the damages instead (a contingency fee).
+    minFee: 25_000,
+    feeRevenueDays: 10, // fee = this many days of the plaintiff's revenue, at least minFee
+    lawyerShare: 0.3, // share of the damages the lawyers keep
     courtDays: 30, // time until the ruling: the defendant can prepare
     customerLoss: 0.15, // share of the defendant's customers driven away by bad press
     clusters: 12, // the loss is spread over this many places
@@ -98,7 +102,58 @@ export const CONFIG = {
     evidenceHalfLifeDays: 70, // older grievances count less
     // Damages = the plaintiff's lost profits: daily revenue of the stolen streets at a medium price, for this many days.
     damagesDays: 45,
-    dismissedCounterCost: 150_000, // plaintiff pays the defendant's costs if dismissed
+    dismissedCostShare: 0.6, // if dismissed, the plaintiff also pays the defendant's costs: this share of its own fee
+  },
+
+  // Big companies are slower: a price change takes a day per this many employees to roll out.
+  agility: { employeesPerDelayDay: 40, maxDelayDays: 15 },
+
+  // Opportunity cards, Mario Kart style: companies further behind get offers
+  // more often, and bigger ones. luck goes from leaderLuck (1st) to lastLuck (last).
+  cards: {
+    firstDay: 30,
+    minGap: 70,
+    maxGap: 110,
+    offerDays: 30, // time to pick before the offer expires
+    leaderLuck: 0.6,
+    lastLuck: 1.6,
+    viralPushShare: 0.35, // × push cap × luck
+    starTeamShare: 0.05, // × staff × luck, trained and ready (at least 3)
+    supplierDealDays: 30, // × luck; variable costs × supplierDealMult
+    supplierDealMult: 0.6,
+    investorValuationShare: 0.1, // cash = valuation × this × luck, between investorMin and investorMax
+    investorMin: 100_000,
+    investorMax: 500_000,
+    investorStake: 0.15,
+    grantRevenueDays: 5, // × daily revenue × luck (at least grantMin); only for small companies
+    grantMin: 30_000,
+    grantMax: 100_000,
+    defectorStreets: 4, // × luck: a rival's customers next to you switch to you
+  },
+
+  // The press, unions and hackers go after the biggest company.
+  scrutiny: {
+    firstDay: 120,
+    minGap: 70,
+    maxGap: 110,
+    minLead: 1.4, // only when the leader is worth this many times the runner-up
+    strikeWarningDays: 7,
+    strikeDays: 8,
+    strikeCapacity: 0.6, // operations capacity during a strike
+    pressStreetShare: 0.05, // streets lost to an exposé
+    breachRevenueDays: 5, // fine for a data breach
+  },
+
+  // Things happening in one part of the city, announced in advance.
+  localEvents: {
+    firstDay: 60,
+    minGap: 50,
+    maxGap: 90,
+    warningDays: 15,
+    radiusShare: 0.09, // of the city's width
+    metro: { demand: 1.4, spend: 1.4, days: null }, // a new metro station: permanent
+    roadworks: { demand: 1, spend: 0.6, days: 40 },
+    festival: { demand: 1, spend: 1.5, days: 20 },
   },
 
   // Competition authority: stops one company from swallowing the market.
@@ -121,7 +176,7 @@ export const CONFIG = {
     hard: { reserveMult: 1, repDays: 20, growth: 0.5, extraPushReserve: 0, leaderFocus: true },
   },
 
-  events: { firstDay: 150, minGap: 120, maxGap: 180 },
+  events: { firstDay: 150, minGap: 120, maxGap: 180, warningDays: 10 },
 
   valuation: {
     earningsMultiple: 18, // investors pay 18x annual profit
