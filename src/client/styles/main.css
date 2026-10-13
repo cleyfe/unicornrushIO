@@ -1591,3 +1591,40 @@ td i {
 .per-click span {
   min-width: 30px;
 }
+
+.race-more {
+  font-size: 11px;
+  color: var(--muted);
+  padding-top: 2px;
+}
+.rival-count {
+  margin-top: 6px;
+  grid-template-columns: repeat(4, 1fr);
+}
+.rival-count button {
+  padding: 6px 4px;
+}
+
+/* Segmented choices (intro: difficulty, player count). */
+.seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.seg button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 4px;
+  font-size: 13px;
+}
+.seg small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.seg button.active small {
+  color: #dbeafe;
+}
+.seg.rival-count {
+  grid-template-columns: repeat(4, 1fr);
+}

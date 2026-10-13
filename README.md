@@ -191,7 +191,9 @@ Size has costs as well as advantages:
 
 ### Rivals
 
-All three are equally competent; they differ in style.
+Pick 3, 7, 11 or 19 rivals (4 to 20 players) on the start screen. The first three are
+always BudgetMart, Steady & Co and Luxe Ltd; bigger matches add more companies with the same
+three styles (discount, balanced, premium). All are equally competent; they differ in style.
 
 - **BudgetMart**: low prices, goes for streets with many customers, attacks rivals
 - **Steady & Co**: medium prices, balanced

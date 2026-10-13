@@ -1,3 +1,4 @@
+import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
 import type { Difficulty } from '@unicornrush/engine-api/game/Game';
 import { CITIES, type CityId } from '../cities';
 
@@ -7,9 +8,10 @@ const SOURCE_URL = 'https://github.com/cleyfe/unicornrushIO';
 export const LEGAL_FOOTER = `<p class="legal">© UnicornRush and Contributors · <a href="${SOURCE_URL}" target="_blank" rel="noopener">Source (AGPL)</a> · <a href="terms-of-service.html">Terms</a> · <a href="privacy-policy.html">Privacy</a> · Maps © OpenStreetMap contributors</p>`;
 
 /** Title screen: pick a city and a company name. */
-export function showIntro(container: HTMLElement, onStart: (name: string, city: CityId, difficulty: Difficulty) => void): void {
+export function showIntro(container: HTMLElement, onStart: (name: string, city: CityId, difficulty: Difficulty, rivals: number) => void): void {
   let city: CityId = CITIES[0].id;
   let difficulty: Difficulty = 'normal';
+  let rivals = 3;
   container.innerHTML = `
     <div class="overlay intro-bg"><div class="card intro">
       <h1>🦄 Unicorn<b>Rush</b></h1>
@@ -33,11 +35,14 @@ export function showIntro(container: HTMLElement, onStart: (name: string, city: 
         <button data-difficulty="normal" class="active" title="Rivals that grow steadily">Normal<small>a fair fight</small></button>
         <button data-difficulty="hard" title="Rivals that invest like a skilled player">Hard<small>for experts</small></button>
       </div>
+      <div class="rival-count seg">
+        ${[3, 7, 11, 19].map((n) => `<button data-rivals="${n}" class="${n === 3 ? 'active' : ''}">${n + 1} players<small>${n} rivals</small></button>`).join('')}
+      </div>
       <div class="intro-actions">
         <input id="name" maxlength="16" placeholder="Your company name" value="Your Co" aria-label="Company name" />
         <button id="start" class="primary">Start company ▶</button>
       </div>
-      <p class="rivals">Your rivals: <b style="color:#ef4444">BudgetMart</b> (cheap, aggressive) · <b style="color:#22c55e">Steady &amp; Co</b> (balanced) · <b style="color:#a855f7">Luxe Ltd</b> (premium)</p>
+      <p class="rivals" data-v="rivals"></p>
       ${LEGAL_FOOTER}
     </div></div>`;
   container.querySelectorAll<HTMLButtonElement>('.city-card').forEach((b) =>
@@ -54,7 +59,23 @@ export function showIntro(container: HTMLElement, onStart: (name: string, city: 
     }),
   );
   const input = container.querySelector<HTMLInputElement>('#name')!;
-  const start = () => onStart(input.value.trim() || 'Your Co', city, difficulty);
+  const describeRivals = () => {
+    const list = defaultCompanies('', false, difficulty, rivals).slice(1);
+    const style = { discounter: 'cheap', balanced: 'balanced', premium: 'premium' } as const;
+    container.querySelector('[data-v="rivals"]')!.innerHTML =
+      rivals <= 3
+        ? `Your rivals: ${list.map((r) => `<b style="color:rgb(${r.color.join(',')})">${r.name}</b> (${style[r.personality ?? 'balanced']})`).join(' · ')}`
+        : `${rivals} rivals: ${list.map((r) => `<b style="color:rgb(${r.color.join(',')})">${r.name}</b>`).join(' · ')}`;
+  };
+  describeRivals();
+  container.querySelectorAll<HTMLButtonElement>('[data-rivals]').forEach((b) =>
+    b.addEventListener('click', () => {
+      rivals = Number(b.dataset.rivals);
+      container.querySelectorAll('[data-rivals]').forEach((x) => x.classList.toggle('active', x === b));
+      describeRivals();
+    }),
+  );
+  const start = () => onStart(input.value.trim() || 'Your Co', city, difficulty, rivals);
   container.querySelector('#start')!.addEventListener('click', start);
   input.addEventListener('keydown', (e) => e.key === 'Enter' && start());
 }

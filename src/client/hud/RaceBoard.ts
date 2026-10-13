@@ -13,8 +13,11 @@ export class RaceBoard {
 
   update(): void {
     const g = this.game;
-    const rows = [...g.companies]
-      .sort((a, b) => g.valuation(b).total - g.valuation(a).total)
+    // Big matches: show the top of the race, plus you wherever you are.
+    const ranked = [...g.companies].sort((a, b) => g.valuation(b).total - g.valuation(a).total);
+    const shown = ranked.length <= 6 ? ranked : ranked.filter((c, i) => i < 5 || c.id === 0);
+    const hidden = ranked.length - shown.length;
+    const rows = shown
       .map((c) => {
         const v = g.valuation(c).total;
         const margin = c.pnl.revenue > 0 ? c.pnl.profit / c.pnl.revenue : 0;
@@ -24,7 +27,7 @@ export class RaceBoard {
           <div class="race-bar"><div style="width:${pct(c.alive ? unicornProgress(v) : 0)};background:${rgb(c.color)}"></div></div>
         </li>`;
       })
-      .join('');
+      .join('') + (hidden > 0 ? `<li class="race-more">+ ${hidden} more companies · 📈 Race (R)</li>` : '');
     $(this.root, '[data-v="rows"]').innerHTML = rows;
   }
 }
