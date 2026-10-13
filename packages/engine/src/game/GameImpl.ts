@@ -176,8 +176,7 @@ export class GameImpl {
   /** The next ad purchase: how much push it buys and what it costs. */
   adOffer(c: Company): { push: number; cost: number } {
     const S = CONFIG.sales;
-    const push = Math.max(20, Math.round(this.maxPush(c) * S.adPackShare));
-    return { push, cost: push * S.adCostPerPush * (1 + S.adPriceStep * c.adHeat) };
+    return { push: S.adPush, cost: Math.round(S.adBaseCost + S.adStepCost * c.adHeat) };
   }
 
   maxDebt(c: Company): number {
@@ -475,10 +474,11 @@ export class GameImpl {
     return t;
   }
 
-  /** What buying `target` costs: its valuation plus the owners' premium. */
+  /** What buying `target` costs: its net cash plus a few years of profit, plus the owners' premium. */
   acquisitionPrice(target: Company): number {
     const A = CONFIG.acquisition;
-    return Math.max(A.minPrice, Math.round(this.valuation(target).total * A.premium));
+    const worth = target.cash - target.debt + Math.max(0, target.avgProfit) * 365 * A.profitYears;
+    return Math.max(A.minPrice, Math.round(worth * A.premium));
   }
 
   /** Why `buyer` can't buy `target` right now, or null if it can. */

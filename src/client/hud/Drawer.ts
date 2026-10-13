@@ -107,8 +107,9 @@ export class Drawer {
 
   private dealsHtml(): string {
     const A = CONFIG.acquisition;
+    const tip = `Its owners want its cash minus debt plus ${A.profitYears} years of profit, plus ${Math.round((A.premium - 1) * 100)}%. You take over its streets, staff, cash and debt. Investors value your own profit at ${CONFIG.valuation.earningsMultiple}× a year, so buying profit at ${A.profitYears}× raises your valuation. The competition authority blocks deals above ${Math.round(CONFIG.antitrust.actShare * 100)}% of the city.`;
     return `<h2>🏢 Buy a rival</h2>
-      <p class="fee-line" title="Its owners want its valuation plus ${Math.round((A.premium - 1) * 100)}%. You take over its streets, staff, cash and debt. A struggling company with many streets can be a bargain; a profitable one costs more than it adds at first. The competition authority blocks deals above ${Math.round(CONFIG.antitrust.actShare * 100)}% of the city.">Price = value + ${Math.round((A.premium - 1) * 100)}% · you get streets, staff, cash and debt</p>
+      <p class="fee-line" title="${tip}">Price = net cash + ${A.profitYears} years of profit, +${Math.round((A.premium - 1) * 100)}% · you get streets, staff, cash and debt</p>
       <table class="cases-table">
         <tr><th>Rival</th><th>Value</th><th>Profit</th><th>Streets</th><th>Price</th><th></th></tr>
         <tbody data-v="dealRows"></tbody>

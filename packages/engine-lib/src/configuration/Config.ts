@@ -69,9 +69,11 @@ export const CONFIG = {
     retentionDrain: 0.3,
     // Advertising: buy sales push with cash. Each purchase makes the next one
     // pricier (the cheapest ad slots go first); the extra cost fades over time.
-    adPackShare: 0.4, // push bought per purchase, as a share of your push cap (min 20)
-    adCostPerPush: 5000,
-    adPriceStep: 0.5, // +50% per recent purchase
+    // Ad campaigns are a fixed pack at a rising price: the first costs adBaseCost,
+    // each recent one adds adStepCost; the extra cost fades over time.
+    adPush: 150,
+    adBaseCost: 100_000,
+    adStepCost: 50_000,
     adHeatDecayPerDay: 0.03,
     maxAdPushMult: 2, // ads can fill the push pool up to twice its normal cap
     maxServiceLevel: 1.5, // spare operations capacity makes customers loyal, up to this
@@ -110,6 +112,9 @@ export const CONFIG = {
   // you take over its streets, staff, cash and debt. The competition authority
   // blocks a deal that would leave the buyer with too much of the market.
   acquisition: {
+    // Price = premium × (net cash + this many years of profit). Private deals happen
+    // at a lower multiple than the 18× investors give the buyer's own profit.
+    profitYears: 6,
     premium: 1.3,
     minPrice: 100_000,
   },

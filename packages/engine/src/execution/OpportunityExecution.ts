@@ -102,7 +102,7 @@ export function cardValue(c: Company, card: Card): number {
   const S = CONFIG.staff;
   switch (card.kind) {
     case 'viral':
-      return card.amount * CONFIG.sales.adCostPerPush * 0.5;
+      return card.amount * (CONFIG.sales.adBaseCost / CONFIG.sales.adPush) * 0.5;
     case 'starTeam':
       return card.amount * (S.hireCost + S.salaryPerDay * (S.trainingDays + 20));
     case 'supplierDeal':

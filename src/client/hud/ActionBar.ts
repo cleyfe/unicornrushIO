@@ -175,7 +175,7 @@ export class ActionBar {
     const ad = g.adOffer(c);
     const adBtn = $<HTMLButtonElement>(r, '[data-act="advertise"]');
     adBtn.querySelector('.lb')!.textContent = money(ad.cost);
-    adBtn.title = `Ad campaign: ${money(ad.cost)} for ${ad.push} push. Click, then aim at a street: it wins streets toward it until the budget runs out. Each ad makes the next one pricier for a while.`;
+    adBtn.title = `Ad campaign: ${ad.push} push for ${money(ad.cost)}. Click, then aim at a street: it wins streets toward it until the budget runs out. Each recent ad adds ${money(CONFIG.sales.adStepCost)} to the next one; the extra fades over a few weeks.`;
     adBtn.disabled = c.cash < ad.cost;
     r.querySelectorAll<HTMLButtonElement>('[data-hire]').forEach((b) => (b.disabled = c.cash < Number(b.dataset.hire) * S.hireCost));
 

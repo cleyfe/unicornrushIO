@@ -19,7 +19,8 @@ export function showHelp(onClose: () => void): void {
         <li><b>💎 Wealth:</b> golden buildings are rich streets: customers spend up to ×${CONFIG.wealth[3].spend} more. Once owned, they stay brighter and keep a gold rim.</li>
         <li><b>💰 Every day:</b> revenue − costs = profit, added to cash. Below zero for ${CONFIG.bankruptcyGraceDays} days = bankrupt.</li>
         <li><b>🏦 Bank:</b> borrow to grow faster or to fund an acquisition; interest is due every day.</li>
-        <li><b>🏢 Buy:</b> buy a rival for its value plus 30%: you take its streets, staff, cash and debt. Struggling companies with many streets are bargains.</li>
+        <li><b>🏢 Buy:</b> buy a rival for its net cash plus ${CONFIG.acquisition.profitYears} years of profit, +30%: you take its streets, staff, cash and debt. Investors value profit at ${CONFIG.valuation.earningsMultiple}×, so a good deal raises your valuation.</li>
+        <li><b>📢 Ads:</b> ${CONFIG.sales.adPush} push for ${money(CONFIG.sales.adBaseCost)}, then ${money(CONFIG.sales.adStepCost)} more for each recent ad (it eases off over a few weeks).</li>
         <li><b>🎯 Push per click:</b> the slider next to the push meter sets how much each click commits (10–100%). Unspent push comes back.</li>
         <li><b>🛡 Defence:</b> a rival's street costs more push than an untapped one: spare Ops staff, unspent push, a price that suits the street and a <b>Guard</b> on the area all make it harder to steal. Hover a street to see why it costs what it does.</li>
         <li><b>⚖️ Sue:</b> fees scale with your size (from ${money(CONFIG.lawsuit.minFee)}), so small companies can afford to sue the giants. Evidence decides the case.</li>
