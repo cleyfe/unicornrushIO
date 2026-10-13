@@ -1,5 +1,6 @@
 import type { Difficulty } from '@unicornrush/engine-api/game/Game';
 import { type CityInfo, loadCityIndex } from '../cities';
+import { openDocs } from './DocsOverlay';
 
 const SOURCE_URL = 'https://github.com/cleyfe/unicornrushIO';
 
@@ -61,7 +62,7 @@ export function showIntro(container: HTMLElement, onStart: (name: string, city: 
           ${[3, 7, 11, 19].map((n) => `<button data-rivals="${n}">${n + 1}</button>`).join('')}
         </div></div>
         <button id="start" class="primary play">Play ▶</button>
-        <a class="docs-link" href="docs.html" target="_blank" rel="noopener">How to play</a>
+        <button class="docs-link link" type="button">How to play</button>
         ${LEGAL_FOOTER}
       </aside>
       <section class="menu-cities">
@@ -117,5 +118,6 @@ export function showIntro(container: HTMLElement, onStart: (name: string, city: 
     onStart(setup.name, city, setup.difficulty, setup.rivals);
   }
   $('#start').addEventListener('click', start);
+  $('.docs-link').addEventListener('click', () => void openDocs());
   input.addEventListener('keydown', (e) => e.key === 'Enter' && start());
 }

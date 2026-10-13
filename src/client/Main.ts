@@ -9,6 +9,7 @@ import { ClientGameRunner } from './ClientGameRunner';
 import { ActionBar } from './hud/ActionBar';
 import { CardPicker } from './hud/CardPicker';
 import { Coach } from './hud/Coach';
+import { openDocs } from './hud/DocsOverlay';
 import { Drawer } from './hud/Drawer';
 import { el } from './hud/dom';
 import { showGameOver } from './hud/GameOverModal';
@@ -84,7 +85,7 @@ async function startGame(name: string, info: CityInfo, difficulty: Difficulty, r
     game,
     `${info.flag} ${info.city} · ${info.area}`,
     setSpeed,
-    () => window.open('docs.html', '_blank', 'noopener'),
+    () => void openDocs(),
     (street) => view.map.flyTo({ center: view.zoneCenter(street), zoom: 15, duration: 1200 }),
     theme,
     (t) => {
