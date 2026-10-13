@@ -212,3 +212,17 @@ export class BuyStreetsExecution extends InstantExecution {
     if (!seller.isBot) game.message(seller.id, `🏢 ${c.name} bought out ${n} of your streets' shops.`, 'bad');
   }
 }
+
+/** Before the match starts: moves the company's starting neighbourhood. */
+export class RelocateExecution extends InstantExecution {
+  constructor(
+    private companyId: number,
+    private tile: number,
+  ) {
+    super();
+  }
+  protected apply(game: GameImpl): void {
+    const error = game.relocateStart(game.companies[this.companyId], this.tile);
+    if (error) game.message(this.companyId, error);
+  }
+}

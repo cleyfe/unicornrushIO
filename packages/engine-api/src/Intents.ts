@@ -7,6 +7,8 @@ import type { PriceLevel } from './game/Game';
  */
 export type Intent =
   | { type: 'campaign'; companyId: number; tile: number }
+  /** Before the match starts: move your starting neighbourhood to around `tile`. */
+  | { type: 'relocate'; companyId: number; tile: number }
   | { type: 'setSalesShare'; companyId: number; share: number }
   /** Share of the push pool each click commits, from 10% to 100%. */
   | { type: 'setCampaignShare'; companyId: number; share: number }

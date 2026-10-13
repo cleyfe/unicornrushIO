@@ -97,7 +97,7 @@ Profit   = Revenue − Costs  → added to Cash
 
 ### Playing
 
-The map opens on your company, paused. Click a **glowing street** next to yours to win it (or
+The map opens on your company, paused. Before your first move you can click anywhere else in the city to move your starting neighbourhood there (same number of customers); bots keep the spot they were given. Click a **glowing street** next to yours to win it (or
 any building on it); hovering a street shows its customers, what it would earn you per day,
 and whether you can afford it. Your card (top-left) shows valuation, cash, profit and how many
 customers you serve; the race board (top-right) shows everyone's progress to $1B; the bar at

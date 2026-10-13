@@ -659,6 +659,34 @@ export class GameImpl {
       });
     }
   }
+
+  /**
+   * Before the match starts, moves company `c` to a new starting neighbourhood
+   * around `tile`: same number of customers, grown along untapped streets.
+   * Returns an error message, or null when it moved.
+   */
+  relocateStart(c: Company, tile: number): string | null {
+    if (this.tick > 0) return 'You can only choose where you start before the match begins.';
+    if (tile < 0 || tile >= this.map.size || this.owner[tile] !== NEUTRAL) return 'Pick an untapped street to start on.';
+    const m = this.map;
+    // Check there is room before giving up the old streets.
+    const room: number[] = [];
+    const seen = new Set([tile]);
+    const queue = [tile];
+    const nb: number[] = [];
+    let customers = 0;
+    while (queue.length > 0 && customers < CONFIG.start.customers) {
+      const t = queue.shift()!;
+      if (customers > 0 && customers + m.demand[t] > CONFIG.start.customers * 1.1) continue;
+      room.push(t);
+      customers += m.demand[t];
+      for (const n of neighbors(m, t, nb)) if (!seen.has(n) && this.owner[n] === NEUTRAL) (seen.add(n), queue.push(n));
+    }
+    if (customers < CONFIG.start.customers * 0.8) return 'Not enough room there: pick a spot further from your rivals.';
+    for (let i = 0; i < this.owner.length; i++) if (this.owner[i] === c.id) this.setOwner(i, NEUTRAL);
+    for (const t of room) this.setOwner(t, c.id);
+    return null;
+  }
 }
 
 function newCompany(id: number, s: CompanySpec): Company {

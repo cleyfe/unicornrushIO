@@ -7,6 +7,7 @@ import {
   FireExecution,
   GuardExecution,
   HireExecution,
+  RelocateExecution,
   RepayExecution,
   SetCampaignShareExecution,
   SetPriceExecution,
@@ -21,6 +22,8 @@ export function createExecution(intent: Intent): Execution {
   switch (intent.type) {
     case 'campaign':
       return new CampaignExecution(intent.companyId, intent.tile);
+    case 'relocate':
+      return new RelocateExecution(intent.companyId, intent.tile);
     case 'setSalesShare':
       return new SetSalesShareExecution(intent.companyId, intent.share);
     case 'setCampaignShare':

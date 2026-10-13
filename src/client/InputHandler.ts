@@ -29,6 +29,8 @@ export class InputHandler {
     private tooltip: HTMLElement,
     private onSpeedKey: (speed: number) => void,
     private onFirstMove: () => void,
+    /** Before the first move, clicking far from your streets moves your start there. */
+    private isStarted: () => boolean = () => true,
   ) {}
 
   attach(): () => void {
@@ -59,6 +61,11 @@ export class InputHandler {
         }
         return;
       }
+      const g = this.client.game;
+      if (!this.isStarted() && g.owner[seg] === NEUTRAL && !this.view.isFrontier(seg)) {
+        this.client.send({ type: 'relocate', companyId: 0, tile: seg });
+        return;
+      }
       this.client.send({ type: 'campaign', companyId: 0, tile: seg });
       this.onFirstMove();
       // A ripple where you clicked: instant feedback before the street changes hands.
@@ -85,7 +92,7 @@ export class InputHandler {
             ? describeAd(g, this.city, seg)
             : this.mode === 'buy'
               ? describeDeal(g, seg)
-              : describeSegment(g, this.city, seg, this.view.isFrontier(seg));
+              : describeSegment(g, this.city, seg, this.view.isFrontier(seg), !this.isStarted());
       const w = this.tooltip.offsetWidth || 260;
       const box = map.getContainer().getBoundingClientRect();
       const x = e.point.x + 16 + w > box.width ? e.point.x - w - 16 : e.point.x + 16;
@@ -173,20 +180,14 @@ function describeGuard(g: GameImpl, seg: number): string {
     <div class="hc-action ${ok ? 'ok' : 'wait'}">${ok ? `Click to guard · ${money(offer.cost)}` : `Costs ${money(offer.cost)}: not enough cash`}</div>`;
 }
 
+/** The parts of a defence worth naming in the hover card. */
 const DEFENCE_PARTS = [
   ['service', 'service'],
   ['loyalty', 'loyal customers'],
   ['reserve', 'push reserve'],
-  ['priceGap', 'price gap'],
+  ['priceGap', 'your price'],
   ['guard', 'guarded'],
 ] as const;
-
-/** "base 24 × service 1.3 × loyal 1.2": why a street costs what it does. */
-function costBreakdown(g: GameImpl, attacker: number, owner: number, seg: number): string {
-  const s = g.streetCost(g.companies[attacker], owner, seg);
-  const parts = DEFENCE_PARTS.filter(([k]) => Math.abs(s[k] - 1) > 0.04).map(([k, label]) => `<span class="${s[k] > 1 ? 'up' : 'down'}">${label} ×${s[k].toFixed(1)}</span>`);
-  return `<div class="hc-cost">🛡 ×${s.defence.toFixed(1)}${parts.length ? ` = ${parts.join(' · ')}` : ''}</div>`;
-}
 
 /**
  * Roughly how many streets a click on `seg` wins: the campaign keeps taking
@@ -213,45 +214,42 @@ function estimateCampaign(g: GameImpl, seg: number, budget: number): number {
   return won;
 }
 
-/** The hover card: what a street is worth and whether you can take it now. */
-export function describeSegment(g: GameImpl, city: CityData, seg: number, reachable: boolean): string {
+/** The hover card: what a street is worth and whether you can take it now. Kept to 3–4 short lines. */
+export function describeSegment(g: GameImpl, city: CityData, seg: number, reachable: boolean, beforeStart = false): string {
   const level = g.map.wealth[seg];
-  const tier = CONFIG.wealth[level];
   const o = g.owner[seg];
   const me = g.player;
   const street = city.segments.names[seg] || 'Unnamed street';
   const vol = g.volume(me, level);
   const perDay =
     vol * (g.map.spend[seg] * CONFIG.prices[me.price].revenue * g.revenueMult() - g.map.demand[seg] * CONFIG.variableCostPerCustomer * g.variableCostMult(me));
-  const owner =
-    o === NEUTRAL ? 'Untapped' : o === 0 ? 'Yours' : `<i style="background:rgb(${g.companies[o].color.join(',')})"></i>${g.companies[o].name}`;
-  let action = '';
-  let defence = '';
-  if (o > 0) defence = costBreakdown(g, 0, o, seg);
-  else if (o === 0) {
-    defence = costBreakdown(g, 0, 0, seg).replace('🛡', '🛡 your defence');
-    if (g.isGuarded(seg, 0)) defence += `<div class="hc-row"><span>Guarded for ${Math.ceil(g.guardUntil[seg] - g.day)} more days</span></div>`;
+  const customers = Math.max(1, Math.round(g.map.demand[seg]));
+  const owner = o === NEUTRAL ? 'Untapped' : o === 0 ? 'Yours' : `<i style="background:rgb(${g.companies[o].color.join(',')})"></i>${g.companies[o].name}`;
+  const lines: string[] = [];
+  // Rivals' streets: how well defended, in one line.
+  if (o > 0) {
+    const s = g.streetCost(me, o, seg);
+    const why = DEFENCE_PARTS.filter(([k]) => s[k] > 1.1).map(([, label]) => label);
+    lines.push(`<div class="hc-cost">🛡 ×${s.defence.toFixed(1)}${why.length ? ` · ${why.join(', ')}` : ''}</div>`);
   }
-  if (o !== 0) {
+  if (o === 0 && g.isGuarded(seg, 0)) lines.push(`<div class="hc-cost">🛡 Guarded · ${Math.ceil(g.guardUntil[seg] - g.day)}d</div>`);
+  for (const e of g.localEvents.filter((ev) => ev.streets.includes(seg))) {
+    const info = LOCAL_EVENT_INFO[e.kind];
+    const when = !e.active && g.day < e.startsDay ? ` in ${Math.ceil(e.startsDay - g.day)}d` : '';
+    lines.push(`<div class="hc-cost" title="${info.effect}">${info.icon} ${info.title}${when}</div>`);
+  }
+  if (beforeStart && o === NEUTRAL && !reachable) {
+    lines.push('<div class="hc-action ok">📍 Click to start here</div>');
+  } else if (o !== 0) {
     const cost = g.tileCost(me, o, seg);
-    if (!reachable) action = '<div class="hc-action muted">Not next to your streets yet</div>';
-    else {
-      const budget = me.push * me.campaignShare;
+    const budget = me.push * me.campaignShare;
+    if (!reachable) lines.push('<div class="hc-action muted">Not next to your streets</div>');
+    else if (budget >= cost) {
       const est = estimateCampaign(g, seg, budget);
-      if (budget >= cost) action = `<div class="hc-action ok">✓ Click: wins ≈ ${est} street${est === 1 ? '' : 's'} here · up to ${Math.floor(budget)} push</div>`;
-      else action = `<div class="hc-action wait">Needs ${cost.toFixed(0)} push · a click commits ${Math.floor(budget)}</div>`;
-    }
+      lines.push(`<div class="hc-action ok">✓ Click · ≈${est} street${est === 1 ? '' : 's'} · ${Math.floor(budget)} push</div>`);
+    } else lines.push(`<div class="hc-action wait">Needs ${Math.ceil(cost)} push (you commit ${Math.floor(budget)})</div>`);
   }
-  const events = g.localEvents
-    .filter((e) => e.streets.includes(seg))
-    .map((e) => {
-      const info = LOCAL_EVENT_INFO[e.kind];
-      const when = !e.active && g.day < e.startsDay ? ` in ${Math.ceil(e.startsDay - g.day)} days` : '';
-      return `<div class="hc-row hc-event">${info.icon} ${info.title}${when}: ${info.effect}</div>`;
-    })
-    .join('');
-  return `<div class="hc-title">${street}</div>
-    <div class="hc-row"><span class="w${level}">${'$'.repeat(level + 1)} ${tier.label}</span><span>${owner}</span></div>
-    <div class="hc-row"><span>${g.map.demand[seg].toFixed(1)} customers × ${tier.spend} spend</span><span>≈ ${money(perDay)} profit/day</span></div>
-    ${defence}${events}${action}`;
+  return `<div class="hc-title">${street} <span class="w${level}" title="${CONFIG.wealth[level].label}: customers spend ×${CONFIG.wealth[level].spend}">${'$'.repeat(level + 1)}</span></div>
+    <div class="hc-row"><span>${owner} · ${customers} customer${customers === 1 ? '' : 's'}</span><span class="pos">${o === 0 ? '' : '≈ '}+${money(perDay)}/day</span></div>
+    ${lines.join('')}`;
 }

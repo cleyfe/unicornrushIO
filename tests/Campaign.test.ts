@@ -115,3 +115,33 @@ describe('explaining losses', () => {
     for (const c of g.companies) expect(c.push).toBe(CONFIG.start.push);
   });
 });
+
+describe('choosing where you start', () => {
+  it('moves your starting streets before the match begins, keeping about the same customers', async () => {
+    const { quietSetup, lastMessage } = await import('./util/Setup');
+    const { CONFIG } = await import('@unicornrush/engine-lib/configuration/Config');
+    const r = quietSetup();
+    const g = r.game;
+    const me = g.player;
+    // An untapped street far from everyone.
+    let target = -1;
+    for (let i = 0; i < g.map.size && target < 0; i++) {
+      if (g.owner[i] >= 0) continue;
+      let near = false;
+      for (let j = 0; j < g.map.size && !near; j++) if (g.owner[j] >= 0 && Math.hypot(g.map.x[i] - g.map.x[j], g.map.y[i] - g.map.y[j]) < 300) near = true;
+      if (!near) target = i;
+    }
+    const old = [...me.border];
+    r.addIntent({ type: 'relocate', companyId: 0, tile: target });
+    r.applyIntentsNow();
+    expect(g.owner[target]).toBe(0);
+    expect(old.every((t) => g.owner[t] !== 0)).toBe(true);
+    expect(me.customers).toBeGreaterThan(CONFIG.start.customers * 0.8);
+    expect(me.customers).toBeLessThan(CONFIG.start.customers * 1.2);
+    // Once the match is running, it's too late.
+    r.executeNextTick();
+    r.addIntent({ type: 'relocate', companyId: 0, tile: old[0] });
+    r.applyIntentsNow();
+    expect(lastMessage(r)).toMatch(/before the match begins/);
+  });
+});

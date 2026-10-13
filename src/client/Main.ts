@@ -105,10 +105,10 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
       `<span class="legend-sep"><i class="line frontier"></i>Streets you can win</span><span><i class="line court"></i>Company on trial</span>`,
   );
   legend.title = 'Building colour = neighbourhood wealth: how much each customer spends. Owned buildings take the owner colour, brighter on richer streets, and rich ones get a gold rim.';
-  const paused = el('div', 'paused-badge', '⏸ Paused: click a glowing street to start');
+  const paused = el('div', 'paused-badge', '⏸ Click a glowing street to start · or click anywhere else to move your start');
   const guardBanner = el('div', 'guard-banner', '🛡 Click one of your streets to guard its neighbourhood · Esc to cancel');
   stage.append(labels.root, top.root, you.root, race.root, legend, actions.root, cards.root, news.root, drawer.root, coach.root, paused, guardBanner);
-  const input = new InputHandler(client, view, city, tooltip, setSpeed, firstMove);
+  const input = new InputHandler(client, view, city, tooltip, setSpeed, firstMove, () => started);
   const detach = input.attach();
   actions.onAim = (mode) => input.toggleMode(mode);
   const banners = {
