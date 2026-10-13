@@ -5,8 +5,10 @@ import { el } from './dom';
 export class NewsFeed {
   readonly root: HTMLElement;
 
-  constructor() {
+  constructor(onOpen: () => void = () => {}) {
     this.root = el('section', 'news-feed', '');
+    this.root.title = 'All news (N)';
+    this.root.addEventListener('click', onOpen);
   }
 
   push(entry: LogEntry): void {

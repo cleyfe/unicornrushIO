@@ -84,7 +84,9 @@ export const CONFIG = {
 
   bankruptcyGraceDays: 10,
 
-  bank: { loanChunk: 25_000, maxDebtRevenueDays: 60, interestPerYear: 0.24 },
+  // When cash goes below zero, the bank lends automatically (an overdraft) up to the
+  // credit limit, plus a small cushion; only past the limit do the grace days start.
+  bank: { loanChunk: 25_000, maxDebtRevenueDays: 60, interestPerYear: 0.24, overdraftCushion: 10_000 },
 
   // The unfair-competition lawsuit: an expensive strike that hits a rival's
   // customers all over its territory, unless the court dismisses the case.

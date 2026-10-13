@@ -7,6 +7,8 @@ export class History {
   readonly profit: Sample[] = [];
   /** Valuation per company per day; null once a company has closed. */
   readonly race: { day: number; values: (number | null)[] }[] = [];
+  /** The player's state each day, for the end-of-match "what happened". */
+  readonly player: { day: number; cash: number; profit: number; tiles: number; oneOff: Record<string, number> }[] = [];
   private lastDay = -1;
 
   constructor(private game: GameImpl) {}
@@ -19,6 +21,7 @@ export class History {
     const me = g.player;
     this.valuation.push({ day, value: g.valuation(me).total });
     this.profit.push({ day, value: me.pnl.profit });
+    if (me.alive) this.player.push({ day, cash: me.cash, profit: me.pnl.profit, tiles: me.tiles, oneOff: { ...me.oneOff } });
     this.race.push({ day, values: g.companies.map((c) => (c.alive ? g.valuation(c).total : null)) });
   }
 }

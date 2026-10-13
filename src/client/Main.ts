@@ -88,7 +88,7 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
   const race = new RaceBoard(game);
   const actions = new ActionBar(game, (i) => client.send(i), (d) => drawer.toggle(d));
   const cards = new CardPicker(game, (i) => client.send(i));
-  const news = new NewsFeed();
+  const news = new NewsFeed(() => drawer.toggle('news'));
   const coach = new Coach(game);
   const legend = el(
     'details',
@@ -158,7 +158,18 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
     }
     if (game.result) {
       detach();
-      showGameOver(game, game.result, () => showIntro(app, startGame));
+      const again = () => {
+        stage.remove();
+        showIntro(app, startGame);
+      };
+      // After closing, you can watch the rest of the match.
+      showGameOver(game, game.result, again, history, () => {
+        game.keepWatching();
+        stage.classList.add('spectating');
+        client.speed = Math.max(1, client.speed);
+        last = performance.now();
+        requestAnimationFrame(frame);
+      });
     } else {
       requestAnimationFrame(frame);
     }

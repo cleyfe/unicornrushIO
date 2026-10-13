@@ -6,7 +6,7 @@ import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import { $, el } from './dom';
 
 type WithoutCompany<T> = T extends unknown ? Omit<T, 'companyId'> : never;
-export type Panel = 'finances' | 'lawsuit' | 'race';
+export type Panel = 'finances' | 'lawsuit' | 'race' | 'news';
 
 const S = CONFIG.staff;
 const P = CONFIG.prices;
@@ -77,6 +77,7 @@ export class ActionBar {
         <div class="grp">
           ${cmd('data-open="finances"', '🏦', 'Money', 'F', 'Profit & loss, valuation, bank loans')}
           ${cmd('data-open="race"', '📈', 'Race', 'R', "Everyone's valuation over time")}
+          ${cmd('data-open="news"', '📰', 'News', 'N', 'Everything that happened this match')}
         </div>
       </div>`,
     );

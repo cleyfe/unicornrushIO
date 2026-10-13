@@ -7,7 +7,7 @@ import { $, el } from './dom';
 import { RaceChart } from './RaceChart';
 import { Sparkline } from './Sparkline';
 
-export type DrawerKind = 'finances' | 'lawsuit' | 'race';
+export type DrawerKind = 'finances' | 'lawsuit' | 'race' | 'news';
 
 /** A panel that slides in over the map for less frequent decisions. */
 export class Drawer {
@@ -28,6 +28,13 @@ export class Drawer {
     // Contents are redrawn, so listen once on the drawer itself.
     const send = (i: Record<string, unknown>) => this.sendIntent({ ...i, companyId: 0 } as Intent);
     this.root.addEventListener('click', (e) => {
+      const f = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-news]');
+      if (f) {
+        this.newsFilter = f.dataset.news as 'all' | 'mine';
+        this.root.querySelectorAll('[data-news]').forEach((x) => x.classList.toggle('active', x === f));
+        this.update();
+        return;
+      }
       const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-sue], [data-bank]');
       if (!b || b.disabled) return;
       if (b.dataset.sue) send({ type: 'lawsuit', targetId: Number(b.dataset.sue) });
@@ -39,7 +46,7 @@ export class Drawer {
     if (this.kind === kind) return this.close();
     this.kind = kind;
     this.root.hidden = false;
-    const html = { finances: this.financesHtml, lawsuit: this.lawsuitHtml, race: this.raceHtml }[kind].call(this);
+    const html = { finances: this.financesHtml, lawsuit: this.lawsuitHtml, race: this.raceHtml, news: this.newsHtml }[kind].call(this);
     this.root.innerHTML = `<button class="close" aria-label="Close">✕</button>${html}`;
     this.root.classList.toggle('wide', kind === 'race');
     $(this.root, '.close').addEventListener('click', () => this.close());
@@ -94,6 +101,14 @@ export class Drawer {
       <div data-v="cases"></div>`;
   }
 
+  private newsHtml(): string {
+    return `<h2>📰 News</h2>
+      <div class="seg news-filter"><button data-news="all" class="active">Everything</button><button data-news="mine">About you</button></div>
+      <ol class="news-log" data-v="newsLog"></ol>`;
+  }
+
+  private newsFilter: 'all' | 'mine' = 'all';
+
   private raceHtml(): string {
     return `<h2>📈 Race to $1B</h2><div data-v="race"></div>`;
   }
@@ -129,6 +144,19 @@ export class Drawer {
       if (g.tick % 10 === 0) {
         this.valueChart.update(this.history.valuation);
         this.profitChart.update(this.history.profit);
+      }
+      return;
+    }
+    if (this.kind === 'news') {
+      const entries = g.log
+        .filter((l) => (this.newsFilter === 'mine' ? l.recipient === 0 : l.recipient === undefined || l.recipient === 0))
+        .slice()
+        .reverse();
+      const html = entries.map((l) => `<li class="news-item ${l.tone}"><span>Day ${l.day}</span>${l.text}</li>`).join('') || '<li class="muted">Nothing yet.</li>';
+      const list = $(this.root, '[data-v="newsLog"]');
+      if (list.dataset.html !== html) {
+        list.dataset.html = html;
+        list.innerHTML = html;
       }
       return;
     }

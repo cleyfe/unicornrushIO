@@ -52,7 +52,7 @@ export class ScrutinyExecution implements Execution {
       case 'breach': {
         const fine = leader.pnl.revenue * S.breachRevenueDays;
         leader.cash -= fine;
-        leader.oneOff.legalFees -= fine;
+        leader.oneOff.fines -= fine;
         this.tell(game, leader, `🔓 Hackers breach ${leader.name}'s customer data: ${money(fine)} in fines and fixes.`);
         return;
       }

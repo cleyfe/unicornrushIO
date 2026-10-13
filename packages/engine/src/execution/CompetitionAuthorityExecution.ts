@@ -50,7 +50,7 @@ export class CompetitionAuthorityExecution implements Execution {
       // Fine and forced divestment.
       const fine = c.pnl.revenue * A.fineRevenueDays;
       c.cash -= fine;
-      c.oneOff.legalFees -= fine;
+      c.oneOff.fines -= fine;
       const sold = game.releaseScattered(c.id, Math.floor(c.tiles * A.divestShare), 8);
       this.lastAction.set(c.id, game.day);
       this.dominantSince.delete(c.id);

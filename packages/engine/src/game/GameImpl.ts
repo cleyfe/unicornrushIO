@@ -428,7 +428,9 @@ export class GameImpl {
   }
 
   recordLoss(loser: number, cause: number | 'churn'): void {
-    if (this.companies[loser].isBot) return;
+    const c = this.companies[loser];
+    c.lostTo[cause] = (c.lostTo[cause] ?? 0) + 1;
+    if (c.isBot) return;
     if (!this.losses.has(loser)) this.losses.set(loser, new Map());
     const m = this.losses.get(loser)!;
     m.set(cause, (m.get(cause) ?? 0) + 1);
@@ -519,12 +521,21 @@ export class GameImpl {
     this.reportLosses(c.id);
     c.alive = false;
     c.closedDay = this.day;
+    c.closedWhy = why;
     for (let i = 0; i < this.owner.length; i++) if (this.owner[i] === c.id) this.setOwner(i, NEUTRAL);
     this.lawsuits = this.lawsuits.filter((l) => l.plaintiff !== c.id && l.defendant !== c.id);
     this.news(
       c.isBot ? `${c.name} ${why} and closed. Its customers are up for grabs.` : `Your company ${why} and closed.`,
       c.isBot ? 'good' : 'bad',
     );
+  }
+
+  /** After the human player closes, keep the match running so they can watch the end. */
+  spectating = false;
+
+  keepWatching(): void {
+    this.spectating = true;
+    this.result = null;
   }
 
   finish(winnerId: number | null, reason: WinReason): void {
@@ -588,7 +599,7 @@ export class GameImpl {
 
   private pushLog(e: Omit<LogEntry, 'id' | 'day'>): void {
     this.log.push({ ...e, id: ++this.logId, day: Math.floor(this.day) });
-    if (this.log.length > 80) this.log.shift();
+    if (this.log.length > 600) this.log.shift();
   }
 
   /**
@@ -738,12 +749,14 @@ function newCompany(id: number, s: CompanySpec): Company {
     tierSpend: [0, 0, 0, 0],
     border: new Set(),
     pnl: emptyPnl(),
-    oneOff: { hiring: 0, severance: 0, legalFees: 0, damages: 0, advertising: 0, guards: 0, streetDeals: 0 },
+    oneOff: { hiring: 0, severance: 0, legalFees: 0, fines: 0, damages: 0, advertising: 0, guards: 0, streetDeals: 0 },
     avgProfit: 0,
     churnCarry: 0,
     negativeCashDays: 0,
     peakTiles: 0,
     peakValuation: 0,
     closedDay: null,
+    closedWhy: null,
+    lostTo: {},
   };
 }

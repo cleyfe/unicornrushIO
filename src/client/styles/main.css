@@ -351,7 +351,7 @@ h1 b {
   bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(800px, calc(100vw - 24px));
+  width: min(860px, calc(100vw - 24px));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -708,7 +708,7 @@ body[data-mode='buy'] canvas {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  pointer-events: none;
+  cursor: pointer;
 }
 .news-item {
   font-size: 12px;
@@ -1635,4 +1635,31 @@ td i {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+}
+
+/* Watching the end of the match after closing: no controls, just the map and the race. */
+.stage.spectating .action-bar,
+.stage.spectating .you-card,
+.stage.spectating .card-picker {
+  display: none;
+}
+ul.what li {
+  margin-bottom: 4px;
+}
+
+.news-filter {
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 8px;
+}
+.news-log {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.news-log .news-item {
+  animation: none;
+  opacity: 1;
 }

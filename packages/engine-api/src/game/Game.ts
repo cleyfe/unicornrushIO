@@ -17,6 +17,7 @@ export interface OneOffFlows {
   hiring: number; // recruiting costs paid (negative)
   severance: number; // firing costs paid (negative)
   legalFees: number; // lawsuit fees and costs paid (negative)
+  fines: number; // antitrust and data-breach fines (negative)
   advertising: number; // ad purchases (negative)
   guards: number; // neighbourhood account teams (negative)
   streetDeals: number; // streets bought in deals (negative)
@@ -88,6 +89,10 @@ export interface Company {
   peakTiles: number;
   peakValuation: number;
   closedDay: number | null;
+  /** Why it closed ("ran out of cash", "lost every customer"), once closed. */
+  closedWhy: string | null;
+  /** Streets this company lost over the match, by who took them (a company id, or 'churn'). */
+  lostTo: Record<string, number>;
 }
 
 export interface Lawsuit {

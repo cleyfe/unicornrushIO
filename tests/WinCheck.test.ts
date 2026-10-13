@@ -34,3 +34,34 @@ describe('ending the game', () => {
     expect(r.game.result).not.toBeNull();
   });
 });
+
+describe('after a big bill', () => {
+  it('the bank covers a profitable company with an overdraft instead of closing it', async () => {
+    const { quietSetup, runDays } = await import('./util/Setup');
+    const r = quietSetup();
+    const me = r.game.player;
+    runDays(r, 5);
+    me.pnl.revenue = 50_000; // credit limit = 60 days of revenue
+    me.cash = -200_000;
+    runDays(r, 1);
+    expect(me.alive).toBe(true);
+    expect(me.cash).toBeGreaterThanOrEqual(0);
+    expect(me.debt).toBeGreaterThan(190_000);
+  });
+});
+
+describe('keep watching', () => {
+  it('lets the match play on after the player closes', async () => {
+    const { setup, runDays } = await import('./util/Setup');
+    const r = setup(5);
+    const g = r.game;
+    g.closeCompany(g.player, 'ran out of cash');
+    runDays(r, 1);
+    expect(g.result?.reason).toBe('playerBankrupt');
+    expect(g.player.closedWhy).toBe('ran out of cash');
+    g.keepWatching();
+    runDays(r, 30);
+    expect(g.result).toBeNull();
+    expect(g.day).toBeGreaterThan(30);
+  });
+});

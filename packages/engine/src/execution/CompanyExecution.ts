@@ -1,6 +1,7 @@
 import type { Company } from '@unicornrush/engine-api/game/Game';
 import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { money } from '@unicornrush/engine-lib/Format';
 import type { GameImpl } from '../game/GameImpl';
 import type { Execution } from './Execution';
 
@@ -116,6 +117,14 @@ export class CompanyExecution implements Execution {
     if (c.tiles === 0) {
       game.closeCompany(c, 'lost every customer');
       return;
+    }
+    // A profitable company hit by a big bill isn't left to die: the bank covers
+    // the gap with an overdraft, up to its credit limit.
+    if (c.cash < 0 && c.debt < game.maxDebt(c)) {
+      const cover = Math.min(game.maxDebt(c) - c.debt, -c.cash + CONFIG.bank.overdraftCushion);
+      c.debt += cover;
+      c.cash += cover;
+      if (!c.isBot) game.message(c.id, `🏦 Out of cash: the bank covered you with a ${money(cover)} overdraft. Interest runs on it.`, 'bad');
     }
     if (c.cash >= 0) {
       c.negativeCashDays = 0;
