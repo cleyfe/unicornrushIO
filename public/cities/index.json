@@ -141,5 +141,18 @@
    0.13
   ],
   "streets": 3447
+ },
+ {
+  "id": "barcelona",
+  "flag": "🇪🇸",
+  "city": "Barcelona",
+  "area": "Eixample",
+  "mix": [
+   0.3,
+   0.38,
+   0.2,
+   0.12
+  ],
+  "streets": 3744
  }
 ]
