@@ -192,11 +192,12 @@ export const CONFIG = {
   // expandEveryDays: days between two sales campaigns; salesMult: size of the sales team
   // they aim for; serviceBonus: extra operations staff kept (costly); streetJudgement:
   // 1 = picks streets by value per push like a pro, 0 = picks any street nearby;
-  // aggressionMult: appetite for taking rivals' streets.
+  // aggressionMult: appetite for taking rivals' streets; advanced: uses ads, cards,
+  // lawsuits, guards and acquisitions (easy bots only expand, hire and price).
   difficulty: {
-    easy: { reserveMult: 3, repDays: 90, growth: 0.1, extraPushReserve: 0.2, leaderFocus: false, expandEveryDays: 3, salesMult: 0.4, serviceBonus: 0.5, streetJudgement: 1, aggressionMult: 1 },
-    normal: { reserveMult: 2, repDays: 45, growth: 0.35, extraPushReserve: 0.1, leaderFocus: true, expandEveryDays: 1, salesMult: 1, serviceBonus: 0, streetJudgement: 1, aggressionMult: 1 },
-    hard: { reserveMult: 1, repDays: 20, growth: 0.5, extraPushReserve: 0, leaderFocus: true, expandEveryDays: 1, salesMult: 1, serviceBonus: 0.1, streetJudgement: 1, aggressionMult: 1 },
+    easy: { reserveMult: 3, repDays: 90, growth: 0.1, extraPushReserve: 0.2, leaderFocus: false, expandEveryDays: 3, salesMult: 0.4, serviceBonus: 0.5, streetJudgement: 1, aggressionMult: 1, advanced: false },
+    normal: { reserveMult: 2, repDays: 45, growth: 0.35, extraPushReserve: 0.1, leaderFocus: true, expandEveryDays: 1, salesMult: 1, serviceBonus: 0, streetJudgement: 1, aggressionMult: 1, advanced: true },
+    hard: { reserveMult: 1, repDays: 20, growth: 0.5, extraPushReserve: 0, leaderFocus: true, expandEveryDays: 1, salesMult: 1, serviceBonus: 0.1, streetJudgement: 1, aggressionMult: 1, advanced: true },
   },
 
   events: { firstDay: 150, minGap: 120, maxGap: 180, warningDays: 10 },

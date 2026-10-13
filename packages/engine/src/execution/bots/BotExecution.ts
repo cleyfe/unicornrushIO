@@ -108,7 +108,8 @@ export class BotExecution implements Execution {
     }
 
     // 3. Sue the leader now and then.
-    const target = this.lawsuitTarget(g);
+    const advanced = level.advanced;
+    const target = advanced ? this.lawsuitTarget(g) : null;
     const fee = g.lawsuitFee(c);
     if (target !== null && cash > fee + reserve * 2) {
       this.act(g, { type: 'lawsuit', companyId: id, targetId: target });
@@ -117,7 +118,7 @@ export class BotExecution implements Execution {
 
     // 3a. Buy a struggling rival cheaply, now and then: lots of streets for little money.
     // Bots leave human players alone: being bought out would end their game.
-    const buy = this.acquisitionTarget(g);
+    const buy = advanced ? this.acquisitionTarget(g) : null;
     if (buy) {
       const price = g.acquisitionPrice(buy);
       if (cash > price + reserve * 3) {
@@ -127,7 +128,7 @@ export class BotExecution implements Execution {
     }
 
     // 3b. Guard the front line against a rival that keeps taking our streets.
-    const front = this.frontToGuard(g);
+    const front = advanced ? this.frontToGuard(g) : -1;
     if (front >= 0) {
       const offer = g.guardOffer(c, front);
       if (cash > offer.cost + reserve * 2) {
@@ -147,13 +148,13 @@ export class BotExecution implements Execution {
     // 5. Advertising: turn idle cash into an ad campaign aimed at the best street, while it pays back.
     const ad = g.adOffer(c);
     const adTarget = f.neutral > 0 ? f.bestNeutral : f.cheapestRivalTile;
-    if (canGrow && adTarget >= 0 && c.push < g.maxPush(c) * 0.5 && cash > ad.cost + reserve * 1.5 * level.reserveMult) {
+    if (advanced && canGrow && adTarget >= 0 && c.push < g.maxPush(c) * 0.5 && cash > ad.cost + reserve * 1.5 * level.reserveMult) {
       this.act(g, { type: 'advertise', companyId: id, tile: adTarget });
       cash -= ad.cost;
     }
 
     // 6. Opportunity cards: take the one worth the most.
-    if (c.offer) {
+    if (c.offer && advanced) {
       const values = c.offer.cards.map((card) => cardValue(c, card));
       this.act(g, { type: 'pickCard', companyId: id, index: values.indexOf(Math.max(...values)) });
     }
