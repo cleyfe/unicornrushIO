@@ -206,5 +206,18 @@
    0.12
   ],
   "streets": 2819
+ },
+ {
+  "id": "warsaw",
+  "flag": "🇵🇱",
+  "city": "Warszawa",
+  "area": "Śródmieście",
+  "mix": [
+   0.4,
+   0.35,
+   0.17,
+   0.08
+  ],
+  "streets": 1818
  }
 ]
