@@ -183,6 +183,14 @@ export interface StreetCost {
   total: number;
 }
 
+/** A guard posted on a neighbourhood, for drawing its marker. */
+export interface GuardPost {
+  owner: number;
+  /** The street it was posted on. */
+  center: number;
+  untilDay: number;
+}
+
 export interface ValuationBreakdown {
   cash: number;
   debt: number;

@@ -178,8 +178,10 @@ describe('guarding a neighbourhood', () => {
     expect(me.cash).toBeCloseTo(cash - offer.cost, -3);
     expect(g.tileCost(rival, 0, tile)).toBeCloseTo(before * CONFIG.guard.defenceMult, 0);
     expect(g.streetCost(rival, 0, tile).guard).toBe(CONFIG.guard.defenceMult);
+    expect(g.guardPosts).toEqual([expect.objectContaining({ owner: 0, center: tile })]);
     runDays(r, CONFIG.guard.days + 1);
     expect(g.isGuarded(tile, 0)).toBe(false);
+    expect(g.guardPosts).toHaveLength(0);
   });
 
   it('only works on your own streets', () => {

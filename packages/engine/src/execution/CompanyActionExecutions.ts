@@ -158,6 +158,7 @@ export class GuardExecution extends InstantExecution {
       game.guardOwner[t] = c.id;
       game.guardUntil[t] = until;
     }
+    game.guardPosts.push({ owner: c.id, center: this.tile, untilDay: until });
     game.guardVersion++;
     if (!c.isBot) game.message(c.id, `🛡 ${offer.streets.length} streets guarded for ${CONFIG.guard.days} days.`, 'good');
   }

@@ -23,6 +23,7 @@ import { History } from './History';
 import { InputHandler } from './InputHandler';
 import { CityMapView, WEALTH_COLORS } from './render/CityMapView';
 import { CompanyLabels } from './render/CompanyLabels';
+import { GuardMarkers } from './render/GuardMarkers';
 
 const app = document.getElementById('app')!;
 
@@ -69,6 +70,7 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
   app.append(loading);
   view.onReady = () => loading.remove();
   const labels = new CompanyLabels(game, city, view.map);
+  const guards = new GuardMarkers(game, view.map, (s) => view.zoneCenter(s));
   const history = new History(game);
   const drawer = new Drawer(game, (i) => client.send(i), history);
   // Drawers don't pause the game: a multiplayer match can't stop for one player either.
@@ -103,7 +105,7 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
   legend.title = 'Building colour = neighbourhood wealth: how much each customer spends. Owned buildings take the owner colour, brighter on richer streets, and rich ones get a gold rim.';
   const paused = el('div', 'paused-badge', '⏸ Click a glowing street to start · or click anywhere else to move your start');
   const guardBanner = el('div', 'guard-banner', '🛡 Click one of your streets to guard its neighbourhood · Esc to cancel');
-  stage.append(labels.root, top.root, you.root, race.root, legend, actions.root, cards.root, news.root, drawer.root, coach.root, paused, guardBanner);
+  stage.append(guards.root, labels.root, top.root, you.root, race.root, legend, actions.root, cards.root, news.root, drawer.root, coach.root, paused, guardBanner);
   const input = new InputHandler(client, view, city, tooltip, setSpeed, firstMove, () => started);
   const detach = input.attach();
   actions.onAim = (mode) => input.toggleMode(mode);
@@ -132,6 +134,7 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
       view.update();
     }
     labels.update(now);
+    guards.update();
     history.update();
     const fresh = client.newLogEntries();
     // When a lawsuit involves you, show your personal message instead of the public one.

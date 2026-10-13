@@ -35,6 +35,10 @@ export class CompanyExecution implements Execution {
     c.peakValuation = Math.max(c.peakValuation, game.valuation(c).total);
     this.checkSolvency(game);
     if (game.tick % (CONFIG.ticksPerDay * 10) === 0) game.reportLosses(c.id);
+    // Drop this company's expired guards, and guards on streets it no longer owns.
+    if (game.isNewDay()) {
+      game.guardPosts = game.guardPosts.filter((p) => p.owner !== c.id || (game.day < p.untilDay && game.owner[p.center] === c.id));
+    }
   }
 
   private graduateTrainees(game: GameImpl): void {

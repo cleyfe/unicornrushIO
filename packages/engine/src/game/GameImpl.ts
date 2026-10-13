@@ -2,6 +2,7 @@ import type {
   ActiveEvent,
   Company,
   Forecast,
+  GuardPost,
   LocalEvent,
   CompanySpec,
   GameResult,
@@ -50,6 +51,8 @@ export class GameImpl {
   readonly guardUntil: Float32Array;
   /** Bumped whenever a guard is posted. */
   guardVersion = 0;
+  /** Guards currently posted (expired ones are dropped each day). */
+  guardPosts: GuardPost[] = [];
   /** Streets bought in a deal can't be bought back with cash until this day. */
   readonly dealLockUntil: Float32Array;
 

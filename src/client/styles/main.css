@@ -1671,3 +1671,28 @@ ul.what li {
   background: var(--accent);
   border-color: var(--accent);
 }
+
+/* Guard badges over guarded neighbourhoods. */
+.stage > .guard-markers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.guard-badge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #fff;
+  background: rgba(10, 16, 26, 0.85);
+  border: 2px solid var(--company);
+  box-shadow: 0 0 10px var(--company);
+}
+.guard-badge.me {
+  font-size: 13px;
+}
