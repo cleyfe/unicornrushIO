@@ -193,5 +193,18 @@
    0.1
   ],
   "streets": 2149
+ },
+ {
+  "id": "sao-paulo",
+  "flag": "🇧🇷",
+  "city": "São Paulo",
+  "area": "Paulista & Jardins",
+  "mix": [
+   0.4,
+   0.3,
+   0.18,
+   0.12
+  ],
+  "streets": 2819
  }
 ]
