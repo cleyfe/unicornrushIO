@@ -59,7 +59,17 @@ customers are harder to win: a luxury customer costs about 2.8× the sales push 
 one, and a budget customer about 0.6×. Every strategy (cheap on budget streets, premium on luxury
 ones, or in between) earns a similar profit per unit of sales effort; they differ in risk.
 
-**First city: Paris · Opéra & Monceau**, from Parc Monceau and the Golden Triangle to Pigalle.
+**Cities:**
+
+| City | Area |
+| --- | --- |
+| 🇫🇷 Paris | Opéra & Monceau: from Parc Monceau and the Golden Triangle to Pigalle |
+| 🇨🇭 Genève | Centre: lakefront luxury, the Old Town, Pâquis and Plainpalais |
+| 🇺🇸 New York | Lower Manhattan: Tribeca, SoHo and the West Village next to Chinatown and the Lower East Side |
+| 🇬🇧 London | West End: Mayfair and Bond Street, Soho, Covent Garden and Holborn |
+| 🇩🇪 Berlin | Mitte: Friedrichstraße and Hackescher Markt down to Kreuzberg |
+| 🇺🇸 San Francisco | Downtown: Nob Hill, the Financial District, SoMa and the Mission |
+| 🇨🇦 Toronto | Downtown: Yorkville, Kensington Market and the Financial District |
 
 #### Adding a city
 
