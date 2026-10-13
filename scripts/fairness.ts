@@ -10,6 +10,15 @@ import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import { cardValue } from '@unicornrush/engine/execution/OpportunityExecution';
 
 const N = Number(process.argv[2] ?? 24);
+// Try a tuning without editing Config: SET="sales.adBaseCost=300000,sales.adStepCost=150000"
+for (const kv of (process.env.SET ?? '').split(',').filter(Boolean)) {
+  const [path, value] = kv.split('=');
+  const keys = path.split('.');
+  let o = CONFIG as unknown as Record<string, unknown>;
+  for (const k of keys.slice(0, -1)) o = o[k] as Record<string, unknown>;
+  o[keys[keys.length - 1]] = Number(value);
+  console.log(`SET ${path} = ${value}`);
+}
 const cityId = process.argv[3];
 const city: CityData | undefined = cityId ? JSON.parse(readFileSync(`public/cities/${cityId}.json`, 'utf8')) : undefined;
 console.log(`Map: ${city ? city.name : 'synthetic grid city'}`);
