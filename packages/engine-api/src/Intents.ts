@@ -14,6 +14,8 @@ export type Intent =
   | { type: 'borrow'; companyId: number }
   | { type: 'repay'; companyId: number }
   | { type: 'advertise'; companyId: number }
+  /** Posts a dedicated account team on the neighbourhood around one of your streets. */
+  | { type: 'guard'; companyId: number; tile: number }
   | { type: 'lawsuit'; companyId: number; targetId: number }
   /** Takes card `index` of the current offer; -1 passes. */
   | { type: 'pickCard'; companyId: number; index: number };

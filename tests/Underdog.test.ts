@@ -162,3 +162,38 @@ describe('scrutiny of the leader', () => {
     expect(g.capacity(me)).toBeCloseTo(before * CONFIG.scrutiny.strikeCapacity);
   });
 });
+
+describe('guarding a neighbourhood', () => {
+  it('makes your nearby streets harder to steal, for a while, at a price', () => {
+    const r = quietSetup();
+    const g = r.game;
+    const me = g.player;
+    const rival = g.companies[1];
+    const tile = [...me.border][0];
+    const before = g.tileCost(rival, 0, tile);
+    const offer = g.guardOffer(me, tile);
+    expect(offer.streets).toContain(tile);
+    const cash = me.cash;
+    act(r, { type: 'guard', companyId: 0, tile });
+    expect(me.cash).toBeCloseTo(cash - offer.cost, -3);
+    expect(g.tileCost(rival, 0, tile)).toBeCloseTo(before * CONFIG.guard.defenceMult, 0);
+    expect(g.streetCost(rival, 0, tile).guard).toBe(CONFIG.guard.defenceMult);
+    runDays(r, CONFIG.guard.days + 1);
+    expect(g.isGuarded(tile, 0)).toBe(false);
+  });
+
+  it('only works on your own streets', () => {
+    const r = quietSetup();
+    const theirs = [...r.game.companies[1].border][0];
+    act(r, { type: 'guard', companyId: 0, tile: theirs });
+    expect(lastMessage(r)).toMatch(/your own streets/);
+  });
+
+  it('explains a street price as base × defence', () => {
+    const g = quietSetup().game;
+    const tile = [...g.companies[1].border][0];
+    const s = g.streetCost(g.player, 1, tile);
+    expect(s.total).toBeCloseTo(s.base * s.service * s.loyalty * s.reserve * s.priceGap * s.guard);
+    expect(s.defence).toBeCloseTo(s.total / s.base);
+  });
+});

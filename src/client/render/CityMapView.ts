@@ -45,6 +45,7 @@ export class CityMapView {
   private ready = false;
   private drawnOwner: Int16Array;
   private drawnBorder: Uint8Array;
+  private drawnGuard: Uint8Array;
   private drawnCourt = '';
   private frontier = new Set<number>();
   private hovered = -1;
@@ -60,6 +61,7 @@ export class CityMapView {
     const n = city.segments.coords.length;
     this.drawnOwner = new Int16Array(n).fill(NEUTRAL);
     this.drawnBorder = new Uint8Array(n);
+    this.drawnGuard = new Uint8Array(n);
     this.buildingsOf = Array.from({ length: n }, () => []);
     city.buildings.segment.forEach((s, b) => this.buildingsOf[s].push(b));
 
@@ -168,6 +170,19 @@ export class CityMapView {
       ...this.game.companies.flatMap((c) => [c.id, lighten(c.color, c.id === 0 ? 0.25 : 0.15)]),
       '#ffffff',
     ];
+    // Guarded streets get a soft halo underneath.
+    map.addLayer({
+      id: 'streets-guard',
+      type: 'line',
+      source: 'streets',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': expr(borderColor),
+        'line-width': expr(['interpolate', ['linear'], ['zoom'], 13, 6, 16, 14, 18, 24]),
+        'line-blur': 3,
+        'line-opacity': expr(['case', ['boolean', ['feature-state', 'guard'], false], 0.45, 0]),
+      },
+    });
     map.addLayer({
       id: 'streets',
       type: 'line',
@@ -269,14 +284,16 @@ export class CityMapView {
     for (let i = 0; i < g.owner.length; i++) {
       const o = g.owner[i];
       const border = o >= 0 && g.companies[o].border.has(i) ? 1 : 0;
+      const guard = o >= 0 && g.isGuarded(i, o) ? 1 : 0;
       const ownerChanged = o !== this.drawnOwner[i];
-      if (!ownerChanged && border === this.drawnBorder[i] && !(courtChanged && o >= 0)) continue;
+      if (!ownerChanged && border === this.drawnBorder[i] && guard === this.drawnGuard[i] && !(courtChanged && o >= 0)) continue;
       this.drawnOwner[i] = o;
       this.drawnBorder[i] = border;
+      this.drawnGuard[i] = guard;
       this.map.setFeatureState(
         { source: 'streets', id: i },
         // Only the border of a company on trial glows, so it doesn't swamp the map.
-        { owner: o, border: border === 1, court: border === 1 && defendants.has(o) },
+        { owner: o, border: border === 1, court: border === 1 && defendants.has(o), guard: guard === 1 },
       );
       if (ownerChanged) {
         for (const b of this.buildingsOf[i]) this.map.setFeatureState({ source: 'buildings', id: b }, { owner: o });

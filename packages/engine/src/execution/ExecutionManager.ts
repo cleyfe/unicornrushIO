@@ -4,6 +4,7 @@ import {
   AdvertiseExecution,
   BorrowExecution,
   FireExecution,
+  GuardExecution,
   HireExecution,
   RepayExecution,
   SetPriceExecution,
@@ -32,6 +33,8 @@ export function createExecution(intent: Intent): Execution {
       return new RepayExecution(intent.companyId);
     case 'advertise':
       return new AdvertiseExecution(intent.companyId);
+    case 'guard':
+      return new GuardExecution(intent.companyId, intent.tile);
     case 'lawsuit':
       return new LawsuitExecution(intent.companyId, intent.targetId);
     case 'pickCard':

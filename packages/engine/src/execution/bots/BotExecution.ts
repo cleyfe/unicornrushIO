@@ -43,6 +43,7 @@ export class BotExecution implements Execution {
   private c!: Company;
   private p!: Persona;
   private nb: number[] = [];
+  private lastGuardDay = -Infinity;
 
   constructor(private companyId: number) {}
 
@@ -113,6 +114,17 @@ export class BotExecution implements Execution {
       cash -= fee;
     }
 
+    // 3b. Guard the front line against a rival that keeps taking our streets.
+    const front = this.frontToGuard(g);
+    if (front >= 0) {
+      const offer = g.guardOffer(c, front);
+      if (cash > offer.cost + reserve * 2) {
+        this.act(g, { type: 'guard', companyId: id, tile: front });
+        cash -= offer.cost;
+        this.lastGuardDay = g.day;
+      }
+    }
+
     // 4. Hiring, from surplus cash only, up to the staff the business needs.
     if (staff < wanted && cash > reserve + s.hireCost * 2) {
       const affordable = Math.floor((cash - reserve) / (s.hireCost + s.salaryPerDay * 20));
@@ -159,6 +171,25 @@ export class BotExecution implements Execution {
     return best !== null && g.rng.chance(0.1 + this.p.litigious * 0.2) ? best : null;
   }
 
+
+  /** A border street facing the rival that took most of our streets lately, if it's worth guarding. */
+  private frontToGuard(g: GameImpl): number {
+    const c = this.c;
+    if (g.day - this.lastGuardDay < CONFIG.guard.days * 0.75) return -1;
+    let attacker = -1;
+    let most = 3; // at least this many streets lost recently
+    for (const r of g.companies) {
+      if (!r.alive || r.id === c.id) continue;
+      const n = g.streetsTaken(r.id, c.id);
+      if (n > most) (most = n), (attacker = r.id);
+    }
+    if (attacker < 0) return -1;
+    for (const b of c.border) {
+      if (g.isGuarded(b, c.id)) continue;
+      for (const n of neighbors(g.map, b, this.nb)) if (g.owner[n] === attacker) return b;
+    }
+    return -1;
+  }
 
   /** How much this company wants an untapped street, given its style. */
   private streetAppeal(g: GameImpl, tile: number): number {

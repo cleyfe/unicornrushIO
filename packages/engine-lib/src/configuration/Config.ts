@@ -105,6 +105,16 @@ export const CONFIG = {
     dismissedCostShare: 0.6, // if dismissed, the plaintiff also pays the defendant's costs: this share of its own fee
   },
 
+  // Guard: a dedicated account team for one neighbourhood. Your streets around
+  // the chosen one cost rivals more push to steal, for a while.
+  guard: {
+    radius: 250, // metres
+    days: 60,
+    defenceMult: 1.6,
+    costPerCustomer: 250, // per customer you own in the area
+    minCost: 5_000,
+  },
+
   // Big companies are slower: a price change takes a day per this many employees to roll out.
   agility: { employeesPerDelayDay: 40, maxDelayDays: 15 },
 

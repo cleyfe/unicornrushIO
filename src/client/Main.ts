@@ -71,16 +71,7 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty): 
   const labels = new CompanyLabels(game, city, view.map);
   const history = new History(game);
   const drawer = new Drawer(game, (i) => client.send(i), history);
-  // Opening a drawer pauses the game, so you can read and decide calmly.
-  let speedBeforeDrawer = 0;
-  drawer.onOpenChange = (open) => {
-    if (open) {
-      speedBeforeDrawer = client.speed;
-      client.speed = 0;
-    } else if (started) {
-      client.speed = speedBeforeDrawer;
-    }
-  };
+  // Drawers don't pause the game: a multiplayer match can't stop for one player either.
   let speedBeforeHelp = 1;
   const top = new TopBar(
     game,
@@ -114,18 +105,25 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty): 
   );
   legend.title = 'Building colour = neighbourhood wealth: how much each customer spends. Owned buildings take the owner colour, brighter on richer streets, and rich ones get a gold rim.';
   const paused = el('div', 'paused-badge', '⏸ Paused: click a glowing street to start');
-  stage.append(labels.root, top.root, you.root, race.root, legend, actions.root, cards.root, news.root, drawer.root, coach.root, paused);
-  const detach = new InputHandler(client, view, city, tooltip, setSpeed, firstMove).attach();
+  const guardBanner = el('div', 'guard-banner', '🛡 Click one of your streets to guard its neighbourhood · Esc to cancel');
+  stage.append(labels.root, top.root, you.root, race.root, legend, actions.root, cards.root, news.root, drawer.root, coach.root, paused, guardBanner);
+  const input = new InputHandler(client, view, city, tooltip, setSpeed, firstMove);
+  const detach = input.attach();
+  actions.onGuard = () => input.toggleGuardMode();
+  input.onHotkey = (key) => actions.hotkey(key);
+  input.onEscape = () => drawer.close();
 
   let last = performance.now();
   let uiTimer = Infinity;
   let drawnVersion = -1;
+  let drawnGuards = -1;
   const frame = (now: number) => {
     const elapsed = now - last;
     last = now;
     client.advance(elapsed);
-    if (game.ownershipVersion !== drawnVersion || game.lawsuits.length > 0) {
+    if (game.ownershipVersion !== drawnVersion || game.lawsuits.length > 0 || game.guardVersion !== drawnGuards) {
       drawnVersion = game.ownershipVersion;
+      drawnGuards = game.guardVersion;
       view.update();
     }
     labels.update(now);
@@ -147,6 +145,7 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty): 
       actions.update();
       cards.update();
       view.updateZones();
+      view.update(); // guards expire over time
       drawer.update();
       coach.update(now);
       paused.hidden = started;

@@ -129,3 +129,28 @@ export class AdvertiseExecution extends InstantExecution {
     c.adHeat += 1;
   }
 }
+
+/** Posts a dedicated account team on the neighbourhood around one of your streets. */
+export class GuardExecution extends InstantExecution {
+  constructor(
+    private companyId: number,
+    private tile: number,
+  ) {
+    super();
+  }
+  protected apply(game: GameImpl): void {
+    const c = game.companies[this.companyId];
+    if (!c.alive || game.owner[this.tile] !== c.id) return game.message(c.id, 'Pick one of your own streets to guard.');
+    const offer = game.guardOffer(c, this.tile);
+    if (c.cash < offer.cost) return game.message(c.id, `Guarding this area costs ${money(offer.cost)}: not enough cash.`);
+    c.cash -= offer.cost;
+    c.oneOff.guards -= offer.cost;
+    const until = game.day + CONFIG.guard.days;
+    for (const t of offer.streets) {
+      game.guardOwner[t] = c.id;
+      game.guardUntil[t] = until;
+    }
+    game.guardVersion++;
+    if (!c.isBot) game.message(c.id, `🛡 ${offer.streets.length} streets guarded for ${CONFIG.guard.days} days.`, 'good');
+  }
+}

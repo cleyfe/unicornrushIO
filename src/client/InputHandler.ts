@@ -8,8 +8,16 @@ import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import type { ClientGameRunner } from './ClientGameRunner';
 import type { CityMapView } from './render/CityMapView';
 
-/** Clicking a street (or a building on it) launches a campaign; hovering explains it. */
+/**
+ * Clicking a street (or a building on it) launches a campaign; hovering explains it.
+ * In guard mode, clicking one of your streets posts an account team there instead.
+ */
 export class InputHandler {
+  private guardMode = false;
+  /** Command hotkeys (letters); returns true if the key was used. */
+  onHotkey: (key: string) => boolean = () => false;
+  onEscape: () => void = () => {};
+
   constructor(
     private client: ClientGameRunner,
     private view: CityMapView,
@@ -24,6 +32,13 @@ export class InputHandler {
     map.on('click', (e: MapMouseEvent) => {
       const seg = this.view.segmentAt(e.point);
       if (seg < 0) return;
+      if (this.guardMode) {
+        if (this.client.game.owner[seg] === 0) {
+          this.client.send({ type: 'guard', companyId: 0, tile: seg });
+          this.setGuardMode(false);
+        }
+        return;
+      }
       this.client.send({ type: 'campaign', companyId: 0, tile: seg });
       this.onFirstMove();
       // A ripple where you clicked: instant feedback before the street changes hands.
@@ -42,7 +57,9 @@ export class InputHandler {
         this.tooltip.style.display = 'none';
         return;
       }
-      this.tooltip.innerHTML = describeSegment(this.client.game, this.city, seg, this.view.isFrontier(seg));
+      this.tooltip.innerHTML = this.guardMode
+        ? describeGuard(this.client.game, seg)
+        : describeSegment(this.client.game, this.city, seg, this.view.isFrontier(seg));
       const w = this.tooltip.offsetWidth || 260;
       const box = map.getContainer().getBoundingClientRect();
       const x = e.point.x + 16 + w > box.width ? e.point.x - w - 16 : e.point.x + 16;
@@ -59,10 +76,16 @@ export class InputHandler {
       // Typing a name shouldn't pause the game; sliders and buttons can keep focus.
       const t = ev.target;
       if ((t instanceof HTMLInputElement && t.type === 'text') || t instanceof HTMLSelectElement) return;
+      if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
       const speeds: Record<string, number> = { ' ': 0, '1': 1, '2': 2, '3': 4 };
       if (ev.key in speeds) {
         ev.preventDefault();
         this.onSpeedKey(ev.key === ' ' && this.client.speed === 0 ? 1 : speeds[ev.key]);
+      } else if (ev.key === 'Escape') {
+        if (this.guardMode) this.setGuardMode(false);
+        else this.onEscape();
+      } else if (ev.key.length === 1 && this.onHotkey(ev.key)) {
+        ev.preventDefault();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -74,6 +97,42 @@ export class InputHandler {
       window.removeEventListener('click', blurButtons, true);
     };
   }
+
+  /** Guard mode: the next click on one of your streets guards its neighbourhood. */
+  setGuardMode(on: boolean): void {
+    this.guardMode = on;
+    this.view.map.getContainer().classList.toggle('guard-mode', on);
+    document.body.classList.toggle('guard-mode', on);
+  }
+
+  toggleGuardMode(): void {
+    this.setGuardMode(!this.guardMode);
+  }
+}
+
+/** The hover card in guard mode: which streets a guard would cover, and the price. */
+function describeGuard(g: GameImpl, seg: number): string {
+  if (g.owner[seg] !== 0) return '<div class="hc-title">🛡 Guard</div><div class="hc-action muted">Pick one of your streets</div>';
+  const offer = g.guardOffer(g.player, seg);
+  const ok = g.player.cash >= offer.cost;
+  return `<div class="hc-title">🛡 Guard this area</div>
+    <div class="hc-row"><span>${offer.streets.length} of your streets · ${CONFIG.guard.days} days</span><span>×${CONFIG.guard.defenceMult} defence</span></div>
+    <div class="hc-action ${ok ? 'ok' : 'wait'}">${ok ? `Click to guard · ${money(offer.cost)}` : `Costs ${money(offer.cost)}: not enough cash`}</div>`;
+}
+
+const DEFENCE_PARTS = [
+  ['service', 'service'],
+  ['loyalty', 'loyal customers'],
+  ['reserve', 'push reserve'],
+  ['priceGap', 'price gap'],
+  ['guard', 'guarded'],
+] as const;
+
+/** "base 24 × service 1.3 × loyal 1.2": why a street costs what it does. */
+function costBreakdown(g: GameImpl, attacker: number, owner: number, seg: number): string {
+  const s = g.streetCost(g.companies[attacker], owner, seg);
+  const parts = DEFENCE_PARTS.filter(([k]) => Math.abs(s[k] - 1) > 0.04).map(([k, label]) => `<span class="${s[k] > 1 ? 'up' : 'down'}">${label} ×${s[k].toFixed(1)}</span>`);
+  return `<div class="hc-cost">🛡 ×${s.defence.toFixed(1)}${parts.length ? ` = ${parts.join(' · ')}` : ''}</div>`;
 }
 
 /** The hover card: what a street is worth and whether you can take it now. */
@@ -89,6 +148,12 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
   const owner =
     o === NEUTRAL ? 'Untapped' : o === 0 ? 'Yours' : `<i style="background:rgb(${g.companies[o].color.join(',')})"></i>${g.companies[o].name}`;
   let action = '';
+  let defence = '';
+  if (o > 0) defence = costBreakdown(g, 0, o, seg);
+  else if (o === 0) {
+    defence = costBreakdown(g, 0, 0, seg).replace('🛡', '🛡 your defence');
+    if (g.isGuarded(seg, 0)) defence += `<div class="hc-row"><span>Guarded for ${Math.ceil(g.guardUntil[seg] - g.day)} more days</span></div>`;
+  }
   if (o !== 0) {
     const cost = g.tileCost(me, o, seg);
     if (!reachable) action = '<div class="hc-action muted">Not next to your streets yet</div>';
@@ -106,5 +171,5 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
   return `<div class="hc-title">${street}</div>
     <div class="hc-row"><span class="w${level}">${'$'.repeat(level + 1)} ${tier.label}</span><span>${owner}</span></div>
     <div class="hc-row"><span>${g.map.demand[seg].toFixed(1)} customers × ${tier.spend} spend</span><span>≈ ${money(perDay)} profit/day</span></div>
-    ${events}${action}`;
+    ${defence}${events}${action}`;
 }

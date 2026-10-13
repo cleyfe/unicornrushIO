@@ -4,18 +4,18 @@ import { money, pct } from '@unicornrush/engine-lib/Format';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import type { History } from '../History';
 import { $, el } from './dom';
+import { RaceChart } from './RaceChart';
 import { Sparkline } from './Sparkline';
 
-export type DrawerKind = 'finances' | 'lawsuit';
+export type DrawerKind = 'finances' | 'lawsuit' | 'race';
 
 /** A panel that slides in over the map for less frequent decisions. */
 export class Drawer {
   readonly root: HTMLElement;
   private kind: DrawerKind | null = null;
-  /** Called with true when a drawer opens and false when it closes (to pause the game). */
-  onOpenChange: (open: boolean) => void = () => {};
   private valueChart = new Sparkline('Valuation', '#60a5fa');
   private profitChart = new Sparkline('Profit per day', '#a78bfa');
+  private raceChart: RaceChart;
 
   constructor(
     private game: GameImpl,
@@ -24,91 +24,87 @@ export class Drawer {
   ) {
     this.root = el('aside', 'drawer glass', '');
     this.root.hidden = true;
+    this.raceChart = new RaceChart(game, history);
+    // Contents are redrawn, so listen once on the drawer itself.
+    const send = (i: Record<string, unknown>) => this.sendIntent({ ...i, companyId: 0 } as Intent);
+    this.root.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-sue], [data-bank]');
+      if (!b || b.disabled) return;
+      if (b.dataset.sue) send({ type: 'lawsuit', targetId: Number(b.dataset.sue) });
+      else send({ type: b.dataset.bank });
+    });
   }
 
   toggle(kind: DrawerKind): void {
     if (this.kind === kind) return this.close();
-    if (!this.kind) this.onOpenChange(true);
     this.kind = kind;
     this.root.hidden = false;
-    this.root.innerHTML = `<button class="close" aria-label="Close">✕</button>${kind === 'finances' ? this.financesHtml() : this.lawsuitHtml()}`;
+    const html = { finances: this.financesHtml, lawsuit: this.lawsuitHtml, race: this.raceHtml }[kind].call(this);
+    this.root.innerHTML = `<button class="close" aria-label="Close">✕</button>${html}`;
+    this.root.classList.toggle('wide', kind === 'race');
     $(this.root, '.close').addEventListener('click', () => this.close());
     if (kind === 'finances') this.root.querySelector('[data-v="charts"]')!.append(this.valueChart.root, this.profitChart.root);
-    this.bind();
+    if (kind === 'race') {
+      this.root.querySelector('[data-v="race"]')!.append(this.raceChart.root);
+      this.raceChart.draw();
+    }
     this.update();
   }
 
   close(): void {
-    if (this.kind) this.onOpenChange(false);
     this.kind = null;
     this.root.hidden = true;
   }
 
   private financesHtml(): string {
     const b = CONFIG.bank;
-    return `<h2>🏦 Finances</h2>
+    return `<h2>🏦 Money</h2>
       <div data-v="charts" class="charts"></div>
-      <h3>Profit &amp; loss <small>per day</small></h3>
+      <h3>Every day</h3>
       <table class="pnl">
-        <tr><td>Revenue <small>customers served × spend × price</small></td><td data-v="revenue" class="pos"></td></tr>
-        <tr><td>− Variable costs <small data-v="varNote"></small></td><td data-v="variableCost" class="neg"></td></tr>
-        <tr><td>− Salaries <small>${money(CONFIG.staff.salaryPerDay)} per person</small></td><td data-v="salaries" class="neg"></td></tr>
-        <tr><td>− Interest <small>${pct(b.interestPerYear)} a year on debt</small></td><td data-v="interest" class="neg"></td></tr>
+        <tr><td title="Customers served × their spend × your price">Revenue</td><td data-v="revenue" class="pos"></td></tr>
+        <tr><td title="What each sale costs you to deliver">− Supplies <small data-v="varNote"></small></td><td data-v="variableCost" class="neg"></td></tr>
+        <tr><td title="${money(CONFIG.staff.salaryPerDay)} per person per day, trainees included">− Salaries</td><td data-v="salaries" class="neg"></td></tr>
+        <tr><td title="${pct(b.interestPerYear)} a year on your debt">− Interest</td><td data-v="interest" class="neg"></td></tr>
         <tr class="total"><td>= Profit</td><td data-v="profit"></td></tr>
       </table>
       <h3>Valuation</h3>
       <table class="pnl">
         <tr><td>Cash</td><td data-v="vCash"></td></tr>
         <tr><td>− Debt</td><td data-v="vDebt" class="neg"></td></tr>
-        <tr><td>+ ${CONFIG.valuation.earningsMultiple}× yearly profit <small>based on average daily profit over the last ${CONFIG.valuation.profitWindowDays} days, so it reacts with a delay</small></td><td data-v="vEarnings"></td></tr>
+        <tr><td title="Average daily profit over the last ${CONFIG.valuation.profitWindowDays} days × 365 × ${CONFIG.valuation.earningsMultiple}">+ ${CONFIG.valuation.earningsMultiple}× yearly profit</td><td data-v="vEarnings"></td></tr>
         <tr class="total"><td>= Valuation</td><td data-v="vTotal"></td></tr>
       </table>
-      <p class="tip">💡 Investors pay for profit, not size: a small company with fat margins can be worth more than a big one losing money. Investing (hiring) lowers profit at first, so your valuation can dip before it grows.</p>
-      <h3>One-off cash flows <small>since the start, not in the daily P&amp;L</small></h3>
+      <h3>One-off spending <small>so far</small></h3>
       <table class="pnl">
-        <tr><td>Recruiting <small>${money(CONFIG.staff.hireCost)} per hire</small></td><td data-v="ooHiring"></td></tr>
-        <tr><td>Severance <small>${money(CONFIG.staff.fireCost)} per person let go</small></td><td data-v="ooSeverance"></td></tr>
-        <tr><td>Advertising <small>cash turned into sales push</small></td><td data-v="ooAds"></td></tr>
+        <tr><td>Recruiting</td><td data-v="ooHiring"></td></tr>
+        <tr><td>Severance</td><td data-v="ooSeverance"></td></tr>
+        <tr><td>Ads</td><td data-v="ooAds"></td></tr>
+        <tr><td>Guards</td><td data-v="ooGuards"></td></tr>
         <tr><td>Legal fees and fines</td><td data-v="ooLegal"></td></tr>
-        <tr><td>Lawsuit damages <small>received (+) or paid (−)</small></td><td data-v="ooDamages"></td></tr>
+        <tr><td>Lawsuit damages</td><td data-v="ooDamages"></td></tr>
       </table>
-      <h3>Bank</h3>
+      <h3>Bank <small data-v="limit"></small></h3>
       <div class="row"><span>Debt</span><b data-v="debt"></b></div>
-      <div class="row small"><span>Credit limit (${b.maxDebtRevenueDays} days of revenue)</span><span data-v="limit"></span></div>
       <div class="buttons">
-        <button data-bank="borrow">Borrow ${money(b.loanChunk)}</button>
+        <button data-bank="borrow" title="${pct(b.interestPerYear)} a year. Credit limit: ${b.maxDebtRevenueDays} days of revenue.">Borrow ${money(b.loanChunk)}</button>
         <button data-bank="repay" class="ghost">Repay ${money(b.loanChunk)}</button>
-      </div>
-      <p class="tip">💡 A loan pays for growth now (more staff, more ads), but interest is due every day, even in a recession. Borrow when each dollar earns more than ${pct(CONFIG.bank.interestPerYear)} a year.</p>`;
+      </div>`;
   }
 
   private lawsuitHtml(): string {
     const L = CONFIG.lawsuit;
-    return `<h2>⚖️ Unfair-competition lawsuit</h2>
-      <p>Sue a rival that hurt your business unfairly. The court looks at the <b>evidence</b>: streets they took from you recently (poaching your customers), and predatory pricing if they sell cheap. Ruling in <b>${L.courtDays} days</b>.</p>
-      <p class="fee-line">Your legal fees: <b data-v="fee"></b> <small>(${L.feeRevenueDays} days of your revenue, at least ${money(L.minFee)}: small companies pay less up front). If you win, your lawyers keep ${pct(L.lawyerShare)} of the damages.</small></p>
+    return `<h2>⚖️ Sue</h2>
+      <p class="fee-line" title="${L.feeRevenueDays} days of your revenue, at least ${money(L.minFee)}. Lawyers keep ${pct(L.lawyerShare)} of damages. If the court dismisses the case, you also pay ${pct(L.dismissedCostShare)} of your fee to the rival.">Fees <b data-v="fee"></b> · ruling in ${L.courtDays} days · lose: −<span data-v="counter"></span></p>
       <table class="cases-table">
-        <tr><th>Rival</th><th title="Streets they took from you recently (older ones count less)">Evidence</th><th>Win chance</th><th title="Your lost profits on those streets, after your lawyers' share">You'd get</th><th title="Average result after fees and risk">Worth it?</th><th></th></tr>
+        <tr><th>Rival</th><th title="Streets they took from you recently, and predatory (low) pricing">Evidence</th><th>Odds</th><th title="Your lost profits on those streets, after your lawyers' share. They also lose ${pct(L.customerLoss)} of their customers.">You'd get</th><th title="Average result after fees and risk">Worth</th><th></th></tr>
         <tbody data-v="caseRows"></tbody>
       </table>
-      <ul class="facts">
-        <li>✅ If you win: they pay your lost profits as damages, and bad press drives away ${pct(L.customerLoss)} of their customers.</li>
-        <li>❌ If you lose: you also pay their legal costs, ${pct(L.dismissedCostShare)} of your fee (<span data-v="counter"></span>).</li>
-      </ul>
-      <div data-v="cases"></div>
-      <p class="tip">💡 Courts decide on evidence, not on who is winning. Suing without a case is an expensive bet.</p>`;
+      <div data-v="cases"></div>`;
   }
 
-  private bind(): void {
-    const send = (i: Record<string, unknown>) => this.sendIntent({ ...i, companyId: 0 } as Intent);
-    this.root.querySelectorAll<HTMLButtonElement>('[data-bank]').forEach((b) =>
-      b.addEventListener('click', () => send({ type: b.dataset.bank })),
-    );
-    // Rows are redrawn, so listen on the drawer itself.
-    this.root.addEventListener('click', (e) => {
-      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-sue]');
-      if (b && !b.disabled) send({ type: 'lawsuit', targetId: Number(b.dataset.sue) });
-    });
+  private raceHtml(): string {
+    return `<h2>📈 Race to $1B</h2><div data-v="race"></div>`;
   }
 
   private set(key: string, text: string, cls?: string): void {
@@ -138,17 +134,22 @@ export class Drawer {
       this.set('vEarnings', money(v.earnings));
       this.set('vTotal', money(v.total));
       this.set('debt', money(c.debt));
-      this.set('limit', money(g.maxDebt(c)));
+      this.set('limit', `limit ${money(g.maxDebt(c))}`);
       const signed = (v: number) => [money(v), v > 0 ? 'pos' : v < 0 ? 'neg' : ''] as const;
       this.set('ooHiring', ...signed(c.oneOff.hiring));
       this.set('ooSeverance', ...signed(c.oneOff.severance));
       this.set('ooLegal', ...signed(c.oneOff.legalFees));
       this.set('ooAds', ...signed(c.oneOff.advertising));
+      this.set('ooGuards', ...signed(c.oneOff.guards));
       this.set('ooDamages', ...signed(c.oneOff.damages));
       if (g.tick % 10 === 0) {
         this.valueChart.update(this.history.valuation);
         this.profitChart.update(this.history.profit);
       }
+      return;
+    }
+    if (this.kind === 'race') {
+      if (g.tick % 10 === 0) this.raceChart.draw();
       return;
     }
     const L = CONFIG.lawsuit;
@@ -168,7 +169,7 @@ export class Drawer {
     const rowsHtml = cases
       .map(
         (k) => `<tr><td><i style="background:rgb(${k.r.color.join(',')})"></i>${k.r.name}</td>
-          <td>${k.evidence >= 0.5 ? `took ${Math.round(k.evidence)} streets` : 'none'}${k.r.price === 'low' ? ' · cheap' : ''}</td>
+          <td>${k.evidence >= 0.5 ? `${Math.round(k.evidence)} streets` : '—'}${k.r.price === 'low' ? ' · cheap' : ''}</td>
           <td>${pct(k.p)}</td><td>${money(k.damages)}</td>
           <td class="${k.value > 0 ? 'pos' : 'neg'}">${k.value > 0 ? '+' : ''}${money(k.value)}</td>
           <td><button class="danger sue-btn" data-sue="${k.r.id}" ${blocked ? 'disabled' : ''} title="${blocked || `Sue ${k.r.name} for ${money(fee)} in fees`}">Sue</button></td></tr>`,

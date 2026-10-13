@@ -35,6 +35,7 @@ Investors pay for profit, so a smaller, profitable company can beat a big one th
 | **Advertising** 📢 | Buy sales push with cash ($5,000 per push point at first). Each ad makes the next one 50% pricier, fading over a month. | Customer acquisition cost, diminishing returns |
 | **Bank loan** | $25K at a time, 24%/year interest, credit limit = 60 days of revenue | Leverage and risk |
 | **Lawsuit** ⚖️ | Sue a rival for unfair competition. Fees scale with your size (10 days of revenue, at least $25K); the court decides on evidence. See below. | Legal risk, damages as lost profits, contingency fees |
+| **Guard** 🛡 | Post an account team on a neighbourhood: your streets within 250 m cost rivals ×1.6 to steal for 60 days. Price: $250 per customer covered. | Customer retention, defending market share |
 | **Opportunity cards** 🎁 | Every couple of months, pick one of three cards. See below. | Fundraising and dilution, grants, supplier deals |
 
 ### The city
@@ -101,11 +102,20 @@ open in a side drawer. Short tips appear the first time each mechanic matters.
 
 ### Defending your customers
 
+Hover any street to see why it costs what it does: base × each defence factor. Your own
+defence (🛡) sits in the command bar.
+
 Stealing a rival's street costs more when the rival:
 - **holds sales push in reserve** (account managers working to keep customers). Each street it
   loses drains some of that reserve, so a well-defended company can't be steamrolled for free.
 - **has spare operations staff** (better service makes customers loyal, up to 1.5×).
 - **charges what its street's customers want** (cheap on budget streets, premium on luxury ones).
+- **has guarded the area** (🛡 Guard: ×1.6 for 60 days).
+
+### Controls
+
+Everything you do lives in the command bar at the bottom: Space pause · 1 2 3 speed ·
+H hire 10 · A ads · G guard · S sue · Q W E price · F money · R race chart · Esc close.
 
 ### Unfair-competition lawsuits ⚖️
 

@@ -18,6 +18,7 @@ export interface OneOffFlows {
   severance: number; // firing costs paid (negative)
   legalFees: number; // lawsuit fees and costs paid (negative)
   advertising: number; // ad purchases (negative)
+  guards: number; // neighbourhood account teams (negative)
   damages: number; // lawsuit damages received (+) or paid (−)
 }
 
@@ -155,6 +156,19 @@ export interface GameResult {
   winnerId: number | null;
   reason: WinReason;
   day: number;
+}
+
+/** Why a street costs what it does to win: the base, then the defender's multipliers. */
+export interface StreetCost {
+  base: number;
+  /** 1 for untapped streets. */
+  defence: number;
+  service: number;
+  loyalty: number;
+  reserve: number;
+  priceGap: number;
+  guard: number;
+  total: number;
 }
 
 export interface ValuationBreakdown {

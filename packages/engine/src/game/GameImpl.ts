@@ -9,6 +9,7 @@ import type {
   LogEntry,
   MessageTone,
   Pnl,
+  StreetCost,
   ValuationBreakdown,
   WinReason,
 } from '@unicornrush/engine-api/game/Game';
@@ -44,6 +45,11 @@ export class GameImpl {
   result: GameResult | null = null;
   /** Bumped whenever tile ownership changes, so renderers can skip redraws. */
   ownershipVersion = 0;
+  /** Guarded streets: who guards each one, and until when. */
+  readonly guardOwner: Int16Array;
+  readonly guardUntil: Float32Array;
+  /** Bumped whenever a guard is posted. */
+  guardVersion = 0;
 
   /** Evidence for lawsuits: streets (and their spend) attacker took from victim, decaying over time. */
   private takenStreets = new Map<string, number>();
@@ -62,6 +68,8 @@ export class GameImpl {
     this.map = city ? mapFromCity(city) : generateGridCity(this.rng);
     this.streetNames = city ? city.segments.names : [];
     this.owner = new Int16Array(this.map.size).fill(NEUTRAL);
+    this.guardOwner = new Int16Array(this.map.size).fill(NEUTRAL);
+    this.guardUntil = new Float32Array(this.map.size);
     specs.forEach((s, id) => this.companies.push(newCompany(id, s)));
     this.placeSpawns();
   }
@@ -206,10 +214,18 @@ export class GameImpl {
 
   /** Push needed to win one area from `target` (NEUTRAL or a company id). */
   tileCost(attacker: Company, target: number, tile: number): number {
+    return this.streetCost(attacker, target, tile).total;
+  }
+
+  /** The cost of winning a street, with each part of the defender's defence. */
+  streetCost(attacker: Company, target: number, tile: number): StreetCost {
     // Wealthier customers are worth more, and harder to win.
     const w = CONFIG.wealth[this.map.wealth[tile]];
     const d = this.map.demand[tile] * w.pushCost;
-    if (target === NEUTRAL) return CONFIG.sales.neutralTileCost * d;
+    if (target === NEUTRAL) {
+      const base = CONFIG.sales.neutralTileCost * d;
+      return { base, defence: 1, service: 1, loyalty: 1, reserve: 1, priceGap: 1, guard: 1, total: base };
+    }
     const def = this.companies[target];
     // Price matters a lot to budget customers and little to luxury ones,
     // who also stick with premium brands and distrust cheap ones.
@@ -217,12 +233,32 @@ export class GameImpl {
     let loyalty = 1 + (CONFIG.prices[def.price].loyalty - 1) * sens;
     if (def.price === 'high') loyalty *= w.prestige;
     if (def.price === 'low') loyalty /= w.prestige;
-    let mult = Math.max(0.3, this.serviceLevel(def)) * loyalty * this.retention(def);
+    const service = Math.max(0.3, this.serviceLevel(def));
+    const reserve = this.retention(def);
     const ar = CONFIG.prices[attacker.price].revenue;
     const dr = CONFIG.prices[def.price].revenue;
-    if (ar < dr) mult *= 1 - 0.25 * sens;
-    if (ar > dr) mult *= 1 + 0.25 * sens;
-    return CONFIG.sales.rivalTileCost * d * mult;
+    const priceGap = ar < dr ? 1 - 0.25 * sens : ar > dr ? 1 + 0.25 * sens : 1;
+    const guard = this.isGuarded(tile, target) ? CONFIG.guard.defenceMult : 1;
+    const defence = service * loyalty * reserve * priceGap * guard;
+    const base = CONFIG.sales.rivalTileCost * d;
+    return { base, defence, service, loyalty, reserve, priceGap, guard, total: base * defence };
+  }
+
+  /** How hard a company's streets are to steal, before street-specific factors (price fit, guards). */
+  defence(c: Company): number {
+    return Math.max(0.3, this.serviceLevel(c)) * this.retention(c);
+  }
+
+  isGuarded(tile: number, owner: number): boolean {
+    return this.guardOwner[tile] === owner && this.day < this.guardUntil[tile];
+  }
+
+  /** Your streets near `tile` that a guard would cover, and what it costs. */
+  guardOffer(c: Company, tile: number): { streets: number[]; cost: number } {
+    const G = CONFIG.guard;
+    const streets = this.streetsNear(tile, G.radius).filter((t) => this.owner[t] === c.id);
+    const customers = streets.reduce((s, t) => s + this.map.demand[t], 0);
+    return { streets, cost: Math.max(G.minCost, Math.round(customers * G.costPerCustomer)) };
   }
 
   activeLawsuitBy(c: Company): Lawsuit | undefined {
@@ -609,7 +645,7 @@ function newCompany(id: number, s: CompanySpec): Company {
     tierSpend: [0, 0, 0, 0],
     border: new Set(),
     pnl: emptyPnl(),
-    oneOff: { hiring: 0, severance: 0, legalFees: 0, damages: 0, advertising: 0 },
+    oneOff: { hiring: 0, severance: 0, legalFees: 0, damages: 0, advertising: 0, guards: 0 },
     avgProfit: 0,
     churnCarry: 0,
     negativeCashDays: 0,
