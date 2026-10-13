@@ -89,5 +89,18 @@
    0.1
   ],
   "streets": 1821
+ },
+ {
+  "id": "lyon",
+  "flag": "🇫🇷",
+  "city": "Lyon",
+  "area": "Presqu'île",
+  "mix": [
+   0.25,
+   0.35,
+   0.25,
+   0.15
+  ],
+  "streets": 3340
  }
 ]
