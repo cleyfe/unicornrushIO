@@ -1817,3 +1817,88 @@ ul.what li {
 .guard-badge.me {
   font-size: 13px;
 }
+
+/* ---------- phones: the map gets the screen ---------- */
+
+@media (max-width: 600px) {
+  .topbar {
+    height: 40px;
+    padding: 0 8px;
+  }
+  .topbar {
+    gap: 8px;
+  }
+  .topbar .brand,
+  .timebar {
+    display: none;
+  }
+  .clock {
+    font-size: 12px;
+    min-width: 0;
+  }
+  .you-card {
+    top: 56px;
+    left: 6px;
+    width: auto;
+    right: 6px;
+    padding: 6px 10px;
+  }
+  .you-card .you-head,
+  .you-card .flow,
+  .you-card .unicorn-bar span {
+    display: none;
+  }
+  .you-value {
+    font-size: 20px;
+  }
+  .you-value small {
+    font-size: 11px;
+  }
+  .you-card .unicorn-bar {
+    height: 4px;
+    margin: 4px 0;
+  }
+  .cash-row {
+    gap: 12px;
+  }
+  .cash-row b {
+    font-size: 15px;
+  }
+  .stage > .action-bar {
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+    transform: none;
+    width: auto;
+    padding: 6px;
+  }
+  .dock-cmds {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .dock-cmds .grp {
+    flex-shrink: 0;
+  }
+  .cmd {
+    min-width: 46px;
+    padding: 4px 2px;
+  }
+  .cmd kbd {
+    display: none;
+  }
+  .cmd .lb {
+    font-size: 10px;
+  }
+  .per-click input {
+    width: 54px;
+  }
+  .wealth-legend {
+    display: none;
+  }
+  .stage > .paused-badge {
+    top: 160px;
+    font-size: 13px;
+  }
+}

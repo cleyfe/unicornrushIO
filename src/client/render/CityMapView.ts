@@ -50,6 +50,13 @@ export function wealthColors(theme: MapTheme): Record<Wealth, string> {
   return THEMES[theme].wealth;
 }
 
+/** A base map with nothing but a background, for when the tiles can't load. */
+const plainStyle = (theme: MapTheme): maplibregl.StyleSpecification => ({
+  version: 8,
+  sources: {},
+  layers: [{ id: 'background', type: 'background', paint: { 'background-color': theme === 'light' ? '#ece8e1' : '#141a22' } }],
+});
+
 const COURT_STREET = '#facc15'; // a company on trial
 
 /** Expressions built at runtime don't fit MapLibre's tuple types; they are checked when the layer is added. */
@@ -122,7 +129,19 @@ export class CityMapView {
       this.addLayers(first);
       first = false;
     });
+    // If the base map can't load (tile server down, or a page that blocks it), play on a
+    // plain background: the game draws its own streets and buildings.
+    const fallback = () => {
+      if (!first || this.offline) return;
+      this.offline = true;
+      this.map.setStyle(plainStyle(this.theme), { diff: false });
+    };
+    this.map.once('error', fallback);
+    window.setTimeout(fallback, 10_000);
   }
+
+  /** True when playing without the base map. */
+  private offline = false;
 
   private ownerColor(): ExpressionSpecification {
     const pairs = this.game.companies.flatMap((c) => [c.id, rgb(c.color)]);
@@ -142,7 +161,7 @@ export class CityMapView {
     this.drawnZones = '';
     this.frontier = new Set();
     this.hovered = -1;
-    this.map.setStyle(THEMES[theme].style, { diff: false });
+    this.map.setStyle(this.offline ? plainStyle(theme) : THEMES[theme].style, { diff: false });
   }
 
   private addLayers(first: boolean): void {
@@ -364,8 +383,14 @@ export class CityMapView {
         [w, s],
         [e, n],
       ],
-      { padding: { top: 140, bottom: 220, left: 340, right: 320 }, maxZoom: 15.6, duration: animate ? 1800 : 0 },
+      { padding: this.hudPadding(), maxZoom: 15.6, duration: animate ? 1800 : 0 },
     );
+  }
+
+  /** Room left for the panels around the map: side cards on wide screens, top and bottom bars on phones. */
+  private hudPadding(): { top: number; bottom: number; left: number; right: number } {
+    const w = this.map.getContainer().clientWidth;
+    return w < 700 ? { top: 150, bottom: 200, left: 30, right: 30 } : { top: 140, bottom: 220, left: 340, right: 320 };
   }
 
   /** Pushes ownership changes to the map as feature state. */

@@ -3,3 +3,4 @@ dist
 .cache
 dist-next
 dist-r3
+dist-*
