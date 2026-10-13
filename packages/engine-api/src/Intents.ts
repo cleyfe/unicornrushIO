@@ -13,7 +13,8 @@ export type Intent =
   | { type: 'fire'; companyId: number; count: number }
   | { type: 'borrow'; companyId: number }
   | { type: 'repay'; companyId: number }
-  | { type: 'advertise'; companyId: number }
+  /** An ad campaign aimed at a street: its push wins streets toward it until spent. */
+  | { type: 'advertise'; companyId: number; tile: number }
   /** Posts a dedicated account team on the neighbourhood around one of your streets. */
   | { type: 'guard'; companyId: number; tile: number }
   | { type: 'lawsuit'; companyId: number; targetId: number }

@@ -18,9 +18,9 @@ export class RaceBoard {
       .map((c) => {
         const v = g.valuation(c).total;
         const margin = c.pnl.revenue > 0 ? c.pnl.profit / c.pnl.revenue : 0;
-        return `<li class="${c.alive ? '' : 'dead'} ${c.isBot ? '' : 'me'}" title="${c.name}: ${CONFIG.prices[c.price].label} prices. Valuation follows profit, so margin matters more than size.">
+        return `<li class="${c.alive ? '' : 'dead'} ${c.isBot ? '' : 'me'}" title="${c.name}: ${CONFIG.prices[c.price].label} prices · margin ${pct(margin)} · ${c.tiles} streets · defence ×${g.defence(c).toFixed(1)}">
           <div class="race-name"><i style="background:${rgb(c.color)}"></i>${c.isBot ? c.name : `${c.name} (you)`}<span>${c.alive ? money(v) : 'closed'}</span></div>
-          <div class="race-sub">${c.alive ? `<span class="${c.pnl.profit >= 0 ? 'pos' : 'neg'}">${c.pnl.profit >= 0 ? '+' : ''}${money(c.pnl.profit)}/day</span> · margin ${pct(margin)} · ${c.tiles} streets` : ''}</div>
+          <div class="race-sub">${c.alive ? `<span class="${c.pnl.profit >= 0 ? 'pos' : 'neg'}">${c.pnl.profit >= 0 ? '+' : ''}${money(c.pnl.profit)}/day</span>` : ''}</div>
           <div class="race-bar"><div style="width:${pct(c.alive ? unicornProgress(v) : 0)};background:${rgb(c.color)}"></div></div>
         </li>`;
       })

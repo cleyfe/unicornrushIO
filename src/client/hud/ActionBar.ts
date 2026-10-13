@@ -26,8 +26,8 @@ export class ActionBar {
   readonly root: HTMLElement;
   /** Keep just enough operations staff, automatically. On by default for beginners. */
   autoOps = true;
-  /** Called when the player picks the Guard command (then clicks a street). */
-  onGuard: () => void = () => {};
+  /** Called for commands that need a street: Ads (aim) and Guard (pick an area). */
+  onAim: (mode: 'ad' | 'guard') => void = () => {};
   private lastAutoDay = -1;
 
   constructor(
@@ -63,7 +63,7 @@ export class ActionBar {
           ${cmd('data-fire="10"', '👋', '−10', '', `Let 10 people go: ${money(S.fireCost * 10)} severance, saves ${money(S.salaryPerDay * 10)}/day.`)}
         </div>
         <div class="grp">
-          ${cmd('data-act="advertise"', '📢', 'Ads', 'A', 'Buy sales push with cash. Each ad makes the next one pricier for a while.')}
+          ${cmd('data-act="advertise"', '📢', 'Ads', 'A', 'Ad campaign: aim it at a street and it wins streets toward it until its budget runs out.')}
           ${cmd('data-act="guard"', '🛡', 'Guard', 'G', `Post an account team on a neighbourhood: click one of your streets. Your streets within ${CONFIG.guard.radius} m cost rivals ×${CONFIG.guard.defenceMult} to steal for ${CONFIG.guard.days} days.`)}
           ${cmd('data-open="lawsuit"', '⚖️', 'Sue', 'S', 'Sue a rival for unfair competition')}
         </div>
@@ -107,8 +107,8 @@ export class ActionBar {
       if (d.price) this.send({ type: 'setPrice', price: d.price as PriceLevel });
       else if (d.hire) this.send({ type: 'hire', count: Number(d.hire) });
       else if (d.fire) this.send({ type: 'fire', count: Number(d.fire) });
-      else if (d.act === 'advertise') this.send({ type: 'advertise' });
-      else if (d.act === 'guard') this.onGuard();
+      else if (d.act === 'advertise') this.onAim('ad');
+      else if (d.act === 'guard') this.onAim('guard');
       else if (d.open) this.open(d.open as Panel);
     });
   }
@@ -165,8 +165,8 @@ export class ActionBar {
     const ad = g.adOffer(c);
     const adBtn = $<HTMLButtonElement>(r, '[data-act="advertise"]');
     adBtn.querySelector('.lb')!.textContent = money(ad.cost);
-    adBtn.title = `Ads: +${ad.push} sales push for ${money(ad.cost)}. Each ad makes the next one pricier for a while.`;
-    adBtn.disabled = c.cash < ad.cost || c.push + ad.push > g.maxPush(c) * CONFIG.sales.maxAdPushMult;
+    adBtn.title = `Ad campaign: ${money(ad.cost)} for ${ad.push} push. Click, then aim at a street: it wins streets toward it until the budget runs out. Each ad makes the next one pricier for a while.`;
+    adBtn.disabled = c.cash < ad.cost;
     r.querySelectorAll<HTMLButtonElement>('[data-hire]').forEach((b) => (b.disabled = c.cash < Number(b.dataset.hire) * S.hireCost));
 
     r.querySelectorAll<HTMLButtonElement>('[data-price]').forEach((b) => {

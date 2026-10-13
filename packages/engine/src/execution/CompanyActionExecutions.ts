@@ -2,6 +2,7 @@ import type { PriceLevel } from '@unicornrush/engine-api/game/Game';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { money } from '@unicornrush/engine-lib/Format';
 import type { GameImpl } from '../game/GameImpl';
+import { CampaignExecution } from './CampaignExecution';
 import { InstantExecution } from './Execution';
 
 export class SetSalesShareExecution extends InstantExecution {
@@ -111,22 +112,23 @@ export class RepayExecution extends InstantExecution {
   }
 }
 
-/** Buys sales push with cash. */
+/** Buys an ad campaign aimed at a street: its push wins streets toward it until spent. */
 export class AdvertiseExecution extends InstantExecution {
-  constructor(private companyId: number) {
+  constructor(
+    private companyId: number,
+    private tile: number,
+  ) {
     super();
   }
   protected apply(game: GameImpl): void {
     const c = game.companies[this.companyId];
+    if (this.tile < 0 || this.tile >= game.owner.length) return game.message(c.id, 'Aim your ad at a street.');
     const offer = game.adOffer(c);
     if (c.cash < offer.cost) return game.message(c.id, `An ad campaign costs ${money(offer.cost)}: not enough cash.`);
-    if (c.push + offer.push > game.maxPush(c) * CONFIG.sales.maxAdPushMult) {
-      return game.message(c.id, 'Your sales push is already full: spend it on streets first.');
-    }
     c.cash -= offer.cost;
     c.oneOff.advertising -= offer.cost;
-    c.push += offer.push;
     c.adHeat += 1;
+    game.addExecution(new CampaignExecution(c.id, this.tile, offer.push));
   }
 }
 

@@ -8,12 +8,16 @@ import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import type { ClientGameRunner } from './ClientGameRunner';
 import type { CityMapView } from './render/CityMapView';
 
+export type ClickMode = 'expand' | 'ad' | 'guard';
+
 /**
  * Clicking a street (or a building on it) launches a campaign; hovering explains it.
  * In guard mode, clicking one of your streets posts an account team there instead.
  */
 export class InputHandler {
-  private guardMode = false;
+  /** What the next click on the map does: expand (default), aim an ad, or guard an area. */
+  private mode: ClickMode = 'expand';
+  onModeChange: (mode: ClickMode) => void = () => {};
   /** Command hotkeys (letters); returns true if the key was used. */
   onHotkey: (key: string) => boolean = () => false;
   onEscape: () => void = () => {};
@@ -32,10 +36,18 @@ export class InputHandler {
     map.on('click', (e: MapMouseEvent) => {
       const seg = this.view.segmentAt(e.point);
       if (seg < 0) return;
-      if (this.guardMode) {
+      if (this.mode === 'guard') {
         if (this.client.game.owner[seg] === 0) {
           this.client.send({ type: 'guard', companyId: 0, tile: seg });
-          this.setGuardMode(false);
+          this.setMode('expand');
+        }
+        return;
+      }
+      if (this.mode === 'ad') {
+        if (this.client.game.owner[seg] !== 0) {
+          this.client.send({ type: 'advertise', companyId: 0, tile: seg });
+          this.onFirstMove();
+          this.setMode('expand');
         }
         return;
       }
@@ -57,9 +69,13 @@ export class InputHandler {
         this.tooltip.style.display = 'none';
         return;
       }
-      this.tooltip.innerHTML = this.guardMode
-        ? describeGuard(this.client.game, seg)
-        : describeSegment(this.client.game, this.city, seg, this.view.isFrontier(seg));
+      const g = this.client.game;
+      this.tooltip.innerHTML =
+        this.mode === 'guard'
+          ? describeGuard(g, seg)
+          : this.mode === 'ad'
+            ? describeAd(g, this.city, seg)
+            : describeSegment(g, this.city, seg, this.view.isFrontier(seg));
       const w = this.tooltip.offsetWidth || 260;
       const box = map.getContainer().getBoundingClientRect();
       const x = e.point.x + 16 + w > box.width ? e.point.x - w - 16 : e.point.x + 16;
@@ -82,7 +98,7 @@ export class InputHandler {
         ev.preventDefault();
         this.onSpeedKey(ev.key === ' ' && this.client.speed === 0 ? 1 : speeds[ev.key]);
       } else if (ev.key === 'Escape') {
-        if (this.guardMode) this.setGuardMode(false);
+        if (this.mode !== 'expand') this.setMode('expand');
         else this.onEscape();
       } else if (ev.key.length === 1 && this.onHotkey(ev.key)) {
         ev.preventDefault();
@@ -98,16 +114,27 @@ export class InputHandler {
     };
   }
 
-  /** Guard mode: the next click on one of your streets guards its neighbourhood. */
-  setGuardMode(on: boolean): void {
-    this.guardMode = on;
-    this.view.map.getContainer().classList.toggle('guard-mode', on);
-    document.body.classList.toggle('guard-mode', on);
+  /** Sets what the next map click does; pressing the same command again cancels it. */
+  setMode(mode: ClickMode): void {
+    this.mode = mode;
+    document.body.dataset.mode = mode;
+    this.onModeChange(mode);
   }
 
-  toggleGuardMode(): void {
-    this.setGuardMode(!this.guardMode);
+  toggleMode(mode: ClickMode): void {
+    this.setMode(this.mode === mode ? 'expand' : mode);
   }
+}
+
+/** The hover card in ad mode: where the campaign will head, and what it buys. */
+function describeAd(g: GameImpl, city: CityData, seg: number): string {
+  const offer = g.adOffer(g.player);
+  const ok = g.player.cash >= offer.cost;
+  const name = city.segments.names[seg] || 'this street';
+  if (g.owner[seg] === 0) return '<div class="hc-title">📢 Ad campaign</div><div class="hc-action muted">Aim at a street that isn\'t yours</div>';
+  return `<div class="hc-title">📢 Ad campaign toward ${name}</div>
+    <div class="hc-row"><span>+${offer.push} push, spent winning streets on the way</span></div>
+    <div class="hc-action ${ok ? 'ok' : 'wait'}">${ok ? `Click to launch · ${money(offer.cost)}` : `Costs ${money(offer.cost)}: not enough cash`}</div>`;
 }
 
 /** The hover card in guard mode: which streets a guard would cover, and the price. */

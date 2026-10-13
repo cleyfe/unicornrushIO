@@ -12,8 +12,8 @@ export class NewsFeed {
   push(entry: LogEntry): void {
     const item = el('div', `news-item ${entry.tone}`, `<span>Day ${entry.day}</span>${entry.text}`);
     this.root.append(item);
-    while (this.root.children.length > 4) this.root.firstElementChild?.remove();
-    window.setTimeout(() => item.classList.add('fade'), 9000);
-    window.setTimeout(() => item.remove(), 10_000);
+    while (this.root.children.length > 3) this.root.firstElementChild?.remove();
+    window.setTimeout(() => item.classList.add('fade'), 6000);
+    window.setTimeout(() => item.remove(), 7000);
   }
 }

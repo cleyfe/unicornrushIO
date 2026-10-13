@@ -652,15 +652,18 @@ h1 b {
   font-weight: 600;
   display: none;
 }
-body.guard-mode .guard-banner {
+body[data-mode='guard'] .guard-banner,
+body[data-mode='ad'] .guard-banner {
   display: block;
 }
-body.guard-mode [data-act='guard'] {
+body[data-mode='guard'] [data-act='guard'],
+body[data-mode='ad'] [data-act='advertise'] {
   background: var(--accent);
   border-color: var(--accent);
 }
-.guard-mode canvas {
-  cursor: cell !important;
+body[data-mode='guard'] canvas,
+body[data-mode='ad'] canvas {
+  cursor: crosshair !important;
 }
 .hc-cost {
   font-size: 12px;
@@ -697,7 +700,7 @@ body.guard-mode [data-act='guard'] {
 }
 .news-feed {
   left: 10px;
-  bottom: 172px;
+  bottom: 56px;
   width: 300px;
   display: flex;
   flex-direction: column;
@@ -1552,4 +1555,20 @@ td i {
 
 .cases-table td:nth-child(n + 3) {
   white-space: nowrap;
+}
+
+.wealth-legend summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+  list-style: none;
+}
+.wealth-legend summary::-webkit-details-marker {
+  display: none;
+}
+.wealth-legend[open] summary {
+  margin-bottom: 4px;
+}
+.wealth-legend[open] ~ .news-feed {
+  display: none;
 }

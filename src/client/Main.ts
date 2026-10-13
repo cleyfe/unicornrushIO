@@ -95,8 +95,9 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty): 
   const news = new NewsFeed();
   const coach = new Coach(game);
   const legend = el(
-    'div',
+    'details',
     'wealth-legend glass',
+    '<summary>🗺 Map key</summary>' +
     CONFIG.wealth
       .map((t, i) => `<span><i style="background:${WEALTH_COLORS[i as Wealth]}"></i>${'$'.repeat(i + 1)} ${t.label} ×${t.spend}</span>`)
       .join('') +
@@ -109,7 +110,11 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty): 
   stage.append(labels.root, top.root, you.root, race.root, legend, actions.root, cards.root, news.root, drawer.root, coach.root, paused, guardBanner);
   const input = new InputHandler(client, view, city, tooltip, setSpeed, firstMove);
   const detach = input.attach();
-  actions.onGuard = () => input.toggleGuardMode();
+  actions.onAim = (mode) => input.toggleMode(mode);
+  const banners = { ad: '📢 Click a street to aim your ad campaign · Esc to cancel', guard: '🛡 Click one of your streets to guard its neighbourhood · Esc to cancel' };
+  input.onModeChange = (mode) => {
+    guardBanner.textContent = mode === 'expand' ? '' : banners[mode];
+  };
   input.onHotkey = (key) => actions.hotkey(key);
   input.onEscape = () => drawer.close();
 

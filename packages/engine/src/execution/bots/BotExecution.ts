@@ -44,6 +44,7 @@ export class BotExecution implements Execution {
   private p!: Persona;
   private nb: number[] = [];
   private lastGuardDay = -Infinity;
+  private lastCampaignDay = -Infinity;
 
   constructor(private companyId: number) {}
 
@@ -132,10 +133,11 @@ export class BotExecution implements Execution {
       if (n > 0) this.act(g, { type: 'hire', companyId: id, count: n });
     }
 
-    // 5. Advertising: turn idle cash into sales push, while it pays back.
+    // 5. Advertising: turn idle cash into an ad campaign aimed at the best street, while it pays back.
     const ad = g.adOffer(c);
-    if (canGrow && c.push < g.maxPush(c) * 0.5 && cash > ad.cost + reserve * 1.5 * CONFIG.difficulty[c.difficulty].reserveMult) {
-      this.act(g, { type: 'advertise', companyId: id });
+    const adTarget = f.neutral > 0 ? f.bestNeutral : f.cheapestRivalTile;
+    if (canGrow && adTarget >= 0 && c.push < g.maxPush(c) * 0.5 && cash > ad.cost + reserve * 1.5 * level.reserveMult) {
+      this.act(g, { type: 'advertise', companyId: id, tile: adTarget });
       cash -= ad.cost;
     }
 
@@ -146,12 +148,16 @@ export class BotExecution implements Execution {
     }
 
     // 7. Sales campaigns.
-    if (c.push >= Math.max(5, g.maxPush(c) * (p.pushReserve + CONFIG.difficulty[c.difficulty].extraPushReserve))) {
+    const rested = g.day - this.lastCampaignDay >= level.expandEveryDays;
+    if (rested && c.push >= Math.max(5, g.maxPush(c) * (p.pushReserve + level.extraPushReserve))) {
       let tile = -1;
       if (f.neutral > 8 || (f.neutral > 0 && f.cheapestRivalTile < 0)) tile = f.bestNeutral;
       else if (f.cheapestRival <= this.rivalThreshold()) tile = f.cheapestRivalTile;
       else if (f.neutral > 0) tile = f.bestNeutral;
-      if (tile >= 0) this.act(g, { type: 'campaign', companyId: id, tile });
+      if (tile >= 0) {
+        this.act(g, { type: 'campaign', companyId: id, tile });
+        this.lastCampaignDay = g.day;
+      }
     }
   }
 

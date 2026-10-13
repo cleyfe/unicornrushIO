@@ -119,10 +119,8 @@ function blitzTurn(r: GameRunner, g: GameImpl): void {
   const n = Math.min(room, Math.floor((me.cash - reserve) / (CONFIG.staff.hireCost + CONFIG.staff.salaryPerDay * 15)));
   if (n > 0) send({ type: 'hire', count: Math.min(n, 100) });
   if (room < -10 && me.pnl.profit < 0) send({ type: 'fire', count: Math.ceil(-room / 4) });
-  const ad = g.adOffer(me);
-  if (me.push < g.maxPush(me) * 0.5 && me.cash > ad.cost + reserve * 3) send({ type: 'advertise' });
-  if (me.push >= 10) {
-    let best = -1;
+  let best = -1;
+  {
     let bestScore = -Infinity;
     const { adjStart, adj } = g.map;
     for (const b of me.border) {
@@ -133,8 +131,10 @@ function blitzTurn(r: GameRunner, g: GameImpl): void {
         if (score > bestScore) (bestScore = score), (best = t);
       }
     }
-    if (best >= 0) send({ type: 'campaign', tile: best });
   }
+  if (best >= 0 && me.push >= 10) send({ type: 'campaign', tile: best });
+  const ad = g.adOffer(me);
+  if (best >= 0 && me.push < g.maxPush(me) * 0.5 && me.cash > ad.cost + reserve * 3) send({ type: 'advertise', tile: best });
   if (me.offer) {
     const values = me.offer.cards.map((c) => cardValue(me, c));
     send({ type: 'pickCard', index: values.indexOf(Math.max(...values)) });

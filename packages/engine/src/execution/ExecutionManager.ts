@@ -32,7 +32,7 @@ export function createExecution(intent: Intent): Execution {
     case 'repay':
       return new RepayExecution(intent.companyId);
     case 'advertise':
-      return new AdvertiseExecution(intent.companyId);
+      return new AdvertiseExecution(intent.companyId, intent.tile);
     case 'guard':
       return new GuardExecution(intent.companyId, intent.tile);
     case 'lawsuit':

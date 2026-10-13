@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
-import { act, lastMessage, quietSetup, runDays } from './util/Setup';
+import { act, lastMessage, neutralNeighbour, quietSetup, runDays } from './util/Setup';
 
 describe('profit and loss', () => {
   it('adds daily profit to cash', () => {
@@ -65,16 +65,22 @@ describe('valuation', () => {
 });
 
 describe('advertising', () => {
-  it('turns cash into sales push', () => {
+  it('turns cash into a campaign that wins streets toward where you aim it', () => {
     const r = quietSetup();
-    const me = r.game.player;
+    const g = r.game;
+    const me = g.player;
     me.cash = 1e6;
     me.push = 0;
-    const offer = r.game.adOffer(me);
-    act(r, { type: 'advertise', companyId: 0 });
-    expect(me.push).toBeGreaterThanOrEqual(offer.push);
+    const offer = g.adOffer(me);
+    // Aim at a street some distance away from our territory.
+    const aim = neutralNeighbour(r);
+    const tiles = me.tiles;
+    act(r, { type: 'advertise', companyId: 0, tile: aim });
     expect(me.cash).toBeCloseTo(1e6 - offer.cost, -3);
     expect(me.oneOff.advertising).toBeCloseTo(-offer.cost);
+    runDays(r, 2);
+    expect(me.tiles).toBeGreaterThan(tiles + 2);
+    expect(g.owner[aim]).toBe(0);
   });
 
   it('gets pricier with each purchase, then cools down', () => {
@@ -83,7 +89,7 @@ describe('advertising', () => {
     me.cash = 1e7;
     me.push = 0;
     const first = r.game.adOffer(me).cost;
-    act(r, { type: 'advertise', companyId: 0 });
+    act(r, { type: 'advertise', companyId: 0, tile: neutralNeighbour(r) });
     me.push = 0;
     const second = r.game.adOffer(me).cost;
     expect(second).toBeGreaterThan(first);
@@ -95,7 +101,7 @@ describe('advertising', () => {
   it('is refused without cash', () => {
     const r = quietSetup();
     r.game.player.cash = 10;
-    act(r, { type: 'advertise', companyId: 0 });
+    act(r, { type: 'advertise', companyId: 0, tile: neutralNeighbour(r) });
     expect(lastMessage(r)).toMatch(/not enough cash/);
   });
 });

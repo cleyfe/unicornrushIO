@@ -90,7 +90,7 @@ export const CONFIG = {
     minFee: 25_000,
     feeRevenueDays: 10, // fee = this many days of the plaintiff's revenue, at least minFee
     lawyerShare: 0.3, // share of the damages the lawyers keep
-    courtDays: 30, // time until the ruling: the defendant can prepare
+    courtDays: 10, // time until the ruling
     customerLoss: 0.15, // share of the defendant's customers driven away by bad press
     clusters: 12, // the loss is spread over this many places
     // Evidence decides the case: streets the defendant took from the plaintiff
@@ -180,10 +180,11 @@ export const CONFIG = {
   // reserve) before hiring; repDays: days of salary they want in hand per new sales
   // rep; growth: max new hires per day as a share of staff; leaderFocus: gang up on
   // a runaway leader.
+  // expandEveryDays: days between two sales campaigns (easy bots take their time).
   difficulty: {
-    easy: { reserveMult: 3, repDays: 90, growth: 0.2, extraPushReserve: 0.2, leaderFocus: false },
-    normal: { reserveMult: 2, repDays: 45, growth: 0.35, extraPushReserve: 0.1, leaderFocus: true },
-    hard: { reserveMult: 1, repDays: 20, growth: 0.5, extraPushReserve: 0, leaderFocus: true },
+    easy: { reserveMult: 3, repDays: 90, growth: 0.2, extraPushReserve: 0.2, leaderFocus: false, expandEveryDays: 1 },
+    normal: { reserveMult: 2, repDays: 45, growth: 0.35, extraPushReserve: 0.1, leaderFocus: true, expandEveryDays: 1 },
+    hard: { reserveMult: 1, repDays: 20, growth: 0.5, extraPushReserve: 0, leaderFocus: true, expandEveryDays: 1 },
   },
 
   events: { firstDay: 150, minGap: 120, maxGap: 180, warningDays: 10 },
