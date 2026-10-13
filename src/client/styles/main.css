@@ -1303,7 +1303,7 @@ td i {
   border-radius: 2px;
 }
 .wealth-legend i.frontier {
-  background: #c7d2e0;
+  background: repeating-linear-gradient(90deg, #3b82f6 0 5px, transparent 5px 8px);
 }
 .wealth-legend i.court {
   background: #facc15;

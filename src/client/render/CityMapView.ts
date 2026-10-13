@@ -9,17 +9,19 @@ import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 
 maplibregl.setWorkerUrl(workerUrl);
 
-const BASE_STYLE = 'https://tiles.openfreemap.org/styles/dark';
-const NEUTRAL_STREET = '#6f7988';
-const FRONTIER_STREET = '#c7d2e0';
+// A light, daytime street map; the game draws its own streets and buildings on top.
+const BASE_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+const NEUTRAL_STREET = '#8a94a3';
+const FRONTIER_STREET = '#1d4ed8'; // streets you can win: a dashed blue line
+const HOVER_STREET = '#f59e0b';
 const COURT_STREET = '#facc15'; // a company on trial
 
-/** Building colour by wealth when nobody owns its street: dark to gold. */
+/** Building colour by wealth when nobody owns its street: light grey to gold. */
 export const WEALTH_COLORS: Record<Wealth, string> = {
-  [Wealth.Budget]: '#262b33',
-  [Wealth.Middle]: '#3f3d33',
-  [Wealth.Upscale]: '#625533',
-  [Wealth.Luxury]: '#93773a',
+  [Wealth.Budget]: '#d9d6d0',
+  [Wealth.Middle]: '#e3d6bd',
+  [Wealth.Upscale]: '#e8c784',
+  [Wealth.Luxury]: '#d9a43c',
 };
 
 /** Expressions built at runtime don't fit MapLibre's tuple types; they are checked when the layer is added. */
@@ -95,7 +97,7 @@ export class CityMapView {
     const map = this.map;
     // Our buildings replace the base map's; keep its roads, water, parks and labels.
     for (const layer of map.getStyle().layers ?? []) {
-      if (layer.id === 'building' || layer.id.startsWith('poi')) map.setLayoutProperty(layer.id, 'visibility', 'none');
+      if (layer.id.startsWith('building') || layer.id.startsWith('poi')) map.setLayoutProperty(layer.id, 'visibility', 'none');
     }
     const { segments, buildings } = this.city;
     map.addSource('buildings', {
@@ -146,8 +148,8 @@ export class CityMapView {
       source: 'buildings',
       paint: {
         'fill-color': expr(['case', owned, ownedColor, wealthColor]),
-        'fill-opacity': expr(['case', owned, ['match', ['get', 'w'], 0, 0.45, 1, 0.6, 2, 0.75, 0.9], 0.85]),
-        'fill-outline-color': 'rgba(0,0,0,0.35)',
+        'fill-opacity': expr(['case', owned, ['match', ['get', 'w'], 0, 0.5, 1, 0.65, 2, 0.8, 0.9], 0.9]),
+        'fill-outline-color': 'rgba(0,0,0,0.18)',
       },
     });
     // Owned rich buildings get a gold rim, so the wealth still shows under the owner's colour.
@@ -199,10 +201,7 @@ export class CityMapView {
           this.ownerColor(),
           // Hovering an untapped street lights it up; owned streets keep their colour.
           ['boolean', ['feature-state', 'hover'], false],
-          '#ffffff',
-          // Streets the player can expand into glow, so it's clear where to click.
-          ['boolean', ['feature-state', 'frontier'], false],
-          FRONTIER_STREET,
+          HOVER_STREET,
           NEUTRAL_STREET,
         ]),
         'line-width': expr([
@@ -218,9 +217,29 @@ export class CityMapView {
         ]),
         'line-opacity': expr([
           'case',
-          ['any', owned, ['boolean', ['feature-state', 'hover'], false], ['boolean', ['feature-state', 'frontier'], false]],
+          ['any', owned, ['boolean', ['feature-state', 'hover'], false]],
           1,
-          0.5,
+          ['boolean', ['feature-state', 'frontier'], false],
+          0,
+          0.35,
+        ]),
+      },
+    });
+    // Streets the player can expand into: a dashed blue line, so it's clear where to click.
+    map.addLayer({
+      id: 'streets-frontier',
+      type: 'line',
+      source: 'streets',
+      layout: { 'line-cap': 'butt', 'line-join': 'round' },
+      paint: {
+        'line-color': FRONTIER_STREET,
+        'line-width': expr(['interpolate', ['linear'], ['zoom'], 13, 2, 16, 4, 18, 7]),
+        'line-dasharray': [2, 1.2],
+        'line-opacity': expr([
+          'case',
+          ['all', ['boolean', ['feature-state', 'frontier'], false], ['!', ['boolean', ['feature-state', 'hover'], false]]],
+          0.9,
+          0,
         ]),
       },
     });
