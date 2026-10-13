@@ -189,5 +189,417 @@
         "weight": -1.8
       }
     ]
+  },
+  "new-york": {
+    "name": "New York · Lower Manhattan",
+    "bbox": [
+      40.714,
+      -74.012,
+      40.744,
+      -73.98
+    ],
+    "wealthHints": [
+      {
+        "name": "Tribeca",
+        "lat": 40.7195,
+        "lon": -74.0085,
+        "radius": 450,
+        "weight": 2.5
+      },
+      {
+        "name": "SoHo",
+        "lat": 40.7233,
+        "lon": -74.001,
+        "radius": 420,
+        "weight": 2.5
+      },
+      {
+        "name": "West Village",
+        "lat": 40.7358,
+        "lon": -74.004,
+        "radius": 500,
+        "weight": 3
+      },
+      {
+        "name": "Washington Square",
+        "lat": 40.731,
+        "lon": -73.997,
+        "radius": 350,
+        "weight": 1.5
+      },
+      {
+        "name": "Gramercy Park",
+        "lat": 40.7378,
+        "lon": -73.9861,
+        "radius": 350,
+        "weight": 2.5
+      },
+      {
+        "name": "Flatiron & NoMad",
+        "lat": 40.7411,
+        "lon": -73.9897,
+        "radius": 400,
+        "weight": 1.5
+      },
+      {
+        "name": "Chelsea",
+        "lat": 40.743,
+        "lon": -74.001,
+        "radius": 450,
+        "weight": 1
+      },
+      {
+        "name": "Chinatown",
+        "lat": 40.7158,
+        "lon": -73.9975,
+        "radius": 420,
+        "weight": -2.5
+      },
+      {
+        "name": "Lower East Side",
+        "lat": 40.7185,
+        "lon": -73.986,
+        "radius": 450,
+        "weight": -1.5
+      },
+      {
+        "name": "Alphabet City",
+        "lat": 40.7255,
+        "lon": -73.98,
+        "radius": 450,
+        "weight": -1.5
+      }
+    ]
+  },
+  "london": {
+    "name": "London · West End",
+    "bbox": [
+      51.505,
+      -0.155,
+      51.522,
+      -0.108
+    ],
+    "wealthHints": [
+      {
+        "name": "Mayfair",
+        "lat": 51.51,
+        "lon": -0.148,
+        "radius": 500,
+        "weight": 3
+      },
+      {
+        "name": "Bond Street",
+        "lat": 51.513,
+        "lon": -0.1455,
+        "radius": 300,
+        "weight": 3
+      },
+      {
+        "name": "St James's",
+        "lat": 51.5065,
+        "lon": -0.137,
+        "radius": 380,
+        "weight": 2.5
+      },
+      {
+        "name": "Marylebone",
+        "lat": 51.519,
+        "lon": -0.151,
+        "radius": 450,
+        "weight": 2
+      },
+      {
+        "name": "Covent Garden",
+        "lat": 51.512,
+        "lon": -0.1235,
+        "radius": 350,
+        "weight": 1
+      },
+      {
+        "name": "Bloomsbury",
+        "lat": 51.521,
+        "lon": -0.1265,
+        "radius": 400,
+        "weight": 0.5
+      },
+      {
+        "name": "Soho",
+        "lat": 51.5136,
+        "lon": -0.134,
+        "radius": 330,
+        "weight": 0.3
+      },
+      {
+        "name": "Tottenham Court Road",
+        "lat": 51.5165,
+        "lon": -0.131,
+        "radius": 300,
+        "weight": -1
+      },
+      {
+        "name": "Drury Lane estates",
+        "lat": 51.5155,
+        "lon": -0.121,
+        "radius": 280,
+        "weight": -1
+      },
+      {
+        "name": "Gray's Inn Road",
+        "lat": 51.521,
+        "lon": -0.1145,
+        "radius": 350,
+        "weight": -1.5
+      },
+      {
+        "name": "Holborn",
+        "lat": 51.5175,
+        "lon": -0.117,
+        "radius": 300,
+        "weight": -0.5
+      }
+    ]
+  },
+  "berlin": {
+    "name": "Berlin · Mitte",
+    "bbox": [
+      52.5,
+      13.38,
+      52.538,
+      13.425
+    ],
+    "wealthHints": [
+      {
+        "name": "Gendarmenmarkt & Friedrichstraße",
+        "lat": 52.514,
+        "lon": 13.391,
+        "radius": 420,
+        "weight": 2.5
+      },
+      {
+        "name": "Unter den Linden",
+        "lat": 52.517,
+        "lon": 13.388,
+        "radius": 350,
+        "weight": 2
+      },
+      {
+        "name": "Spandauer Vorstadt & Hackescher Markt",
+        "lat": 52.525,
+        "lon": 13.401,
+        "radius": 450,
+        "weight": 2
+      },
+      {
+        "name": "Kollwitzkiez",
+        "lat": 52.5365,
+        "lon": 13.418,
+        "radius": 450,
+        "weight": 1.5
+      },
+      {
+        "name": "Nikolaiviertel",
+        "lat": 52.5165,
+        "lon": 13.407,
+        "radius": 250,
+        "weight": 1
+      },
+      {
+        "name": "Alexanderplatz",
+        "lat": 52.5219,
+        "lon": 13.4132,
+        "radius": 350,
+        "weight": -1
+      },
+      {
+        "name": "Leipziger Straße towers",
+        "lat": 52.51,
+        "lon": 13.399,
+        "radius": 350,
+        "weight": -1
+      },
+      {
+        "name": "Karl-Marx-Allee",
+        "lat": 52.518,
+        "lon": 13.423,
+        "radius": 350,
+        "weight": -0.5
+      },
+      {
+        "name": "Moritzplatz",
+        "lat": 52.5035,
+        "lon": 13.4105,
+        "radius": 380,
+        "weight": -1.5
+      },
+      {
+        "name": "Kottbusser Tor",
+        "lat": 52.5,
+        "lon": 13.418,
+        "radius": 420,
+        "weight": -2.5
+      }
+    ]
+  },
+  "san-francisco": {
+    "name": "San Francisco · Downtown",
+    "bbox": [
+      37.758,
+      -122.428,
+      37.8,
+      -122.388
+    ],
+    "wealthHints": [
+      {
+        "name": "Nob Hill",
+        "lat": 37.793,
+        "lon": -122.416,
+        "radius": 450,
+        "weight": 3
+      },
+      {
+        "name": "Russian Hill",
+        "lat": 37.799,
+        "lon": -122.418,
+        "radius": 350,
+        "weight": 2.5
+      },
+      {
+        "name": "Financial District",
+        "lat": 37.7946,
+        "lon": -122.3999,
+        "radius": 400,
+        "weight": 2
+      },
+      {
+        "name": "Union Square",
+        "lat": 37.788,
+        "lon": -122.4075,
+        "radius": 300,
+        "weight": 2
+      },
+      {
+        "name": "Rincon Hill & South Beach",
+        "lat": 37.786,
+        "lon": -122.391,
+        "radius": 400,
+        "weight": 1.5
+      },
+      {
+        "name": "Mission Bay",
+        "lat": 37.77,
+        "lon": -122.392,
+        "radius": 450,
+        "weight": 1
+      },
+      {
+        "name": "Hayes Valley",
+        "lat": 37.776,
+        "lon": -122.424,
+        "radius": 350,
+        "weight": 1.5
+      },
+      {
+        "name": "Tenderloin",
+        "lat": 37.784,
+        "lon": -122.414,
+        "radius": 380,
+        "weight": -3
+      },
+      {
+        "name": "Sixth Street",
+        "lat": 37.779,
+        "lon": -122.407,
+        "radius": 350,
+        "weight": -2
+      },
+      {
+        "name": "Chinatown",
+        "lat": 37.7945,
+        "lon": -122.407,
+        "radius": 280,
+        "weight": -1.5
+      },
+      {
+        "name": "The Mission",
+        "lat": 37.761,
+        "lon": -122.419,
+        "radius": 550,
+        "weight": -1.5
+      }
+    ]
+  },
+  "toronto": {
+    "name": "Toronto · Downtown",
+    "bbox": [
+      43.642,
+      -79.41,
+      43.672,
+      -79.37
+    ],
+    "wealthHints": [
+      {
+        "name": "Yorkville",
+        "lat": 43.6705,
+        "lon": -79.393,
+        "radius": 400,
+        "weight": 3
+      },
+      {
+        "name": "Bloor Street (Mink Mile)",
+        "lat": 43.6695,
+        "lon": -79.389,
+        "radius": 300,
+        "weight": 3
+      },
+      {
+        "name": "The Annex",
+        "lat": 43.668,
+        "lon": -79.405,
+        "radius": 400,
+        "weight": 1.5
+      },
+      {
+        "name": "Financial District",
+        "lat": 43.648,
+        "lon": -79.381,
+        "radius": 380,
+        "weight": 1.5
+      },
+      {
+        "name": "King West",
+        "lat": 43.645,
+        "lon": -79.394,
+        "radius": 400,
+        "weight": 1
+      },
+      {
+        "name": "Church & Wellesley",
+        "lat": 43.665,
+        "lon": -79.381,
+        "radius": 300,
+        "weight": -0.5
+      },
+      {
+        "name": "Kensington Market",
+        "lat": 43.6545,
+        "lon": -79.4005,
+        "radius": 330,
+        "weight": -2
+      },
+      {
+        "name": "Chinatown",
+        "lat": 43.653,
+        "lon": -79.3975,
+        "radius": 300,
+        "weight": -2
+      },
+      {
+        "name": "Moss Park",
+        "lat": 43.6555,
+        "lon": -79.37,
+        "radius": 400,
+        "weight": -2
+      }
+    ]
   }
 }

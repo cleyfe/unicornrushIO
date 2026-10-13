@@ -933,28 +933,30 @@ table {
 }
 .cities {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
 }
 .city-card {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 2px 10px;
+  gap: 0 8px;
   text-align: left;
-  padding: 12px 14px;
-  border-radius: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
 }
 .city-card .flag {
-  grid-row: span 3;
-  font-size: 28px;
+  grid-row: span 2;
+  font-size: 22px;
+  align-self: center;
 }
-.city-card small,
-.city-card em {
-  font-size: 12px;
-}
-.city-card em {
+.city-blurb {
+  margin: 8px 2px 0;
+  font-size: 13px;
   color: var(--muted);
-  font-style: normal;
+  min-height: 1.4em;
+}
+.city-card small {
+  font-size: 12px;
 }
 .city-card.active {
   background: rgba(59, 130, 246, 0.18);

@@ -22,10 +22,11 @@ export function showIntro(container: HTMLElement, onStart: (name: string, city: 
       <h3>Choose a city</h3>
       <div class="cities">
         ${CITIES.map(
-          (c, i) => `<button class="city-card${i === 0 ? ' active' : ''}" data-city="${c.id}">
-            <span class="flag">${c.flag}</span><b>${c.name}</b><small>${c.area}</small><em>${c.blurb}</em></button>`,
+          (c, i) => `<button class="city-card${i === 0 ? ' active' : ''}" data-city="${c.id}" title="${c.blurb}">
+            <span class="flag">${c.flag}</span><b>${c.name}</b><small>${c.area}</small></button>`,
         ).join('')}
       </div>
+      <p class="city-blurb" data-v="blurb">${CITIES[0].blurb}</p>
       <h3>Rivals</h3>
       <div class="difficulty seg">
         <button data-difficulty="easy" title="Cautious rivals: good for learning the game">Easy<small>learning</small></button>
@@ -43,6 +44,7 @@ export function showIntro(container: HTMLElement, onStart: (name: string, city: 
     b.addEventListener('click', () => {
       city = b.dataset.city as CityId;
       container.querySelectorAll('.city-card').forEach((x) => x.classList.toggle('active', x === b));
+      container.querySelector('[data-v="blurb"]')!.textContent = CITIES.find((c) => c.id === city)!.blurb;
     }),
   );
   container.querySelectorAll<HTMLButtonElement>('[data-difficulty]').forEach((b) =>
