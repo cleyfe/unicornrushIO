@@ -109,15 +109,14 @@ export const CONFIG = {
     dismissedCostShare: 0.6, // if dismissed, the plaintiff also pays the defendant's costs: this share of its own fee
   },
 
-  // Acquisitions: buy a whole rival. Its owners want a premium over its valuation;
-  // you take over its streets, staff, cash and debt. The competition authority
-  // blocks a deal that would leave the buyer with too much of the market.
-  acquisition: {
-    // Price = premium × (net cash + this many years of profit). Private deals happen
-    // at a lower multiple than the 18× investors give the buyer's own profit.
-    profitYears: 6,
-    premium: 1.3,
-    minPrice: 100_000,
+  // Buying a block of a rival's streets: instant, so dearer than winning them with an
+  // ad. Price = the push they'd cost × dollarsPerPush, +stepShare per recent deal
+  // (fading over time). The seller is paid.
+  streetDeal: {
+    blockSize: 6,
+    dollarsPerPush: 1_500,
+    stepShare: 0.25,
+    heatDecayPerDay: 0.03,
   },
 
   // Guard: a dedicated account team for one neighbourhood. Your streets around
@@ -199,7 +198,7 @@ export const CONFIG = {
   // they aim for; serviceBonus: extra operations staff kept (costly); streetJudgement:
   // 1 = picks streets by value per push like a pro, 0 = picks any street nearby;
   // aggressionMult: appetite for taking rivals' streets; advanced: uses ads, cards,
-  // lawsuits, guards and acquisitions (easy bots only expand, hire and price).
+  // lawsuits, guards and street deals (easy bots only expand, hire and price).
   difficulty: {
     easy: { reserveMult: 3, repDays: 90, growth: 0.1, extraPushReserve: 0.2, leaderFocus: false, expandEveryDays: 3, salesMult: 0.4, serviceBonus: 0.5, streetJudgement: 1, aggressionMult: 1, advanced: false },
     normal: { reserveMult: 2, repDays: 45, growth: 0.35, extraPushReserve: 0.1, leaderFocus: true, expandEveryDays: 1, salesMult: 1, serviceBonus: 0, streetJudgement: 1, aggressionMult: 1, advanced: true },

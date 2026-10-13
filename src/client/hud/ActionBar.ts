@@ -6,7 +6,7 @@ import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import { $, el } from './dom';
 
 type WithoutCompany<T> = T extends unknown ? Omit<T, 'companyId'> : never;
-export type Panel = 'finances' | 'lawsuit' | 'race' | 'deals';
+export type Panel = 'finances' | 'lawsuit' | 'race';
 
 const S = CONFIG.staff;
 const P = CONFIG.prices;
@@ -27,7 +27,7 @@ export class ActionBar {
   /** Keep just enough operations staff, automatically. On by default for beginners. */
   autoOps = true;
   /** Called for commands that need a street: Ads (aim) and Guard (pick an area). */
-  onAim: (mode: 'ad' | 'guard') => void = () => {};
+  onAim: (mode: 'ad' | 'guard' | 'buy') => void = () => {};
   private lastAutoDay = -1;
 
   constructor(
@@ -69,7 +69,7 @@ export class ActionBar {
           ${cmd('data-act="advertise"', '📢', 'Ads', 'A', 'Ad campaign: aim it at a street and it wins streets toward it until its budget runs out.')}
           ${cmd('data-act="guard"', '🛡', 'Guard', 'G', `Post an account team on a neighbourhood: click one of your streets. Your streets within ${CONFIG.guard.radius} m cost rivals ×${CONFIG.guard.defenceMult} to steal for ${CONFIG.guard.days} days.`)}
           ${cmd('data-open="lawsuit"', '⚖️', 'Sue', 'S', 'Sue a rival for unfair competition')}
-          ${cmd('data-open="deals"', '🏢', 'Buy', 'B', 'Buy a rival: its streets, staff, cash and debt')}
+          ${cmd('data-act="buy"', '🏢', 'Buy', 'B', `Buy a block of a rival's streets next to yours, instantly: up to ${CONFIG.streetDeal.blockSize} streets. Dearer than ads, and the rival is paid.`)}
         </div>
         <div class="grp price">
           ${PRICE_LEVELS.map((p, i) => cmd(`data-price="${p}"`, '$'.repeat(i + 1), P[p].label, PRICE_KEYS[p], PRICE_TIPS[p])).join('')}
@@ -116,6 +116,7 @@ export class ActionBar {
       else if (d.fire) this.send({ type: 'fire', count: Number(d.fire) });
       else if (d.act === 'advertise') this.onAim('ad');
       else if (d.act === 'guard') this.onAim('guard');
+      else if (d.act === 'buy') this.onAim('buy');
       else if (d.open) this.open(d.open as Panel);
     });
   }

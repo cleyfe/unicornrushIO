@@ -10,8 +10,8 @@ export type Intent =
   | { type: 'setSalesShare'; companyId: number; share: number }
   /** Share of the push pool each click commits, from 10% to 100%. */
   | { type: 'setCampaignShare'; companyId: number; share: number }
-  /** Buys a whole rival: its streets, staff, cash and debt. */
-  | { type: 'acquire'; companyId: number; targetId: number }
+  /** Buys a block of a rival's streets around `tile` (next to yours), paying the rival. */
+  | { type: 'buyStreets'; companyId: number; tile: number }
   | { type: 'setPrice'; companyId: number; price: PriceLevel }
   | { type: 'hire'; companyId: number; count: number }
   | { type: 'fire'; companyId: number; count: number }

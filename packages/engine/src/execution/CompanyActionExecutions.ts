@@ -175,27 +175,31 @@ export class SetCampaignShareExecution extends InstantExecution {
   }
 }
 
-/** Buys a whole rival: its owners get the price, the buyer takes over its streets, staff, cash and debt. */
-export class AcquireExecution extends InstantExecution {
+/** Buys a block of a rival's streets next to yours; the rival is paid. */
+export class BuyStreetsExecution extends InstantExecution {
   constructor(
     private companyId: number,
-    private targetId: number,
+    private tile: number,
   ) {
     super();
   }
   protected apply(game: GameImpl): void {
     const c = game.companies[this.companyId];
-    const t = game.companies[this.targetId];
-    if (!t) return game.message(c.id, 'Pick a rival that is still in business.');
-    const blocked = game.acquisitionBlocked(c, t);
-    if (blocked) return game.message(c.id, blocked);
-    const price = game.acquisitionPrice(t);
-    c.cash -= price;
-    c.oneOff.acquisitions -= price;
-    const streets = t.tiles;
-    game.absorb(c, t);
-    game.news(`🤝 ${c.name} bought ${t.name} for ${money(price)}: ${streets} streets and ${t.isBot ? 'its' : 'their'} staff change hands.`, 'info');
-    if (!c.isBot) game.message(c.id, `🤝 You bought ${t.name} for ${money(price)}. Its ${streets} streets, staff, cash and debt are yours.`, 'good');
-    if (!t.isBot) game.message(t.id, `🤝 ${c.name} bought your company for ${money(price)}.`, 'bad');
+    if (!c.alive) return;
+    if (this.tile < 0 || this.tile >= game.owner.length) return game.message(c.id, 'Pick a street.');
+    const deal = game.streetDeal(c, this.tile);
+    if (!deal) return game.message(c.id, "Pick a rival's street.");
+    if (!game.borders(c, this.tile)) return game.message(c.id, 'You can only buy streets next to yours.');
+    if (c.cash < deal.cost) return game.message(c.id, `These ${deal.streets.length} streets cost ${money(deal.cost)}: not enough cash.`);
+    const seller = game.companies[deal.seller];
+    c.cash -= deal.cost;
+    seller.cash += deal.cost;
+    c.oneOff.streetDeals -= deal.cost;
+    seller.oneOff.streetDeals += deal.cost;
+    c.dealHeat += 1;
+    for (const t of deal.streets) game.setOwner(t, c.id);
+    const n = deal.streets.length;
+    if (!c.isBot) game.message(c.id, `🏢 You bought ${n} streets from ${seller.name} for ${money(deal.cost)}.`, 'good');
+    if (!seller.isBot) game.message(seller.id, `🏢 ${c.name} bought ${n} of your streets for ${money(deal.cost)}.`, 'info');
   }
 }

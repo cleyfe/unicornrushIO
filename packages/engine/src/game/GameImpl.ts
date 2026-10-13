@@ -17,7 +17,6 @@ import type { CityData } from '@unicornrush/engine-api/game/City';
 import { NEUTRAL, Wealth, type GameMap } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { generateGridCity, mapFromCity, neighbors } from '@unicornrush/engine-lib/game/GameMap';
-import { money as moneyShort } from '@unicornrush/engine-lib/Format';
 import { PseudoRandom } from '@unicornrush/engine-lib/PseudoRandom';
 import type { Execution } from '../execution/Execution';
 
@@ -479,43 +478,32 @@ export class GameImpl {
     return t;
   }
 
-  /** What buying `target` costs: its net cash plus a few years of profit, plus the owners' premium. */
-  acquisitionPrice(target: Company): number {
-    const A = CONFIG.acquisition;
-    const worth = target.cash - target.debt + Math.max(0, target.avgProfit) * 365 * A.profitYears;
-    return Math.max(A.minPrice, Math.round(worth * A.premium));
-  }
-
-  /** Why `buyer` can't buy `target` right now, or null if it can. */
-  acquisitionBlocked(buyer: Company, target: Company): string | null {
-    if (!buyer.alive) return 'Your company is closed.';
-    if (!target.alive || target.id === buyer.id) return 'Pick a rival that is still in business.';
-    const share = (buyer.customers + target.customers) / this.totalCustomers();
-    if (share > CONFIG.antitrust.actShare) {
-      return `The competition authority would block it: you'd serve ${Math.round(share * 100)}% of the city.`;
+  /**
+   * A block of a rival's streets `buyer` could buy around `tile`: the street
+   * and its same-owner neighbours, up to blockSize, and the price.
+   */
+  streetDeal(buyer: Company, tile: number): { seller: number; streets: number[]; cost: number } | null {
+    const D = CONFIG.streetDeal;
+    const seller = this.owner[tile];
+    if (seller < 0 || seller === buyer.id || !this.companies[seller].alive) return null;
+    const streets: number[] = [];
+    const seen = new Set([tile]);
+    const queue = [tile];
+    while (queue.length > 0 && streets.length < D.blockSize) {
+      const t = queue.shift()!;
+      streets.push(t);
+      for (const n of neighbors(this.map, t, this.nb)) {
+        if (!seen.has(n) && this.owner[n] === seller) (seen.add(n), queue.push(n));
+      }
     }
-    const price = this.acquisitionPrice(target);
-    if (buyer.cash < price) return `Buying ${target.name} costs ${moneyShort(price)}: not enough cash.`;
-    return null;
+    const push = streets.reduce((s, t) => s + this.tileCost(buyer, seller, t), 0);
+    return { seller, streets, cost: Math.round(push * D.dollarsPerPush * (1 + D.stepShare * buyer.dealHeat)) };
   }
 
-  /** `buyer` takes over everything `target` owns, and `target` closes. */
-  absorb(buyer: Company, target: Company): void {
-    for (let i = 0; i < this.owner.length; i++) if (this.owner[i] === target.id) this.setOwner(i, buyer.id);
-    buyer.employees += target.employees;
-    buyer.trainees.push(...target.trainees);
-    buyer.cash += target.cash;
-    buyer.debt += target.debt;
-    buyer.push += target.push;
-    // Investors value the combined profits from day one.
-    buyer.avgProfit += target.avgProfit;
-    target.employees = 0;
-    target.trainees = [];
-    target.cash = 0;
-    target.debt = 0;
-    target.alive = false;
-    target.closedDay = this.day;
-    this.lawsuits = this.lawsuits.filter((l) => l.plaintiff !== target.id && l.defendant !== target.id);
+  /** Is `tile` next to one of `c`'s streets? */
+  borders(c: Company, tile: number): boolean {
+    for (const n of neighbors(this.map, tile, this.nb2)) if (this.owner[n] === c.id) return true;
+    return false;
   }
 
   closeCompany(c: Company, why: string): void {
@@ -690,6 +678,7 @@ function newCompany(id: number, s: CompanySpec): Company {
     campaignShare: CONFIG.sales.campaignShare,
     pushCommitted: 0,
     adHeat: 0,
+    dealHeat: 0,
     lastAdDay: -Infinity,
     tiles: 0,
     customers: 0,
@@ -698,7 +687,7 @@ function newCompany(id: number, s: CompanySpec): Company {
     tierSpend: [0, 0, 0, 0],
     border: new Set(),
     pnl: emptyPnl(),
-    oneOff: { hiring: 0, severance: 0, legalFees: 0, damages: 0, advertising: 0, guards: 0, acquisitions: 0 },
+    oneOff: { hiring: 0, severance: 0, legalFees: 0, damages: 0, advertising: 0, guards: 0, streetDeals: 0 },
     avgProfit: 0,
     churnCarry: 0,
     negativeCashDays: 0,

@@ -19,7 +19,7 @@ export interface OneOffFlows {
   legalFees: number; // lawsuit fees and costs paid (negative)
   advertising: number; // ad purchases (negative)
   guards: number; // neighbourhood account teams (negative)
-  acquisitions: number; // rivals bought (negative)
+  streetDeals: number; // streets bought (−) or sold (+) in deals
   damages: number; // lawsuit damages received (+) or paid (−)
 }
 
@@ -65,6 +65,8 @@ export interface Company {
   pushCommitted: number;
   /** Recent advertising (makes the next ad pricier). */
   adHeat: number;
+  /** Recent street deals (make the next one pricier). */
+  dealHeat: number;
   /** Day the last ad campaign was bought (the agency needs a break between campaigns). */
   lastAdDay: number;
 

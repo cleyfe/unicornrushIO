@@ -1,9 +1,9 @@
 import type { Intent } from '@unicornrush/engine-api/Intents';
 import { CampaignExecution } from './CampaignExecution';
 import {
-  AcquireExecution,
   AdvertiseExecution,
   BorrowExecution,
+  BuyStreetsExecution,
   FireExecution,
   GuardExecution,
   HireExecution,
@@ -25,8 +25,8 @@ export function createExecution(intent: Intent): Execution {
       return new SetSalesShareExecution(intent.companyId, intent.share);
     case 'setCampaignShare':
       return new SetCampaignShareExecution(intent.companyId, intent.share);
-    case 'acquire':
-      return new AcquireExecution(intent.companyId, intent.targetId);
+    case 'buyStreets':
+      return new BuyStreetsExecution(intent.companyId, intent.tile);
     case 'setPrice':
       return new SetPriceExecution(intent.companyId, intent.price);
     case 'hire':

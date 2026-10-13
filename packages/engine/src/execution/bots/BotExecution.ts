@@ -116,14 +116,12 @@ export class BotExecution implements Execution {
       cash -= fee;
     }
 
-    // 3a. Buy a struggling rival cheaply, now and then: lots of streets for little money.
-    // Bots leave human players alone: being bought out would end their game.
-    const buy = advanced ? this.acquisitionTarget(g) : null;
-    if (buy) {
-      const price = g.acquisitionPrice(buy);
-      if (cash > price + reserve * 3) {
-        this.act(g, { type: 'acquire', companyId: id, targetId: buy.id });
-        cash -= price;
+    // 3a. With lots of idle cash, buy a block of the cheapest rival streets next door, now and then.
+    if (advanced && f.cheapestRivalTile >= 0 && g.rng.chance(0.05)) {
+      const deal = g.streetDeal(c, f.cheapestRivalTile);
+      if (deal && cash > deal.cost * 4 + reserve * 2) {
+        this.act(g, { type: 'buyStreets', companyId: id, tile: f.cheapestRivalTile });
+        cash -= deal.cost;
       }
     }
 
@@ -189,23 +187,6 @@ export class BotExecution implements Execution {
     return best !== null && g.rng.chance(0.1 + this.p.litigious * 0.2) ? best : null;
   }
 
-
-  /** A struggling bot rival worth buying: cheap for its streets, and allowed by the competition authority. */
-  private acquisitionTarget(g: GameImpl): Company | null {
-    const c = this.c;
-    if (!g.rng.chance(0.03)) return null;
-    const mine = g.valuation(c).total;
-    let best: Company | null = null;
-    let bestValue = 0;
-    for (const t of g.companies) {
-      if (!t.isBot || t.id === c.id || g.acquisitionBlocked(c, t)) continue;
-      const price = g.acquisitionPrice(t);
-      if (price > mine * 0.25) continue;
-      const value = t.spend / price; // customers' spending per dollar paid
-      if (t.avgProfit < 0 && value > bestValue) (bestValue = value), (best = t);
-    }
-    return best;
-  }
 
   /** A border street facing the rival that took most of our streets lately, if it's worth guarding. */
   private frontToGuard(g: GameImpl): number {

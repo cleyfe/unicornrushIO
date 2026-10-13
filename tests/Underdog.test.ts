@@ -198,46 +198,66 @@ describe('guarding a neighbourhood', () => {
   });
 });
 
-describe('acquisitions', () => {
-  it('hand over the rival: streets, staff, cash and debt, for its valuation plus a premium', () => {
+describe('buying a block of streets', () => {
+  /** A rival street next to the player's territory. */
+  function rivalNextDoor(r: ReturnType<typeof quietSetup>): number {
+    const g = r.game;
+    const rival = g.companies[1];
+    const b = [...rival.border][0];
+    // Give the player a street touching the rival.
+    for (let k = g.map.adjStart[b]; k < g.map.adjStart[b + 1]; k++) {
+      const n = g.map.adj[k];
+      if (g.owner[n] < 0) {
+        g.setOwner(n, 0);
+        return b;
+      }
+    }
+    throw new Error('no free street next to the rival');
+  }
+
+  it('moves up to a block of the rival\'s streets to you at once, and pays the rival', () => {
     const r = quietSetup();
     const g = r.game;
     const me = g.player;
-    const t = g.companies[2];
+    const rival = g.companies[1];
     me.cash = 1e7;
-    t.debt = 10_000;
-    const price = g.acquisitionPrice(t);
-    const tiles = me.tiles + t.tiles;
-    const staff = me.employees + t.employees;
-    const cash = me.cash - price + t.cash;
-    act(r, { type: 'acquire', companyId: 0, targetId: 2 });
-    expect(t.alive).toBe(false);
-    expect(me.tiles).toBe(tiles);
-    expect(me.employees).toBe(staff);
-    expect(me.debt).toBe(10_000);
-    expect(me.cash).toBeCloseTo(cash, -3);
-    expect(me.oneOff.acquisitions).toBe(-price);
-    expect(price).toBeGreaterThanOrEqual(CONFIG.acquisition.minPrice);
+    const tile = rivalNextDoor(r);
+    const deal = g.streetDeal(me, tile)!;
+    expect(deal.streets.length).toBeGreaterThan(1);
+    expect(deal.streets.length).toBeLessThanOrEqual(CONFIG.streetDeal.blockSize);
+    const mine = me.tiles;
+    const theirCash = rival.cash;
+    act(r, { type: 'buyStreets', companyId: 0, tile });
+    expect(me.tiles).toBe(mine + deal.streets.length);
+    expect(me.oneOff.streetDeals).toBe(-deal.cost);
+    expect(rival.cash).toBeGreaterThan(theirCash + deal.cost - 1000);
+    for (const t of deal.streets) expect(g.owner[t]).toBe(0);
   });
 
-  it('need the cash', () => {
-    const r = quietSetup();
-    r.game.player.cash = 1000;
-    act(r, { type: 'acquire', companyId: 0, targetId: 1 });
-    expect(r.game.companies[1].alive).toBe(true);
-    expect(lastMessage(r)).toMatch(/not enough cash/);
-  });
-
-  it('are blocked when the buyer would dominate the city', () => {
+  it('costs more than winning the same streets with ads, and more each time', () => {
     const r = quietSetup();
     const g = r.game;
-    g.player.cash = 1e9;
-    // Give the player just under 40% of the city's customers; adding a rival pushes it past the limit.
-    const total = g.totalCustomers();
-    for (let i = 0; i < g.map.size && g.player.customers < total * 0.399; i++) if (g.owner[i] < 0) g.setOwner(i, 0);
-    act(r, { type: 'acquire', companyId: 0, targetId: 1 });
-    expect(g.companies[1].alive).toBe(true);
-    expect(lastMessage(r)).toMatch(/competition authority/);
+    const me = g.player;
+    me.cash = 1e8;
+    const tile = rivalNextDoor(r);
+    const deal = g.streetDeal(me, tile)!;
+    const push = deal.streets.reduce((s, t) => s + g.tileCost(me, 1, t), 0);
+    expect(deal.cost / push).toBeGreaterThan(CONFIG.sales.adBaseCost / CONFIG.sales.adPush);
+    me.dealHeat = 2;
+    expect(g.streetDeal(me, tile)!.cost).toBeGreaterThan(deal.cost);
+  });
+
+  it('only works on rival streets next to yours, with the cash', () => {
+    const r = quietSetup();
+    const g = r.game;
+    g.player.cash = 1e7;
+    const far = [...g.companies[2].border][0];
+    act(r, { type: 'buyStreets', companyId: 0, tile: far });
+    expect(lastMessage(r)).toMatch(/next to yours/);
+    const tile = rivalNextDoor(r);
+    g.player.cash = 10;
+    act(r, { type: 'buyStreets', companyId: 0, tile });
+    expect(lastMessage(r)).toMatch(/not enough cash/);
   });
 });
 

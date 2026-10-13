@@ -111,7 +111,11 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty): 
   const input = new InputHandler(client, view, city, tooltip, setSpeed, firstMove);
   const detach = input.attach();
   actions.onAim = (mode) => input.toggleMode(mode);
-  const banners = { ad: '📢 Click a street to aim your ad campaign · Esc to cancel', guard: '🛡 Click one of your streets to guard its neighbourhood · Esc to cancel' };
+  const banners = {
+    ad: '📢 Click a street to aim your ad campaign · Esc to cancel',
+    guard: '🛡 Click one of your streets to guard its neighbourhood · Esc to cancel',
+    buy: "🏢 Click a rival's street next to yours to buy that block · Esc to cancel",
+  };
   input.onModeChange = (mode) => {
     guardBanner.textContent = mode === 'expand' ? '' : banners[mode];
   };

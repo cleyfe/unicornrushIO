@@ -653,16 +653,19 @@ h1 b {
   display: none;
 }
 body[data-mode='guard'] .guard-banner,
-body[data-mode='ad'] .guard-banner {
+body[data-mode='ad'] .guard-banner,
+body[data-mode='buy'] .guard-banner {
   display: block;
 }
 body[data-mode='guard'] [data-act='guard'],
-body[data-mode='ad'] [data-act='advertise'] {
+body[data-mode='ad'] [data-act='advertise'],
+body[data-mode='buy'] [data-act='buy'] {
   background: var(--accent);
   border-color: var(--accent);
 }
 body[data-mode='guard'] canvas,
-body[data-mode='ad'] canvas {
+body[data-mode='ad'] canvas,
+body[data-mode='buy'] canvas {
   cursor: crosshair !important;
 }
 .hc-cost {

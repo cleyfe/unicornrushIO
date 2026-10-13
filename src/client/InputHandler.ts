@@ -8,7 +8,7 @@ import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import type { ClientGameRunner } from './ClientGameRunner';
 import type { CityMapView } from './render/CityMapView';
 
-export type ClickMode = 'expand' | 'ad' | 'guard';
+export type ClickMode = 'expand' | 'ad' | 'guard' | 'buy';
 
 /**
  * Clicking a street (or a building on it) launches a campaign; hovering explains it.
@@ -39,6 +39,14 @@ export class InputHandler {
       if (this.mode === 'guard') {
         if (this.client.game.owner[seg] === 0) {
           this.client.send({ type: 'guard', companyId: 0, tile: seg });
+          this.setMode('expand');
+        }
+        return;
+      }
+      if (this.mode === 'buy') {
+        const g = this.client.game;
+        if (g.owner[seg] > 0 && g.borders(g.player, seg)) {
+          this.client.send({ type: 'buyStreets', companyId: 0, tile: seg });
           this.setMode('expand');
         }
         return;
@@ -75,7 +83,9 @@ export class InputHandler {
           ? describeGuard(g, seg)
           : this.mode === 'ad'
             ? describeAd(g, this.city, seg)
-            : describeSegment(g, this.city, seg, this.view.isFrontier(seg));
+            : this.mode === 'buy'
+              ? describeDeal(g, seg)
+              : describeSegment(g, this.city, seg, this.view.isFrontier(seg));
       const w = this.tooltip.offsetWidth || 260;
       const box = map.getContainer().getBoundingClientRect();
       const x = e.point.x + 16 + w > box.width ? e.point.x - w - 16 : e.point.x + 16;
@@ -135,6 +145,19 @@ function describeAd(g: GameImpl, city: CityData, seg: number): string {
   return `<div class="hc-title">📢 Ad campaign toward ${name}</div>
     <div class="hc-row"><span>+${offer.push} push, spent winning streets on the way</span></div>
     <div class="hc-action ${ok ? 'ok' : 'wait'}">${ok ? `Click to launch · ${money(offer.cost)}` : `Costs ${money(offer.cost)}: not enough cash`}</div>`;
+}
+
+/** The hover card in buy mode: which rival streets you'd get, and the price. */
+function describeDeal(g: GameImpl, seg: number): string {
+  const me = g.player;
+  const deal = g.streetDeal(me, seg);
+  if (!deal) return '<div class="hc-title">🏢 Buy streets</div><div class="hc-action muted">Pick a rival\'s street</div>';
+  const seller = g.companies[deal.seller];
+  if (!g.borders(me, seg)) return `<div class="hc-title">🏢 Buy from ${seller.name}</div><div class="hc-action muted">Only streets next to yours</div>`;
+  const ok = me.cash >= deal.cost;
+  return `<div class="hc-title">🏢 Buy ${deal.streets.length} streets from ${seller.name}</div>
+    <div class="hc-row"><span>Instant · ${seller.name} is paid</span></div>
+    <div class="hc-action ${ok ? 'ok' : 'wait'}">${ok ? `Click to buy · ${money(deal.cost)}` : `Costs ${money(deal.cost)}: not enough cash`}</div>`;
 }
 
 /** The hover card in guard mode: which streets a guard would cover, and the price. */

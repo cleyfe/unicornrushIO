@@ -28,6 +28,7 @@ export class CompanyExecution implements Execution {
     const cap = game.maxPush(c);
     if (c.push < cap) c.push = Math.min(cap, c.push + game.pushPerDay(c) * DT);
     c.adHeat *= 1 - CONFIG.sales.adHeatDecayPerDay * DT;
+    c.dealHeat *= 1 - CONFIG.streetDeal.heatDecayPerDay * DT;
     this.churn(game);
     this.economy(game);
     c.peakTiles = Math.max(c.peakTiles, c.tiles);
