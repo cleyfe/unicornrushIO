@@ -128,5 +128,18 @@
    0.17
   ],
   "streets": 3833
+ },
+ {
+  "id": "madrid",
+  "flag": "🇪🇸",
+  "city": "Madrid",
+  "area": "Centro & Salamanca",
+  "mix": [
+   0.3,
+   0.35,
+   0.22,
+   0.13
+  ],
+  "streets": 3447
  }
 ]
