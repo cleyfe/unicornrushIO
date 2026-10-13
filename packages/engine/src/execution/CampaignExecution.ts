@@ -52,7 +52,7 @@ export class CampaignExecution implements Execution {
     const target = game.owner[this.tile];
     if (target === c.id) return fail('Those are already your customers.');
     if (!game.touches(c, target)) return fail('You can only expand into markets next to yours.');
-    const budget = c.push * CONFIG.sales.campaignShare;
+    const budget = c.push * c.campaignShare;
     if (budget < 1) return fail('Not enough sales push yet: put more staff in Sales.');
     c.push -= budget;
     c.pushCommitted += budget;

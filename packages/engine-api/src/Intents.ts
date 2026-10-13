@@ -8,6 +8,10 @@ import type { PriceLevel } from './game/Game';
 export type Intent =
   | { type: 'campaign'; companyId: number; tile: number }
   | { type: 'setSalesShare'; companyId: number; share: number }
+  /** Share of the push pool each click commits, from 10% to 100%. */
+  | { type: 'setCampaignShare'; companyId: number; share: number }
+  /** Buys a whole rival: its streets, staff, cash and debt. */
+  | { type: 'acquire'; companyId: number; targetId: number }
   | { type: 'setPrice'; companyId: number; price: PriceLevel }
   | { type: 'hire'; companyId: number; count: number }
   | { type: 'fire'; companyId: number; count: number }

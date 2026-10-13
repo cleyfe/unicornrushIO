@@ -162,6 +162,31 @@ function costBreakdown(g: GameImpl, attacker: number, owner: number, seg: number
   return `<div class="hc-cost">🛡 ×${s.defence.toFixed(1)}${parts.length ? ` = ${parts.join(' · ')}` : ''}</div>`;
 }
 
+/**
+ * Roughly how many streets a click on `seg` wins: the campaign keeps taking
+ * streets of the same owner around it until its budget runs out.
+ */
+function estimateCampaign(g: GameImpl, seg: number, budget: number): number {
+  const me = g.player;
+  const owner = g.owner[seg];
+  const seen = new Set([seg]);
+  const queue = [seg];
+  let spent = 0;
+  let won = 0;
+  while (queue.length > 0 && won < 500) {
+    const t = queue.shift()!;
+    const cost = g.tileCost(me, owner, t);
+    if (spent + cost > budget) break;
+    spent += cost;
+    won++;
+    for (let k = g.map.adjStart[t]; k < g.map.adjStart[t + 1]; k++) {
+      const n = g.map.adj[k];
+      if (!seen.has(n) && g.owner[n] === owner) (seen.add(n), queue.push(n));
+    }
+  }
+  return won;
+}
+
 /** The hover card: what a street is worth and whether you can take it now. */
 export function describeSegment(g: GameImpl, city: CityData, seg: number, reachable: boolean): string {
   const level = g.map.wealth[seg];
@@ -184,8 +209,12 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
   if (o !== 0) {
     const cost = g.tileCost(me, o, seg);
     if (!reachable) action = '<div class="hc-action muted">Not next to your streets yet</div>';
-    else if (me.push * CONFIG.sales.campaignShare >= cost) action = `<div class="hc-action ok">✓ Click to win it · ${cost.toFixed(0)} push</div>`;
-    else action = `<div class="hc-action wait">Needs ${cost.toFixed(0)} push · your next click spends ${Math.floor(me.push * CONFIG.sales.campaignShare)}</div>`;
+    else {
+      const budget = me.push * me.campaignShare;
+      const est = estimateCampaign(g, seg, budget);
+      if (budget >= cost) action = `<div class="hc-action ok">✓ Click: wins ≈ ${est} street${est === 1 ? '' : 's'} here · up to ${Math.floor(budget)} push</div>`;
+      else action = `<div class="hc-action wait">Needs ${cost.toFixed(0)} push · a click commits ${Math.floor(budget)}</div>`;
+    }
   }
   const events = g.localEvents
     .filter((e) => e.streets.includes(seg))

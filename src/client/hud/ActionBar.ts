@@ -6,7 +6,7 @@ import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import { $, el } from './dom';
 
 type WithoutCompany<T> = T extends unknown ? Omit<T, 'companyId'> : never;
-export type Panel = 'finances' | 'lawsuit' | 'race';
+export type Panel = 'finances' | 'lawsuit' | 'race' | 'deals';
 
 const S = CONFIG.staff;
 const P = CONFIG.prices;
@@ -45,6 +45,9 @@ export class ActionBar {
           <span class="ic">🤝</span>
           <div class="push-meter"><div data-v="pushFill"></div><span data-v="pushText"></span></div>
           <span class="rate" data-v="pushRate"></span>
+          <label class="per-click" title="How much of your push each click commits. Small clicks for precise moves, big ones to grab land fast. Unspent push comes back.">
+            <input type="range" min="10" max="100" step="10" data-input="share" aria-label="Push per click" /><span data-v="share"></span>
+          </label>
         </div>
         <div class="defence" data-v="defence" title="Defence: how much harder your streets are to steal. Spare Ops staff and unspent push raise it; being overloaded lowers it."></div>
       </div>
@@ -66,6 +69,7 @@ export class ActionBar {
           ${cmd('data-act="advertise"', '📢', 'Ads', 'A', 'Ad campaign: aim it at a street and it wins streets toward it until its budget runs out.')}
           ${cmd('data-act="guard"', '🛡', 'Guard', 'G', `Post an account team on a neighbourhood: click one of your streets. Your streets within ${CONFIG.guard.radius} m cost rivals ×${CONFIG.guard.defenceMult} to steal for ${CONFIG.guard.days} days.`)}
           ${cmd('data-open="lawsuit"', '⚖️', 'Sue', 'S', 'Sue a rival for unfair competition')}
+          ${cmd('data-open="deals"', '🏢', 'Buy', 'B', 'Buy a rival: its streets, staff, cash and debt')}
         </div>
         <div class="grp price">
           ${PRICE_LEVELS.map((p, i) => cmd(`data-price="${p}"`, '$'.repeat(i + 1), P[p].label, PRICE_KEYS[p], PRICE_TIPS[p])).join('')}
@@ -100,6 +104,9 @@ export class ActionBar {
     });
     // Give keyboard focus back to the game, so hotkeys keep working.
     slider.addEventListener('change', () => slider.blur());
+    const share = $<HTMLInputElement>(r, '[data-input="share"]');
+    share.addEventListener('input', () => this.send({ type: 'setCampaignShare', share: Number(share.value) / 100 }));
+    share.addEventListener('change', () => share.blur());
     r.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
       if (!b || b.disabled) return;
@@ -145,7 +152,10 @@ export class ActionBar {
     const fill = c.push / g.maxPush(c);
     $(r, '[data-v="pushFill"]').style.width = `${Math.min(100, fill * 100)}%`;
     const committed = c.pushCommitted >= 1 ? ` · ${Math.floor(c.pushCommitted)} at work` : '';
-    $(r, '[data-v="pushText"]').textContent = `${Math.floor(c.push)} / ${Math.floor(g.maxPush(c))} · click ${Math.floor(c.push * CONFIG.sales.campaignShare)}${committed}`;
+    $(r, '[data-v="pushText"]').textContent = `${Math.floor(c.push)} / ${Math.floor(g.maxPush(c))} · click ${Math.floor(c.push * c.campaignShare)}${committed}`;
+    const share = $<HTMLInputElement>(r, '[data-input="share"]');
+    if (document.activeElement !== share) share.value = String(Math.round(c.campaignShare * 100));
+    $(r, '[data-v="share"]').textContent = `${Math.round(c.campaignShare * 100)}%`;
     $(r, '[data-v="pushRate"]').textContent = `+${g.pushPerDay(c).toFixed(1)}/d`;
     const def = g.defence(c);
     const defEl = $(r, '[data-v="defence"]');

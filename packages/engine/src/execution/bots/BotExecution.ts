@@ -115,6 +115,17 @@ export class BotExecution implements Execution {
       cash -= fee;
     }
 
+    // 3a. Buy a struggling rival cheaply, now and then: lots of streets for little money.
+    // Bots leave human players alone: being bought out would end their game.
+    const buy = this.acquisitionTarget(g);
+    if (buy) {
+      const price = g.acquisitionPrice(buy);
+      if (cash > price + reserve * 3) {
+        this.act(g, { type: 'acquire', companyId: id, targetId: buy.id });
+        cash -= price;
+      }
+    }
+
     // 3b. Guard the front line against a rival that keeps taking our streets.
     const front = this.frontToGuard(g);
     if (front >= 0) {
@@ -178,6 +189,23 @@ export class BotExecution implements Execution {
   }
 
 
+  /** A struggling bot rival worth buying: cheap for its streets, and allowed by the competition authority. */
+  private acquisitionTarget(g: GameImpl): Company | null {
+    const c = this.c;
+    if (!g.rng.chance(0.03)) return null;
+    const mine = g.valuation(c).total;
+    let best: Company | null = null;
+    let bestValue = 0;
+    for (const t of g.companies) {
+      if (!t.isBot || t.id === c.id || g.acquisitionBlocked(c, t)) continue;
+      const price = g.acquisitionPrice(t);
+      if (price > mine * 0.25) continue;
+      const value = t.spend / price; // customers' spending per dollar paid
+      if (t.avgProfit < 0 && value > bestValue) (bestValue = value), (best = t);
+    }
+    return best;
+  }
+
   /** A border street facing the rival that took most of our streets lately, if it's worth guarding. */
   private frontToGuard(g: GameImpl): number {
     const c = this.c;
@@ -211,7 +239,8 @@ export class BotExecution implements Execution {
   }
 
   private rivalThreshold(): number {
-    return CONFIG.sales.rivalTileCost * (0.5 + this.p.aggression * 0.9);
+    const appetite = this.p.aggression * CONFIG.difficulty[this.c.difficulty].aggressionMult;
+    return CONFIG.sales.rivalTileCost * (0.5 + appetite * 0.9);
   }
 
   private scanFrontier(g: GameImpl): Frontier {

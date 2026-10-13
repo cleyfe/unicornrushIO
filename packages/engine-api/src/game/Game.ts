@@ -19,6 +19,7 @@ export interface OneOffFlows {
   legalFees: number; // lawsuit fees and costs paid (negative)
   advertising: number; // ad purchases (negative)
   guards: number; // neighbourhood account teams (negative)
+  acquisitions: number; // rivals bought (negative)
   damages: number; // lawsuit damages received (+) or paid (−)
 }
 
@@ -58,6 +59,8 @@ export interface Company {
   strikeUntil: number;
 
   push: number;
+  /** Share of the push pool each click commits (OpenFront's attack ratio). */
+  campaignShare: number;
   /** Push committed to campaigns still running. */
   pushCommitted: number;
   /** Recent advertising (makes the next ad pricier). */

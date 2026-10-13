@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { applyCard, dealCards } from '@unicornrush/engine/execution/OpportunityExecution';
-import { act, lastMessage, quietSetup, runDays } from './util/Setup';
+import { act, lastMessage, neutralNeighbour, quietSetup, runDays } from './util/Setup';
 
 const L = CONFIG.lawsuit;
 
@@ -195,5 +195,64 @@ describe('guarding a neighbourhood', () => {
     const s = g.streetCost(g.player, 1, tile);
     expect(s.total).toBeCloseTo(s.base * s.service * s.loyalty * s.reserve * s.priceGap * s.guard);
     expect(s.defence).toBeCloseTo(s.total / s.base);
+  });
+});
+
+describe('acquisitions', () => {
+  it('hand over the rival: streets, staff, cash and debt, for its valuation plus a premium', () => {
+    const r = quietSetup();
+    const g = r.game;
+    const me = g.player;
+    const t = g.companies[2];
+    me.cash = 1e7;
+    t.debt = 10_000;
+    const price = g.acquisitionPrice(t);
+    const tiles = me.tiles + t.tiles;
+    const staff = me.employees + t.employees;
+    const cash = me.cash - price + t.cash;
+    act(r, { type: 'acquire', companyId: 0, targetId: 2 });
+    expect(t.alive).toBe(false);
+    expect(me.tiles).toBe(tiles);
+    expect(me.employees).toBe(staff);
+    expect(me.debt).toBe(10_000);
+    expect(me.cash).toBeCloseTo(cash, -3);
+    expect(me.oneOff.acquisitions).toBe(-price);
+    expect(price).toBeGreaterThanOrEqual(CONFIG.acquisition.minPrice);
+  });
+
+  it('need the cash', () => {
+    const r = quietSetup();
+    r.game.player.cash = 1000;
+    act(r, { type: 'acquire', companyId: 0, targetId: 1 });
+    expect(r.game.companies[1].alive).toBe(true);
+    expect(lastMessage(r)).toMatch(/not enough cash/);
+  });
+
+  it('are blocked when the buyer would dominate the city', () => {
+    const r = quietSetup();
+    const g = r.game;
+    g.player.cash = 1e9;
+    // Give the player just under 40% of the city's customers; adding a rival pushes it past the limit.
+    const total = g.totalCustomers();
+    for (let i = 0; i < g.map.size && g.player.customers < total * 0.399; i++) if (g.owner[i] < 0) g.setOwner(i, 0);
+    act(r, { type: 'acquire', companyId: 0, targetId: 1 });
+    expect(g.companies[1].alive).toBe(true);
+    expect(lastMessage(r)).toMatch(/competition authority/);
+  });
+});
+
+describe('push per click', () => {
+  it('commits the share of push the company chose', () => {
+    const r = quietSetup();
+    const me = r.game.player;
+    act(r, { type: 'setCampaignShare', companyId: 0, share: 0.2 });
+    expect(me.campaignShare).toBe(0.2);
+    me.push = 100;
+    act(r, { type: 'campaign', companyId: 0, tile: neutralNeighbour(r) });
+    expect(me.push + me.pushCommitted).toBeGreaterThan(79);
+    act(r, { type: 'setCampaignShare', companyId: 0, share: 5 });
+    expect(me.campaignShare).toBe(1);
+    act(r, { type: 'setCampaignShare', companyId: 0, share: 0 });
+    expect(me.campaignShare).toBe(CONFIG.sales.minCampaignShare);
   });
 });

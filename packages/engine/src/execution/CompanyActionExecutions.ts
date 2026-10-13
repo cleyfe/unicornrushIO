@@ -156,3 +156,43 @@ export class GuardExecution extends InstantExecution {
     if (!c.isBot) game.message(c.id, `🛡 ${offer.streets.length} streets guarded for ${CONFIG.guard.days} days.`, 'good');
   }
 }
+
+/** Sets how much of the push pool each click commits. */
+export class SetCampaignShareExecution extends InstantExecution {
+  constructor(
+    private companyId: number,
+    private share: number,
+  ) {
+    super();
+  }
+  protected apply(game: GameImpl): void {
+    const c = game.companies[this.companyId];
+    if (!Number.isFinite(this.share)) return;
+    c.campaignShare = Math.min(1, Math.max(CONFIG.sales.minCampaignShare, this.share));
+  }
+}
+
+/** Buys a whole rival: its owners get the price, the buyer takes over its streets, staff, cash and debt. */
+export class AcquireExecution extends InstantExecution {
+  constructor(
+    private companyId: number,
+    private targetId: number,
+  ) {
+    super();
+  }
+  protected apply(game: GameImpl): void {
+    const c = game.companies[this.companyId];
+    const t = game.companies[this.targetId];
+    if (!t) return game.message(c.id, 'Pick a rival that is still in business.');
+    const blocked = game.acquisitionBlocked(c, t);
+    if (blocked) return game.message(c.id, blocked);
+    const price = game.acquisitionPrice(t);
+    c.cash -= price;
+    c.oneOff.acquisitions -= price;
+    const streets = t.tiles;
+    game.absorb(c, t);
+    game.news(`🤝 ${c.name} bought ${t.name} for ${money(price)}: ${streets} streets and ${t.isBot ? 'its' : 'their'} staff change hands.`, 'info');
+    if (!c.isBot) game.message(c.id, `🤝 You bought ${t.name} for ${money(price)}. Its ${streets} streets, staff, cash and debt are yours.`, 'good');
+    if (!t.isBot) game.message(t.id, `🤝 ${c.name} bought your company for ${money(price)}.`, 'bad');
+  }
+}

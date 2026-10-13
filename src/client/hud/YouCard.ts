@@ -48,7 +48,7 @@ export class YouCard {
   /** One-off spending so far (hiring, ads, guards, legal fees…), as a positive number. */
   private spent(): number {
     const o = this.game.player.oneOff;
-    return -(o.hiring + o.severance + o.advertising + o.guards + o.legalFees + Math.min(0, o.damages));
+    return -(o.hiring + o.severance + o.advertising + o.guards + o.acquisitions + o.legalFees + Math.min(0, o.damages));
   }
 
   update(): void {

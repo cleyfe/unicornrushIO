@@ -1572,3 +1572,19 @@ td i {
 .wealth-legend[open] ~ .news-feed {
   display: none;
 }
+
+.per-click {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.per-click input {
+  width: 70px;
+  accent-color: var(--accent);
+}
+.per-click span {
+  min-width: 30px;
+}

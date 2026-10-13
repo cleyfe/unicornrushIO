@@ -7,7 +7,7 @@ import { $, el } from './dom';
 import { RaceChart } from './RaceChart';
 import { Sparkline } from './Sparkline';
 
-export type DrawerKind = 'finances' | 'lawsuit' | 'race';
+export type DrawerKind = 'finances' | 'lawsuit' | 'race' | 'deals';
 
 /** A panel that slides in over the map for less frequent decisions. */
 export class Drawer {
@@ -28,9 +28,10 @@ export class Drawer {
     // Contents are redrawn, so listen once on the drawer itself.
     const send = (i: Record<string, unknown>) => this.sendIntent({ ...i, companyId: 0 } as Intent);
     this.root.addEventListener('click', (e) => {
-      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-sue], [data-bank]');
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-sue], [data-bank], [data-buy]');
       if (!b || b.disabled) return;
       if (b.dataset.sue) send({ type: 'lawsuit', targetId: Number(b.dataset.sue) });
+      else if (b.dataset.buy) send({ type: 'acquire', targetId: Number(b.dataset.buy) });
       else send({ type: b.dataset.bank });
     });
   }
@@ -39,7 +40,7 @@ export class Drawer {
     if (this.kind === kind) return this.close();
     this.kind = kind;
     this.root.hidden = false;
-    const html = { finances: this.financesHtml, lawsuit: this.lawsuitHtml, race: this.raceHtml }[kind].call(this);
+    const html = { finances: this.financesHtml, lawsuit: this.lawsuitHtml, race: this.raceHtml, deals: this.dealsHtml }[kind].call(this);
     this.root.innerHTML = `<button class="close" aria-label="Close">✕</button>${html}`;
     this.root.classList.toggle('wide', kind === 'race');
     $(this.root, '.close').addEventListener('click', () => this.close());
@@ -81,6 +82,7 @@ export class Drawer {
         <tr><td>Severance</td><td data-v="ooSeverance"></td></tr>
         <tr><td>Ads</td><td data-v="ooAds"></td></tr>
         <tr><td>Guards</td><td data-v="ooGuards"></td></tr>
+        <tr><td>Acquisitions</td><td data-v="ooAcq"></td></tr>
         <tr><td>Legal fees and fines</td><td data-v="ooLegal"></td></tr>
         <tr><td>Lawsuit damages</td><td data-v="ooDamages"></td></tr>
       </table>
@@ -101,6 +103,16 @@ export class Drawer {
         <tbody data-v="caseRows"></tbody>
       </table>
       <div data-v="cases"></div>`;
+  }
+
+  private dealsHtml(): string {
+    const A = CONFIG.acquisition;
+    return `<h2>🏢 Buy a rival</h2>
+      <p class="fee-line" title="Its owners want its valuation plus ${Math.round((A.premium - 1) * 100)}%. You take over its streets, staff, cash and debt. A struggling company with many streets can be a bargain; a profitable one costs more than it adds at first. The competition authority blocks deals above ${Math.round(CONFIG.antitrust.actShare * 100)}% of the city.">Price = value + ${Math.round((A.premium - 1) * 100)}% · you get streets, staff, cash and debt</p>
+      <table class="cases-table">
+        <tr><th>Rival</th><th>Value</th><th>Profit</th><th>Streets</th><th>Price</th><th></th></tr>
+        <tbody data-v="dealRows"></tbody>
+      </table>`;
   }
 
   private raceHtml(): string {
@@ -141,10 +153,31 @@ export class Drawer {
       this.set('ooLegal', ...signed(c.oneOff.legalFees));
       this.set('ooAds', ...signed(c.oneOff.advertising));
       this.set('ooGuards', ...signed(c.oneOff.guards));
+      this.set('ooAcq', ...signed(c.oneOff.acquisitions));
       this.set('ooDamages', ...signed(c.oneOff.damages));
       if (g.tick % 10 === 0) {
         this.valueChart.update(this.history.valuation);
         this.profitChart.update(this.history.profit);
+      }
+      return;
+    }
+    if (this.kind === 'deals') {
+      const rows = g.companies
+        .filter((r) => r.alive && r.id !== c.id)
+        .map((r) => {
+          const price = g.acquisitionPrice(r);
+          const blocked = g.acquisitionBlocked(c, r);
+          return `<tr><td><i style="background:rgb(${r.color.join(',')})"></i>${r.name}</td>
+            <td>${money(g.valuation(r).total)}</td>
+            <td class="${r.pnl.profit >= 0 ? 'pos' : 'neg'}">${money(r.pnl.profit)}/d</td>
+            <td>${r.tiles}</td><td>${money(price)}</td>
+            <td><button class="buy-btn" data-buy="${r.id}" ${blocked ? 'disabled' : ''} title="${blocked ?? `Buy ${r.name} for ${money(price)}`}">Buy</button></td></tr>`;
+        })
+        .join('');
+      const body = $(this.root, '[data-v="dealRows"]');
+      if (body.dataset.html !== rows) {
+        body.dataset.html = rows;
+        body.innerHTML = rows;
       }
       return;
     }

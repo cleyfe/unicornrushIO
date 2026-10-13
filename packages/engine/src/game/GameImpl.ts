@@ -17,6 +17,7 @@ import type { CityData } from '@unicornrush/engine-api/game/City';
 import { NEUTRAL, Wealth, type GameMap } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { generateGridCity, mapFromCity, neighbors } from '@unicornrush/engine-lib/game/GameMap';
+import { money as moneyShort } from '@unicornrush/engine-lib/Format';
 import { PseudoRandom } from '@unicornrush/engine-lib/PseudoRandom';
 import type { Execution } from '../execution/Execution';
 
@@ -467,6 +468,51 @@ export class GameImpl {
     return lost;
   }
 
+  /** Customers in the whole city. */
+  totalCustomers(): number {
+    let t = 0;
+    for (let i = 0; i < this.map.size; i++) t += this.map.demand[i];
+    return t;
+  }
+
+  /** What buying `target` costs: its valuation plus the owners' premium. */
+  acquisitionPrice(target: Company): number {
+    const A = CONFIG.acquisition;
+    return Math.max(A.minPrice, Math.round(this.valuation(target).total * A.premium));
+  }
+
+  /** Why `buyer` can't buy `target` right now, or null if it can. */
+  acquisitionBlocked(buyer: Company, target: Company): string | null {
+    if (!buyer.alive) return 'Your company is closed.';
+    if (!target.alive || target.id === buyer.id) return 'Pick a rival that is still in business.';
+    const share = (buyer.customers + target.customers) / this.totalCustomers();
+    if (share > CONFIG.antitrust.actShare) {
+      return `The competition authority would block it: you'd serve ${Math.round(share * 100)}% of the city.`;
+    }
+    const price = this.acquisitionPrice(target);
+    if (buyer.cash < price) return `Buying ${target.name} costs ${moneyShort(price)}: not enough cash.`;
+    return null;
+  }
+
+  /** `buyer` takes over everything `target` owns, and `target` closes. */
+  absorb(buyer: Company, target: Company): void {
+    for (let i = 0; i < this.owner.length; i++) if (this.owner[i] === target.id) this.setOwner(i, buyer.id);
+    buyer.employees += target.employees;
+    buyer.trainees.push(...target.trainees);
+    buyer.cash += target.cash;
+    buyer.debt += target.debt;
+    buyer.push += target.push;
+    // Investors value the combined profits from day one.
+    buyer.avgProfit += target.avgProfit;
+    target.employees = 0;
+    target.trainees = [];
+    target.cash = 0;
+    target.debt = 0;
+    target.alive = false;
+    target.closedDay = this.day;
+    this.lawsuits = this.lawsuits.filter((l) => l.plaintiff !== target.id && l.defendant !== target.id);
+  }
+
   closeCompany(c: Company, why: string): void {
     if (!c.alive) return;
     this.reportLosses(c.id);
@@ -636,6 +682,7 @@ function newCompany(id: number, s: CompanySpec): Company {
     strikeFrom: 0,
     strikeUntil: 0,
     push: CONFIG.start.push, // enough for a first expansion right away
+    campaignShare: CONFIG.sales.campaignShare,
     pushCommitted: 0,
     adHeat: 0,
     tiles: 0,
@@ -645,7 +692,7 @@ function newCompany(id: number, s: CompanySpec): Company {
     tierSpend: [0, 0, 0, 0],
     border: new Set(),
     pnl: emptyPnl(),
-    oneOff: { hiring: 0, severance: 0, legalFees: 0, damages: 0, advertising: 0, guards: 0 },
+    oneOff: { hiring: 0, severance: 0, legalFees: 0, damages: 0, advertising: 0, guards: 0, acquisitions: 0 },
     avgProfit: 0,
     churnCarry: 0,
     negativeCashDays: 0,
