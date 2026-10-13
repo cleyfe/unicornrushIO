@@ -201,11 +201,13 @@ export const CONFIG = {
   // 1 = picks streets by value per push like a pro, 0 = picks any street nearby;
   // aggressionMult: appetite for taking rivals' streets; advanced: uses ads, cards,
   // lawsuits, guards and street deals (easy bots only expand, hire and price);
-  // dealAppetite: daily chance of buying a block of rival streets when cash allows.
+  // dealAppetite: daily chance of buying a block of rival streets when cash allows;
+  // hireBase: hires per day on top of growth; humanCostMult: how much costlier a human
+  // player's streets look to the bot (easy bots rarely take yours).
   difficulty: {
-    easy: { reserveMult: 3, repDays: 90, growth: 0.1, extraPushReserve: 0.2, leaderFocus: false, expandEveryDays: 3, salesMult: 0.4, serviceBonus: 0.5, streetJudgement: 1, aggressionMult: 1, advanced: false, dealAppetite: 0 },
-    normal: { reserveMult: 2, repDays: 45, growth: 0.35, extraPushReserve: 0.1, leaderFocus: true, expandEveryDays: 1, salesMult: 1, serviceBonus: 0, streetJudgement: 1, aggressionMult: 1, advanced: true, dealAppetite: 0.05 },
-    hard: { reserveMult: 1, repDays: 20, growth: 0.5, extraPushReserve: 0, leaderFocus: true, expandEveryDays: 1, salesMult: 1, serviceBonus: 0.1, streetJudgement: 1, aggressionMult: 1, advanced: true, dealAppetite: 0.05 },
+    easy: { reserveMult: 4, repDays: 120, growth: 0.05, extraPushReserve: 0.2, leaderFocus: false, expandEveryDays: 3, salesMult: 0.4, serviceBonus: 0.5, streetJudgement: 1, aggressionMult: 1, advanced: false, dealAppetite: 0, hireBase: 1, humanCostMult: 2 },
+    normal: { reserveMult: 2, repDays: 45, growth: 0.35, extraPushReserve: 0.1, leaderFocus: true, expandEveryDays: 1, salesMult: 1, serviceBonus: 0, streetJudgement: 1, aggressionMult: 1, advanced: true, dealAppetite: 0.05, hireBase: 3, humanCostMult: 1 },
+    hard: { reserveMult: 1, repDays: 20, growth: 0.5, extraPushReserve: 0, leaderFocus: true, expandEveryDays: 1, salesMult: 1, serviceBonus: 0.1, streetJudgement: 1, aggressionMult: 1, advanced: true, dealAppetite: 0.05, hireBase: 3, humanCostMult: 1 },
   },
 
   events: { firstDay: 150, minGap: 120, maxGap: 180, warningDays: 10 },

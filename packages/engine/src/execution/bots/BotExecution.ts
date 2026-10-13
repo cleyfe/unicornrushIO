@@ -139,7 +139,7 @@ export class BotExecution implements Execution {
     // 4. Hiring, from surplus cash only, up to the staff the business needs.
     if (staff < wanted && cash > reserve + s.hireCost * 2) {
       const affordable = Math.floor((cash - reserve) / (s.hireCost + s.salaryPerDay * 20));
-      const n = Math.min(affordable, wanted - staff, Math.ceil(c.employees * level.growth) + 3);
+      const n = Math.min(affordable, wanted - staff, Math.ceil(c.employees * level.growth) + level.hireBase);
       if (n > 0) this.act(g, { type: 'hire', companyId: id, count: n });
     }
 
@@ -255,6 +255,7 @@ export class BotExecution implements Execution {
     }
     for (const [owner, tile] of sample) {
       let cost = g.tileCost(c, owner, tile) / g.map.spend[tile];
+      if (!g.companies[owner].isBot) cost *= CONFIG.difficulty[c.difficulty].humanCostMult;
       // Competitors focus on a runaway leader, as real rivals do.
       const leader = g.leaderId();
       if (CONFIG.difficulty[c.difficulty].leaderFocus && owner === leader && g.valuation(g.companies[owner]).total > g.valuation(c).total * 1.5) cost *= 0.6;

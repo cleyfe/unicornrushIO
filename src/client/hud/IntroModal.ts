@@ -31,7 +31,7 @@ export function showIntro(container: HTMLElement, onStart: (name: string, city: 
       <p class="city-blurb" data-v="blurb">${CITIES[0].blurb}</p>
       <h3>Rivals</h3>
       <div class="difficulty seg">
-        <button data-difficulty="easy" title="Cautious rivals: good for learning the game">Easy<small>learning</small></button>
+        <button data-difficulty="easy" title="Slow-growing rivals that rarely take your streets: good for learning the game">Easy<small>learning</small></button>
         <button data-difficulty="normal" class="active" title="Rivals that grow steadily">Normal<small>a fair fight</small></button>
         <button data-difficulty="hard" title="Rivals that invest like a skilled player">Hard<small>for experts</small></button>
       </div>
