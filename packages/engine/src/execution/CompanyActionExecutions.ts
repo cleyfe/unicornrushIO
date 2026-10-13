@@ -124,10 +124,13 @@ export class AdvertiseExecution extends InstantExecution {
     const c = game.companies[this.companyId];
     if (this.tile < 0 || this.tile >= game.owner.length) return game.message(c.id, 'Aim your ad at a street.');
     const offer = game.adOffer(c);
+    const wait = game.adWait(c);
+    if (wait > 0) return game.message(c.id, `Your ad agency is still busy: next campaign in ${Math.ceil(wait)} days.`);
     if (c.cash < offer.cost) return game.message(c.id, `An ad campaign costs ${money(offer.cost)}: not enough cash.`);
     c.cash -= offer.cost;
     c.oneOff.advertising -= offer.cost;
     c.adHeat += 1;
+    c.lastAdDay = game.day;
     game.addExecution(new CampaignExecution(c.id, this.tile, offer.push));
   }
 }

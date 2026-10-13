@@ -75,6 +75,7 @@ export const CONFIG = {
     adBaseCost: 100_000,
     adStepCost: 50_000,
     adHeatDecayPerDay: 0.03,
+    adCooldownDays: 7, // your agency runs one campaign at a time
     maxAdPushMult: 2, // ads can fill the push pool up to twice its normal cap
     maxServiceLevel: 1.5, // spare operations capacity makes customers loyal, up to this
   },

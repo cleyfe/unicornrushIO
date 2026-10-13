@@ -174,6 +174,11 @@ export class GameImpl {
   }
 
   /** The next ad purchase: how much push it buys and what it costs. */
+  /** Days until the agency can run another ad campaign (0 = now). */
+  adWait(c: Company): number {
+    return Math.max(0, c.lastAdDay + CONFIG.sales.adCooldownDays - this.day);
+  }
+
   adOffer(c: Company): { push: number; cost: number } {
     const S = CONFIG.sales;
     return { push: S.adPush, cost: Math.round(S.adBaseCost + S.adStepCost * c.adHeat) };
@@ -685,6 +690,7 @@ function newCompany(id: number, s: CompanySpec): Company {
     campaignShare: CONFIG.sales.campaignShare,
     pushCommitted: 0,
     adHeat: 0,
+    lastAdDay: -Infinity,
     tiles: 0,
     customers: 0,
     spend: 0,

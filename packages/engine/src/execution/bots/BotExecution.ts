@@ -148,7 +148,7 @@ export class BotExecution implements Execution {
     // 5. Advertising: turn idle cash into an ad campaign aimed at the best street, while it pays back.
     const ad = g.adOffer(c);
     const adTarget = f.neutral > 0 ? f.bestNeutral : f.cheapestRivalTile;
-    if (advanced && canGrow && adTarget >= 0 && c.push < g.maxPush(c) * 0.5 && cash > ad.cost + reserve * 1.5 * level.reserveMult) {
+    if (advanced && canGrow && adTarget >= 0 && g.adWait(c) === 0 && c.push < g.maxPush(c) * 0.5 && cash > ad.cost + reserve * 1.5 * level.reserveMult) {
       this.act(g, { type: 'advertise', companyId: id, tile: adTarget });
       cash -= ad.cost;
     }

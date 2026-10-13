@@ -65,6 +65,8 @@ export interface Company {
   pushCommitted: number;
   /** Recent advertising (makes the next ad pricier). */
   adHeat: number;
+  /** Day the last ad campaign was bought (the agency needs a break between campaigns). */
+  lastAdDay: number;
 
   tiles: number;
   customers: number; // customers on owned streets
