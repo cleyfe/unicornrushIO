@@ -87,7 +87,7 @@ export class BotExecution implements Execution {
     const level = CONFIG.difficulty[c.difficulty];
     const surplusReps = Math.floor(Math.max(0, cash - reserve * level.reserveMult) / (s.hireCost + s.salaryPerDay * level.repDays));
     const salesWanted = canGrow
-      ? Math.max(4, Math.ceil(opsNeeded * p.salesRatio), Math.min(surplusReps, opsNeeded * 4 + 20))
+      ? Math.max(4, Math.ceil(Math.max(Math.ceil(opsNeeded * p.salesRatio), Math.min(surplusReps, opsNeeded * 4 + 20)) * level.salesMult))
       : 2;
     const wanted = opsNeeded + salesWanted;
     const staff = c.employees + g.traineeCount(c);

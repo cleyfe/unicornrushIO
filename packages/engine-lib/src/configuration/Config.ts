@@ -180,11 +180,12 @@ export const CONFIG = {
   // reserve) before hiring; repDays: days of salary they want in hand per new sales
   // rep; growth: max new hires per day as a share of staff; leaderFocus: gang up on
   // a runaway leader.
-  // expandEveryDays: days between two sales campaigns (easy bots take their time).
+  // expandEveryDays: days between two sales campaigns; salesMult: size of the sales team
+  // they aim for (easy bots grow with a small one).
   difficulty: {
-    easy: { reserveMult: 3, repDays: 90, growth: 0.2, extraPushReserve: 0.2, leaderFocus: false, expandEveryDays: 1 },
-    normal: { reserveMult: 2, repDays: 45, growth: 0.35, extraPushReserve: 0.1, leaderFocus: true, expandEveryDays: 1 },
-    hard: { reserveMult: 1, repDays: 20, growth: 0.5, extraPushReserve: 0, leaderFocus: true, expandEveryDays: 1 },
+    easy: { reserveMult: 3, repDays: 90, growth: 0.2, extraPushReserve: 0.2, leaderFocus: false, expandEveryDays: 1, salesMult: 1 },
+    normal: { reserveMult: 2, repDays: 45, growth: 0.35, extraPushReserve: 0.1, leaderFocus: true, expandEveryDays: 1, salesMult: 1 },
+    hard: { reserveMult: 1, repDays: 20, growth: 0.5, extraPushReserve: 0, leaderFocus: true, expandEveryDays: 1, salesMult: 1 },
   },
 
   events: { firstDay: 150, minGap: 120, maxGap: 180, warningDays: 10 },
