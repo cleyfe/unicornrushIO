@@ -91,7 +91,7 @@ if (!existsSync(cacheFile)) {
 out geom;`;
   console.log(`Downloading OSM data for ${bbox} from ${OVERPASS} ...`);
   // curl honours the HTTPS proxy settings; Node's fetch does not.
-  execFileSync('curl', ['-sS', '--fail', '-m', '300', '-o', cacheFile, '--data-urlencode', `data=${query}`, OVERPASS], {
+  execFileSync('curl', ['-sS', '--fail', '-m', '600', '-A', 'UnicornRush-city-builder (https://github.com/cleyfe/unicornrushIO)', '-o', cacheFile, '--data-urlencode', `data=${query}`, OVERPASS], {
     stdio: 'inherit',
   });
 }

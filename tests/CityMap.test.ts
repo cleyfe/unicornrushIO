@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { GameMap } from '@unicornrush/engine-api/game/GameMap';
 import { Wealth } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
@@ -119,6 +121,21 @@ describe('city file format', () => {
     for (let i = 0; i < a.length; i++) {
       expect(Math.abs(a[i][0] - b[i][0])).toBeLessThan(2e-5);
       expect(Math.abs(a[i][1] - b[i][1])).toBeLessThan(2e-5);
+    }
+  });
+});
+
+describe('city list', () => {
+  it('lists every built city once, each with a thumbnail and a valid map', () => {
+    const dir = join(__dirname, '..', 'public', 'cities');
+    const index: { id: string; mix: number[] }[] = JSON.parse(readFileSync(join(dir, 'index.json'), 'utf8'));
+    const built = readdirSync(dir).filter((f) => f.endsWith('.json') && f !== 'index.json').map((f) => f.replace('.json', ''));
+    expect(index.map((c) => c.id).sort()).toEqual(built.sort());
+    for (const c of index) {
+      expect(existsSync(join(dir, 'thumbs', `${c.id}.svg`))).toBe(true);
+      expect(c.mix.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 1);
+      const map = mapFromCity(loadCity(c.id));
+      expect(unreachable(map)).toBe(0);
     }
   });
 });
