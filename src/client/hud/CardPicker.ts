@@ -34,13 +34,12 @@ export class CardPicker {
     if (key !== this.shown) {
       this.shown = key;
       const luck = g.luck(g.player);
-      const luckNote =
-        luck > 1.05 ? 'You are behind: bigger offers for you.' : luck < 0.95 ? 'You lead: leaders get smaller offers.' : '';
-      this.root.innerHTML = `<div class="cp-head"><b>🎁 Opportunity: pick one</b><span data-v="expires"></span></div>
+      const luckNote = luck > 1.05 ? '🍀 Behind: bigger offers' : '';
+      this.root.innerHTML = `<div class="cp-head"><b>🎁 Pick one</b><span data-v="expires"></span></div>
         <div class="cp-cards">${offer.cards
           .map((c, i) => {
             const info = CARD_INFO[c.kind];
-            return `<button class="cp-card" data-card="${i}"><span class="cp-icon">${info.icon}</span><b>${info.title}</b><span>${describeCard(c)}</span><small>${info.lesson}</small></button>`;
+            return `<button class="cp-card" data-card="${i}"><span class="cp-icon">${info.icon}</span><b>${info.title}</b><span>${describeCard(c)}</span></button>`;
           })
           .join('')}</div>
         <div class="cp-foot"><small>${luckNote}</small><button class="link" data-card="-1">Pass</button></div>`;

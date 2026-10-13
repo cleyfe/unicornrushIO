@@ -12,6 +12,8 @@ npm run balance   # simulate bot-only matches
 npm run fairness  # controlled balance experiments (add a city id to test a real city)
 ```
 
+The full rules are on the in-game **How to play** page (`docs.html`), generated from the game's config.
+
 ## How to win
 
 - 🦄 **Become the first unicorn**: the first company valued at **$1B** wins instantly.
@@ -61,29 +63,26 @@ customers are harder to win: a luxury customer costs about 2.8× the sales push 
 one, and a budget customer about 0.6×. Every strategy (cheap on budget streets, premium on luxury
 ones, or in between) earns a similar profit per unit of sales effort; they differ in risk.
 
-**Cities:**
-
-| City | Area |
-| --- | --- |
-| 🇫🇷 Paris | Opéra & Monceau: from Parc Monceau and the Golden Triangle to Pigalle |
-| 🇨🇭 Genève | Centre: lakefront luxury, the Old Town, Pâquis and Plainpalais. Rich city (25% luxury): premium prices pay |
-| 🇺🇸 New York | Lower Manhattan: Tribeca, SoHo and the West Village next to Chinatown and the Lower East Side |
-| 🇬🇧 London | West End: Mayfair and Bond Street, Soho, Covent Garden and Holborn |
-| 🇩🇪 Berlin | Mitte: Friedrichstraße and Hackescher Markt down to Kreuzberg. Budget city (45% budget): low prices win |
-| 🇺🇸 San Francisco | Downtown: Nob Hill, the Financial District, SoMa and the Mission. Split city: every price can work |
-| 🇨🇦 Toronto | Downtown: Yorkville, Kensington Market and the Financial District |
-
-Each city has its own mix of budget, middle, upscale and luxury streets (`wealthShares` in
-`scripts/cities.json`), so the best pricing strategy depends on where you play.
+**Cities:** 17 real neighbourhoods, from Paris, Genève and London to New York, São Paulo and Warszawa
+(the list is in `scripts/cities.json`; the in-game rules page shows them all). Each city has its own mix of
+budget, middle, upscale and luxury streets (`wealthShares`), so the best pricing strategy depends on where you play.
 
 #### Adding a city
 
-Add an entry to `scripts/cities.json` (a bounding box plus a few hand-placed wealth hints, since
-OpenStreetMap has no income data), then run:
+Add an entry to `scripts/cities.json`: display name and flag, a bounding box of about 3 km, the
+wealth mix and a few hand-placed wealth hints (OpenStreetMap has no income data). Then:
 
 ```bash
-npm run build-city -- <id>   # downloads OSM data and writes public/cities/<id>.json
+npm run build-city -- <id>   # downloads OSM data, writes public/cities/<id>.json, the index and a thumbnail
+npm run fairness -- 96 <id>  # check seats and prices are fair on the new map
 ```
+
+The client lists cities from `public/cities/index.json`, so no code changes are needed.
+`npm run city-index` rebuilds the index and thumbnails on their own.
+
+City files use a compact format (`engine-lib/game/CityCodec.ts`): coordinates in whole metres,
+delta-encoded, simplified building outlines and a shared street-name table. A city is about
+0.5–1.2 MB (0.2–0.4 MB gzipped) and is only downloaded when someone plays it.
 
 ### Every day
 

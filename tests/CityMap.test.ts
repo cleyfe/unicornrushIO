@@ -4,6 +4,7 @@ import { Wealth } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
 import { generateGridCity, mapFromCity, neighbors } from '@unicornrush/engine-lib/game/GameMap';
+import { decodeCity, encodeCity } from '@unicornrush/engine-lib/game/CityCodec';
 import { PseudoRandom } from '@unicornrush/engine-lib/PseudoRandom';
 import { GameRunner } from '@unicornrush/engine/GameRunner';
 import { act, loadCity, quietSetup, runDays } from './util/Setup';
@@ -99,5 +100,25 @@ describe('wealth economics', () => {
     };
     const perCustomer = (t: number) => g.tileCost(g.player, -1, t) / g.map.demand[t];
     expect(perCustomer(find(Wealth.Luxury))).toBeGreaterThan(perCustomer(find(Wealth.Budget)));
+  });
+});
+
+describe('city file format', () => {
+  it('round-trips a city: same graph and customers, coordinates within a metre', () => {
+    const city = loadCity('geneva');
+    const back = decodeCity(JSON.parse(JSON.stringify(encodeCity(city))));
+    expect(back.segments.adj).toEqual(city.segments.adj);
+    expect(back.segments.adjStart).toEqual(city.segments.adjStart);
+    expect(back.segments.names).toEqual(city.segments.names);
+    expect(back.segments.customers).toEqual(city.segments.customers);
+    expect(back.segments.wealth).toEqual(city.segments.wealth);
+    expect(back.buildings.segment).toEqual(city.buildings.segment);
+    const a = city.segments.coords[100];
+    const b = back.segments.coords[100];
+    expect(b).toHaveLength(a.length);
+    for (let i = 0; i < a.length; i++) {
+      expect(Math.abs(a[i][0] - b[i][0])).toBeLessThan(2e-5);
+      expect(Math.abs(a[i][1] - b[i][1])).toBeLessThan(2e-5);
+    }
   });
 });

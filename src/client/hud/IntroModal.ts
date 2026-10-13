@@ -1,81 +1,121 @@
-import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
 import type { Difficulty } from '@unicornrush/engine-api/game/Game';
-import { CITIES, type CityId } from '../cities';
+import { type CityInfo, loadCityIndex } from '../cities';
 
 const SOURCE_URL = 'https://github.com/cleyfe/unicornrushIO';
 
 /** Copyright notice and links required by the license terms (AGPL §13 source link). */
 export const LEGAL_FOOTER = `<p class="legal">© UnicornRush and Contributors · <a href="${SOURCE_URL}" target="_blank" rel="noopener">Source (AGPL)</a> · <a href="terms-of-service.html">Terms</a> · <a href="privacy-policy.html">Privacy</a> · Maps © OpenStreetMap contributors</p>`;
 
-/** Title screen: pick a city and a company name. */
-export function showIntro(container: HTMLElement, onStart: (name: string, city: CityId, difficulty: Difficulty, rivals: number) => void): void {
-  let city: CityId = CITIES[0].id;
-  let difficulty: Difficulty = 'normal';
-  let rivals = 3;
+const WEALTH_LABELS = ['Budget', 'Middle', 'Upscale', 'Luxury'];
+const STORAGE_KEY = 'unicornrush.setup';
+
+interface Setup {
+  name: string;
+  city: string;
+  difficulty: Difficulty;
+  rivals: number;
+}
+
+function loadSetup(): Setup {
+  const fallback: Setup = { name: 'Your Co', city: 'paris-opera', difficulty: 'normal', rivals: 3 };
+  try {
+    return { ...fallback, ...JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') };
+  } catch {
+    return fallback;
+  }
+}
+
+function saveSetup(s: Setup): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  } catch {
+    // Storage blocked: the menu starts from the defaults next time.
+  }
+}
+
+/** The city's wealth mix as a tiny stacked bar. */
+const mixBar = (mix: number[]) =>
+  `<span class="mix" title="${mix.map((m, i) => `${WEALTH_LABELS[i]} ${Math.round(m * 100)}%`).join(' · ')}">${mix
+    .map((m, i) => `<i class="w${i}" style="flex:${m}"></i>`)
+    .join('')}</span>`;
+
+const cityCard = (c: CityInfo, active: boolean) =>
+  `<button class="city-card${active ? ' active' : ''}" data-city="${c.id}" data-search="${`${c.city} ${c.area}`.toLowerCase()}">
+    <img src="cities/thumbs/${c.id}.svg" alt="" loading="lazy" />
+    <span class="city-name"><span class="flag">${c.flag}</span><b>${c.city}</b></span>
+    <small>${c.area}</small>${mixBar(c.mix)}</button>`;
+
+/** Title screen: settings on the left, cities on the right. */
+export function showIntro(container: HTMLElement, onStart: (name: string, city: CityInfo, difficulty: Difficulty, rivals: number) => void): void {
+  const setup = loadSetup();
   container.innerHTML = `
-    <div class="overlay intro-bg"><div class="card intro">
-      <h1>🦄 Unicorn<b>Rush</b></h1>
-      <p class="lead">Build a company on real city streets. Win customers, watch your cash, and race your rivals to a <b>$1B valuation</b>.</p>
-      <div class="steps">
-        <div><span>1</span><b>Expand</b>Click streets next to yours to win their customers.</div>
-        <div><span>2</span><b>Run it</b>Balance sales and operations staff, set your price, hire.</div>
-        <div><span>3</span><b>Get rich</b>Profit raises your valuation. First to $1B wins.</div>
-      </div>
-      <h3>Choose a city</h3>
-      <div class="cities">
-        ${CITIES.map(
-          (c, i) => `<button class="city-card${i === 0 ? ' active' : ''}" data-city="${c.id}" title="${c.blurb}">
-            <span class="flag">${c.flag}</span><b>${c.name}</b><small>${c.area}</small></button>`,
-        ).join('')}
-      </div>
-      <p class="city-blurb" data-v="blurb">${CITIES[0].blurb}</p>
-      <h3>Rivals</h3>
-      <div class="difficulty seg">
-        <button data-difficulty="easy" title="Slow-growing rivals that rarely take your streets: good for learning the game">Easy<small>learning</small></button>
-        <button data-difficulty="normal" class="active" title="Rivals that grow steadily">Normal<small>a fair fight</small></button>
-        <button data-difficulty="hard" title="Rivals that invest like a skilled player">Hard<small>for experts</small></button>
-      </div>
-      <div class="rival-count seg">
-        ${[3, 7, 11, 19].map((n) => `<button data-rivals="${n}" class="${n === 3 ? 'active' : ''}">${n + 1} players<small>${n} rivals</small></button>`).join('')}
-      </div>
-      <div class="intro-actions">
-        <input id="name" maxlength="16" placeholder="Your company name" value="Your Co" aria-label="Company name" />
-        <button id="start" class="primary">Start company ▶</button>
-      </div>
-      <p class="rivals" data-v="rivals"></p>
-      ${LEGAL_FOOTER}
+    <div class="overlay intro-bg"><div class="menu">
+      <aside class="menu-side">
+        <h1 class="logo">🦄 Unicorn<b>Rush</b></h1>
+        <p class="tagline">Race to <b>$1B</b> on real city streets.</p>
+        <label class="field"><span>Company</span><input id="name" maxlength="16" value="" /></label>
+        <div class="field"><span>Rivals</span><div class="seg difficulty">
+          ${(['easy', 'normal', 'hard'] as const).map((d) => `<button data-difficulty="${d}">${d[0].toUpperCase() + d.slice(1)}</button>`).join('')}
+        </div></div>
+        <div class="field"><span>Players</span><div class="seg rival-count">
+          ${[3, 7, 11, 19].map((n) => `<button data-rivals="${n}">${n + 1}</button>`).join('')}
+        </div></div>
+        <button id="start" class="primary play">Play ▶</button>
+        <a class="docs-link" href="docs.html" target="_blank" rel="noopener">How to play</a>
+        ${LEGAL_FOOTER}
+      </aside>
+      <section class="menu-cities">
+        <div class="menu-cities-head">
+          <h3>City</h3>
+          <input id="city-search" type="search" placeholder="Search" aria-label="Search cities" />
+        </div>
+        <div class="city-grid"><p class="muted">Loading cities…</p></div>
+      </section>
     </div></div>`;
-  container.querySelectorAll<HTMLButtonElement>('.city-card').forEach((b) =>
-    b.addEventListener('click', () => {
-      city = b.dataset.city as CityId;
-      container.querySelectorAll('.city-card').forEach((x) => x.classList.toggle('active', x === b));
-      container.querySelector('[data-v="blurb"]')!.textContent = CITIES.find((c) => c.id === city)!.blurb;
-    }),
-  );
+
+  const $ = <T extends HTMLElement>(sel: string) => container.querySelector<T>(sel)!;
+  const input = $<HTMLInputElement>('#name');
+  input.value = setup.name;
+  const pick = (attr: string, value: string) =>
+    container.querySelectorAll<HTMLElement>(`[${attr}]`).forEach((b) => b.classList.toggle('active', b.getAttribute(attr) === value));
+  pick('data-difficulty', setup.difficulty);
+  pick('data-rivals', String(setup.rivals));
   container.querySelectorAll<HTMLButtonElement>('[data-difficulty]').forEach((b) =>
-    b.addEventListener('click', () => {
-      difficulty = b.dataset.difficulty as Difficulty;
-      container.querySelectorAll('[data-difficulty]').forEach((x) => x.classList.toggle('active', x === b));
-    }),
+    b.addEventListener('click', () => pick('data-difficulty', (setup.difficulty = b.dataset.difficulty as Difficulty))),
   );
-  const input = container.querySelector<HTMLInputElement>('#name')!;
-  const describeRivals = () => {
-    const list = defaultCompanies('', false, difficulty, rivals).slice(1);
-    const style = { discounter: 'cheap', balanced: 'balanced', premium: 'premium' } as const;
-    container.querySelector('[data-v="rivals"]')!.innerHTML =
-      rivals <= 3
-        ? `Your rivals: ${list.map((r) => `<b style="color:rgb(${r.color.join(',')})">${r.name}</b> (${style[r.personality ?? 'balanced']})`).join(' · ')}`
-        : `${rivals} rivals: ${list.map((r) => `<b style="color:rgb(${r.color.join(',')})">${r.name}</b>`).join(' · ')}`;
-  };
-  describeRivals();
   container.querySelectorAll<HTMLButtonElement>('[data-rivals]').forEach((b) =>
     b.addEventListener('click', () => {
-      rivals = Number(b.dataset.rivals);
-      container.querySelectorAll('[data-rivals]').forEach((x) => x.classList.toggle('active', x === b));
-      describeRivals();
+      setup.rivals = Number(b.dataset.rivals);
+      pick('data-rivals', b.dataset.rivals!);
     }),
   );
-  const start = () => onStart(input.value.trim() || 'Your Co', city, difficulty, rivals);
-  container.querySelector('#start')!.addEventListener('click', start);
+
+  let cities: CityInfo[] = [];
+  const grid = $('.city-grid');
+  loadCityIndex().then(
+    (list) => {
+      cities = list;
+      if (!list.some((c) => c.id === setup.city)) setup.city = list[0]?.id ?? '';
+      grid.innerHTML = list.map((c) => cityCard(c, c.id === setup.city)).join('');
+      grid.querySelectorAll<HTMLButtonElement>('.city-card').forEach((b) => {
+        b.addEventListener('click', () => pick('data-city', (setup.city = b.dataset.city!)));
+        b.addEventListener('dblclick', start);
+      });
+    },
+    (e: Error) => (grid.innerHTML = `<p class="muted">${e.message}</p>`),
+  );
+  $<HTMLInputElement>('#city-search').addEventListener('input', (e) => {
+    const q = (e.target as HTMLInputElement).value.trim().toLowerCase();
+    grid.querySelectorAll<HTMLElement>('.city-card').forEach((b) => (b.hidden = !!q && !b.dataset.search!.includes(q)));
+  });
+
+  function start(): void {
+    const city = cities.find((c) => c.id === setup.city);
+    if (!city) return;
+    setup.name = input.value.trim() || 'Your Co';
+    saveSetup(setup);
+    onStart(setup.name, city, setup.difficulty, setup.rivals);
+  }
+  $('#start').addEventListener('click', start);
   input.addEventListener('keydown', (e) => e.key === 'Enter' && start());
 }

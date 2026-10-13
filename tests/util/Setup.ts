@@ -1,3 +1,4 @@
+import { decodeCity } from '@unicornrush/engine-lib/game/CityCodec';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { CityData } from '@unicornrush/engine-api/game/City';
@@ -44,5 +45,5 @@ export function lastMessage(r: GameRunner, companyId = 0): string | undefined {
 
 /** Loads a built city from public/cities/. */
 export function loadCity(id: string): CityData {
-  return JSON.parse(readFileSync(join(__dirname, '..', '..', 'public', 'cities', `${id}.json`), 'utf8'));
+  return decodeCity(JSON.parse(readFileSync(join(__dirname, '..', '..', 'public', 'cities', `${id}.json`), 'utf8')));
 }

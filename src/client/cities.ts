@@ -1,12 +1,24 @@
-/** Playable cities, built with `npm run build-city -- <id>`. */
-export const CITIES = [
-  { id: 'paris-opera', flag: '🇫🇷', name: 'Paris', area: 'Opéra & Monceau', blurb: 'From the Golden Triangle and Parc Monceau to Pigalle.' },
-  { id: 'geneva', flag: '🇨🇭', name: 'Genève', area: 'Centre', blurb: 'Rich city: a quarter of the streets are luxury, so premium prices pay. Lakefront, Old Town, Pâquis, Plainpalais.' },
-  { id: 'new-york', flag: '🇺🇸', name: 'New York', area: 'Lower Manhattan', blurb: 'Tribeca, SoHo and the West Village next to Chinatown and the Lower East Side.' },
-  { id: 'london', flag: '🇬🇧', name: 'London', area: 'West End', blurb: 'Mayfair and Bond Street, Soho, Covent Garden and Holborn.' },
-  { id: 'berlin', flag: '🇩🇪', name: 'Berlin', area: 'Mitte', blurb: 'Budget city: nearly half the streets are modest, so low prices and volume win. Friedrichstraße down to Kreuzberg.' },
-  { id: 'san-francisco', flag: '🇺🇸', name: 'San Francisco', area: 'Downtown', blurb: 'Split city: rich hills next to cheap flats, so every price can work. Nob Hill, the Financial District, SoMa, the Mission.' },
-  { id: 'toronto', flag: '🇨🇦', name: 'Toronto', area: 'Downtown', blurb: 'Yorkville luxury, Kensington Market and the Financial District.' },
-] as const;
+/**
+ * Playable cities, listed in public/cities/index.json. That file is generated
+ * from scripts/cities.json by `npm run build-city` / `npm run city-index`, so
+ * adding a city needs no client change.
+ */
+export interface CityInfo {
+  id: string;
+  flag: string;
+  city: string;
+  area: string;
+  /** Share of streets at each wealth level: Budget, Middle, Upscale, Luxury. */
+  mix: number[];
+  streets: number;
+}
 
-export type CityId = (typeof CITIES)[number]['id'];
+let index: Promise<CityInfo[]> | null = null;
+
+export function loadCityIndex(): Promise<CityInfo[]> {
+  index ??= fetch('cities/index.json').then((r) => {
+    if (!r.ok) throw new Error(`Could not load the city list (${r.status}).`);
+    return r.json() as Promise<CityInfo[]>;
+  });
+  return index;
+}

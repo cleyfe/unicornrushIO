@@ -78,7 +78,6 @@ export function showGameOver(game: GameImpl, r: GameResult, onAgain: () => void,
     lessons.push(`You sold ${pct(1 - me.stake)} of your company to investors: you own ${pct(me.stake)}, a stake worth ${money(Math.max(0, game.valuation(me).total) * me.stake)}. Raising money speeds growth, at the price of a smaller slice.`);
   }
   if (me.debt === 0 && me.alive && !won) lessons.push('You never borrowed. Debt can speed up growth when each new customer earns more than the interest.');
-  lessons.push(`Valuation = cash − debt + ${CONFIG.valuation.earningsMultiple}× yearly profit.`);
 
   const rows = [...game.companies]
     .sort((a, b) => (b.id === r.winnerId ? 1 : 0) - (a.id === r.winnerId ? 1 : 0) || game.valuation(b).total - game.valuation(a).total)
@@ -95,20 +94,33 @@ export function showGameOver(game: GameImpl, r: GameResult, onAgain: () => void,
     <p class="lead">${why[r.reason]}</p>
     <table class="final"><tr><th>Company</th><th>Final value</th><th>Peak value</th><th>Peak streets</th></tr>${rows}</table>
     ${!me.alive && history ? whatHappened(game, history) : ''}
-    <h3>What to take away</h3>
-    <ul>${lessons.map((l) => `<li>${l}</li>`).join('')}</ul>
-    <div class="buttons"><button class="primary" id="again" disabled>Play again</button>${r.reason === 'playerBankrupt' && onWatch ? '<button id="watch">👀 Keep watching</button>' : ''}</div>
+    ${lessons.length ? `<h3>Takeaways</h3><ul>${lessons.slice(0, 2).map((l) => `<li>${l}</li>`).join('')}</ul>` : ''}
+    <div class="buttons"><button class="primary" id="again" disabled>Play again</button><button id="explore">🗺 Explore map</button>${r.reason === 'playerBankrupt' && onWatch ? '<button id="watch">👀 Keep watching</button>' : ''}</div>
   </div>`;
   document.body.append(overlay);
   // A short delay so a click meant for the map doesn't dismiss the results.
   const again = overlay.querySelector<HTMLButtonElement>('#again')!;
   window.setTimeout(() => (again.disabled = false), 1500);
+  // Explore: hide the results to pan and zoom the final map; a pill brings them back.
+  const pill = document.createElement('button');
+  pill.className = 'results-pill glass';
+  pill.textContent = '🏁 Results';
+  pill.addEventListener('click', () => {
+    pill.remove();
+    overlay.hidden = false;
+  });
+  overlay.querySelector('#explore')!.addEventListener('click', () => {
+    overlay.hidden = true;
+    document.body.append(pill);
+  });
   again.addEventListener('click', () => {
     overlay.remove();
+    pill.remove();
     onAgain();
   });
   overlay.querySelector('#watch')?.addEventListener('click', () => {
     overlay.remove();
+    pill.remove();
     onWatch?.();
   });
 }

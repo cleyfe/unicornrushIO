@@ -12,9 +12,16 @@ maplibregl.setWorkerUrl(workerUrl);
 export type MapTheme = 'light' | 'dark';
 
 /** Everything that changes between the daytime and the night map. */
-const THEMES: Record<MapTheme, { style: string; neutral: string; neutralOpacity: number; frontier: string; hover: string; outline: string; wealth: Record<Wealth, string> }> = {
+const THEMES: Record<
+  MapTheme,
+  { style: string; veil: string; neutral: string; neutralOpacity: number; frontier: string; hover: string; outline: string; casing: number; unowned: number; wealth: Record<Wealth, string> }
+> = {
   light: {
     style: 'https://tiles.openfreemap.org/styles/liberty',
+    // Washes the base map out, so the companies' colours stand out from it.
+    veil: 'rgba(246,244,240,0.55)',
+    casing: 0.45,
+    unowned: 0.45, // opacity of buildings nobody owns yet
     neutral: '#8a94a3',
     neutralOpacity: 0.35,
     frontier: '#1d4ed8',
@@ -25,6 +32,9 @@ const THEMES: Record<MapTheme, { style: string; neutral: string; neutralOpacity:
   },
   dark: {
     style: 'https://tiles.openfreemap.org/styles/dark',
+    veil: 'rgba(8,10,14,0.45)',
+    casing: 0.6,
+    unowned: 0.6,
     neutral: '#6f7988',
     neutralOpacity: 0.5,
     frontier: '#c7d2e0',
@@ -139,9 +149,18 @@ export class CityMapView {
     const map = this.map;
     const T = THEMES[this.theme];
     // Our buildings replace the base map's; keep its roads, water, parks and labels.
-    for (const layer of map.getStyle().layers ?? []) {
+    const baseLayers = map.getStyle().layers ?? [];
+    for (const layer of baseLayers) {
       if (layer.id.startsWith('building') || layer.id.startsWith('poi')) map.setLayoutProperty(layer.id, 'visibility', 'none');
     }
+    // A veil between the base map and its labels: streets and parks fade, names stay sharp.
+    const firstLabel = baseLayers.find((l) => l.type === 'symbol')?.id;
+    const [w, s, e, n] = this.city.bounds;
+    map.addSource('veil', {
+      type: 'geojson',
+      data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[w - 1, s - 1], [e + 1, s - 1], [e + 1, n + 1], [w - 1, n + 1], [w - 1, s - 1]]] } },
+    });
+    map.addLayer({ id: 'veil', type: 'fill', source: 'veil', paint: { 'fill-color': T.veil } }, firstLabel);
     const { segments, buildings } = this.city;
     map.addSource('buildings', {
       type: 'geojson',
@@ -191,7 +210,7 @@ export class CityMapView {
       source: 'buildings',
       paint: {
         'fill-color': expr(['case', owned, ownedColor, wealthColor]),
-        'fill-opacity': expr(['case', owned, ['match', ['get', 'w'], 0, 0.5, 1, 0.65, 2, 0.8, 0.9], 0.9]),
+        'fill-opacity': expr(['case', owned, ['match', ['get', 'w'], 0, 0.8, 1, 0.88, 0.95], T.unowned]),
         'fill-outline-color': T.outline,
       },
     });
@@ -226,6 +245,19 @@ export class CityMapView {
         'line-width': expr(['interpolate', ['linear'], ['zoom'], 13, 6, 16, 14, 18, 24]),
         'line-blur': 3,
         'line-opacity': expr(['case', ['boolean', ['feature-state', 'guard'], false], 0.45, 0]),
+      },
+    });
+    // A darker edge under owned streets, so they read against any background.
+    const casingColor = ['match', ['coalesce', ['feature-state', 'owner'], NEUTRAL], ...this.game.companies.flatMap((c) => [c.id, darken(c.color, T.casing)]), '#000000'];
+    map.addLayer({
+      id: 'streets-casing',
+      type: 'line',
+      source: 'streets',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': expr(casingColor),
+        'line-width': expr(['interpolate', ['linear'], ['zoom'], 13, 4, 16, 9, 18, 16]),
+        'line-opacity': expr(['case', owned, 0.9, 0]),
       },
     });
     map.addLayer({

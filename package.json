@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "balance": "vite-node scripts/balance.ts --",
     "fairness": "vite-node scripts/fairness.ts --",
-    "build-city": "vite-node scripts/build-city.ts --"
+    "build-city": "vite-node scripts/build-city.ts --",
+    "city-index": "vite-node scripts/city-index.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

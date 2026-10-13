@@ -1,5 +1,6 @@
 // Headless balance check: runs bot-only matches and prints how they end.
 // Usage: npm run balance -- [matches] [city id]
+import { decodeCity } from '@unicornrush/engine-lib/game/CityCodec';
 import { readFileSync } from 'node:fs';
 import type { CityData } from '@unicornrush/engine-api/game/City';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
@@ -9,7 +10,7 @@ import { GameRunner } from '@unicornrush/engine/GameRunner';
 
 const matches = Number(process.argv[2] ?? 8);
 const cityId = process.argv[3];
-const city: CityData | undefined = cityId ? JSON.parse(readFileSync(`public/cities/${cityId}.json`, 'utf8')) : undefined;
+const city: CityData | undefined = cityId ? decodeCity(JSON.parse(readFileSync(`public/cities/${cityId}.json`, 'utf8'))) : undefined;
 const wins: Record<string, number> = {};
 let suits = 0;
 let dismissed = 0;

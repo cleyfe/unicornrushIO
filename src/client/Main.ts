@@ -4,7 +4,7 @@ import type { Difficulty } from '@unicornrush/engine-api/game/Game';
 import type { Wealth } from '@unicornrush/engine-api/game/GameMap';
 import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
-import { CITIES, type CityId } from './cities';
+import type { CityInfo } from './cities';
 import { ClientGameRunner } from './ClientGameRunner';
 import { ActionBar } from './hud/ActionBar';
 import { CardPicker } from './hud/CardPicker';
@@ -12,11 +12,11 @@ import { Coach } from './hud/Coach';
 import { Drawer } from './hud/Drawer';
 import { el } from './hud/dom';
 import { showGameOver } from './hud/GameOverModal';
-import { showHelp } from './hud/HelpModal';
 import { showIntro } from './hud/IntroModal';
 import { NewsFeed } from './hud/NewsFeed';
 import { RaceBoard } from './hud/RaceBoard';
 import { toast } from './hud/Toast';
+import { decodeCity } from '@unicornrush/engine-lib/game/CityCodec';
 import { TopBar } from './hud/TopBar';
 import { YouCard } from './hud/YouCard';
 import { History } from './History';
@@ -27,18 +27,17 @@ import { GuardMarkers } from './render/GuardMarkers';
 
 const app = document.getElementById('app')!;
 
-async function loadCity(id: CityId): Promise<CityData> {
+async function loadCity(id: string): Promise<CityData> {
   const res = await fetch(`cities/${id}.json`);
   if (!res.ok) throw new Error(`Could not load the city (${res.status}).`);
-  return res.json();
+  return decodeCity(await res.json());
 }
 
-async function startGame(name: string, cityId: CityId, difficulty: Difficulty, rivals: number): Promise<void> {
-  const info = CITIES.find((c) => c.id === cityId)!;
-  app.innerHTML = `<div class="overlay intro-bg"><div class="card loading"><h2>${info.flag} Loading ${info.name}…</h2><p>Mapping streets and buildings</p></div></div>`;
+async function startGame(name: string, info: CityInfo, difficulty: Difficulty, rivals: number): Promise<void> {
+  app.innerHTML = `<div class="overlay intro-bg"><div class="card loading"><h2>${info.flag} ${info.city}</h2><p>Loading…</p></div></div>`;
   let city: CityData;
   try {
-    city = await loadCity(cityId);
+    city = await loadCity(info.id);
   } catch (e) {
     app.innerHTML = `<div class="overlay"><div class="card"><h2>Couldn't load the city</h2><p>${(e as Error).message}</p></div></div>`;
     return;
@@ -73,7 +72,7 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
   }
   const view = new CityMapView(mapEl, game, city, theme);
   // Keep a loading screen up until the map has drawn, instead of a black screen.
-  const loading = el('div', 'overlay intro-bg', `<div class="card loading"><h2>${info.flag} Loading ${info.name}…</h2><p>Drawing streets and buildings</p></div>`);
+  const loading = el('div', 'overlay intro-bg', `<div class="card loading"><h2>${info.flag} ${info.city}</h2><p>Drawing the map…</p></div>`);
   app.append(loading);
   view.onReady = () => loading.remove();
   const labels = new CompanyLabels(game, city, view.map);
@@ -81,16 +80,11 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
   const history = new History(game);
   const drawer = new Drawer(game, (i) => client.send(i), history);
   // Drawers don't pause the game: a multiplayer match can't stop for one player either.
-  let speedBeforeHelp = 1;
   const top = new TopBar(
     game,
-    `${info.flag} ${info.name} · ${info.area}`,
+    `${info.flag} ${info.city} · ${info.area}`,
     setSpeed,
-    () => {
-      speedBeforeHelp = client.speed;
-      client.speed = 0;
-      showHelp(() => (client.speed = started ? speedBeforeHelp : 0));
-    },
+    () => window.open('docs.html', '_blank', 'noopener'),
     (street) => view.map.flyTo({ center: view.zoneCenter(street), zoom: 15, duration: 1200 }),
     theme,
     (t) => {
@@ -113,24 +107,23 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
   const news = new NewsFeed(() => drawer.toggle('news'));
   const coach = new Coach(game);
   const legendHtml = () =>
-    '<summary>🗺 Map key</summary>' +
+    '<summary>🗺 Key</summary>' +
     CONFIG.wealth
       .map((t, i) => `<span><i style="background:${wealthColors(theme)[i as Wealth]}"></i>${'$'.repeat(i + 1)} ${t.label} ×${t.spend}</span>`)
       .join('') +
-      `<span title="Owned buildings take the owner's colour: brighter on richer streets, with a gold rim on the richest"><i class="rim"></i>Owned: brighter = richer</span>` +
-      `<span class="legend-sep"><i class="line frontier"></i>Streets you can win</span><span><i class="line court"></i>Company on trial</span>`;
+      `<span><i class="rim"></i>Owned: brighter = richer</span>` +
+      `<span class="legend-sep"><i class="line frontier"></i>You can win</span><span><i class="line court"></i>On trial</span>`;
   const legend = el('details', 'wealth-legend glass', legendHtml());
-  legend.title = 'Building colour = neighbourhood wealth: how much each customer spends. Owned buildings take the owner colour, brighter on richer streets, and rich ones get a gold rim.';
-  const paused = el('div', 'paused-badge', '⏸ Click a glowing street to start · or click anywhere else to move your start');
-  const guardBanner = el('div', 'guard-banner', '🛡 Click one of your streets to guard its neighbourhood · Esc to cancel');
+  const paused = el('div', 'paused-badge', 'Click a glowing street to start · elsewhere to move');
+  const guardBanner = el('div', 'guard-banner', '');
   stage.append(guards.root, labels.root, top.root, you.root, race.root, legend, actions.root, cards.root, news.root, drawer.root, coach.root, paused, guardBanner);
   const input = new InputHandler(client, view, city, tooltip, setSpeed, firstMove, () => started);
   const detach = input.attach();
   actions.onAim = (mode) => input.toggleMode(mode);
   const banners = {
-    ad: '📢 Click a street to aim your ad campaign · Esc to cancel',
-    guard: '🛡 Click one of your streets to guard its neighbourhood · Esc to cancel',
-    buy: "🏢 Click a rival's street next to yours to buy that block · Esc to cancel",
+    ad: '📢 Aim at a street · Esc',
+    guard: '🛡 Pick one of your streets · Esc',
+    buy: "🏢 Pick a rival's street next to yours · Esc",
   };
   input.onModeChange = (mode) => {
     guardBanner.textContent = mode === 'expand' ? '' : banners[mode];

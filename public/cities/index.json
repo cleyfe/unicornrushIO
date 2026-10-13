@@ -1,0 +1,93 @@
+[
+ {
+  "id": "paris-opera",
+  "flag": "🇫🇷",
+  "city": "Paris",
+  "area": "Opéra & Monceau",
+  "mix": [
+   0.3,
+   0.35,
+   0.22,
+   0.13
+  ],
+  "streets": 2079
+ },
+ {
+  "id": "geneva",
+  "flag": "🇨🇭",
+  "city": "Genève",
+  "area": "Centre",
+  "mix": [
+   0.15,
+   0.3,
+   0.3,
+   0.25
+  ],
+  "streets": 3429
+ },
+ {
+  "id": "new-york",
+  "flag": "🇺🇸",
+  "city": "New York",
+  "area": "Lower Manhattan",
+  "mix": [
+   0.35,
+   0.35,
+   0.18,
+   0.12
+  ],
+  "streets": 2337
+ },
+ {
+  "id": "london",
+  "flag": "🇬🇧",
+  "city": "London",
+  "area": "West End",
+  "mix": [
+   0.2,
+   0.3,
+   0.28,
+   0.22
+  ],
+  "streets": 2696
+ },
+ {
+  "id": "berlin",
+  "flag": "🇩🇪",
+  "city": "Berlin",
+  "area": "Mitte",
+  "mix": [
+   0.45,
+   0.35,
+   0.15,
+   0.05
+  ],
+  "streets": 3997
+ },
+ {
+  "id": "san-francisco",
+  "flag": "🇺🇸",
+  "city": "San Francisco",
+  "area": "Downtown",
+  "mix": [
+   0.35,
+   0.3,
+   0.2,
+   0.15
+  ],
+  "streets": 4088
+ },
+ {
+  "id": "toronto",
+  "flag": "🇨🇦",
+  "city": "Toronto",
+  "area": "Downtown",
+  "mix": [
+   0.35,
+   0.35,
+   0.2,
+   0.1
+  ],
+  "streets": 1821
+ }
+]

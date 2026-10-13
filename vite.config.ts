@@ -6,6 +6,12 @@ const pkg = (name: string) => fileURLToPath(new URL(`./packages/${name}/src`, im
 export default defineConfig({
   base: './',
   worker: { format: 'es' },
+  build: {
+    rollupOptions: {
+      // The game and the rules page.
+      input: { main: fileURLToPath(new URL('./index.html', import.meta.url)), docs: fileURLToPath(new URL('./docs.html', import.meta.url)) },
+    },
+  },
   resolve: {
     alias: {
       '@unicornrush/engine-api': pkg('engine-api'),

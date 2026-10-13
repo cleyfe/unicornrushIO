@@ -1,4 +1,3 @@
-import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import { el } from './dom';
 
@@ -53,49 +52,49 @@ export class Coach {
       {
         id: 'expand',
         anchor: '.action-bar .push',
-        text: '👋 Your company is the <b>blue streets</b>. The <b>glowing streets</b> next to them are up for grabs: click one to win its customers. Time starts with your first move.',
+        text: '👋 You are <b>blue</b>. Click a <b>glowing street</b> to grow.',
         when: () => true,
         done: (g) => g.player.tiles > this.startTiles + 2,
       },
       {
         id: 'overload',
         anchor: '.action-bar .team',
-        text: '⚙️ <b>Overloaded!</b> Each operations employee serves ' + CONFIG.staff.customersPerOps + ' customers. Unserved customers leave: turn on <b>Auto</b>, slide left toward ⚙️ Ops, or hire.',
+        text: '⚙️ <b>Overloaded</b>: customers are leaving. Turn on <b>Auto</b> or hire.',
         when: (g) => g.coverage(g.player) < 0.97,
         done: (g) => g.coverage(g.player) >= 1,
       },
       {
         id: 'hire',
         anchor: '.action-bar .team',
-        text: '💼 You have cash to invest. <b>Hire</b> more people: sales staff win streets, ops staff serve customers. Each costs $' + CONFIG.staff.salaryPerDay + '/day.',
+        text: '💼 Spare cash: <b>hire</b>.',
         when: (g) => g.day > 25 && g.player.cash > 20_000 && g.player.employees + g.traineeCount(g.player) <= this.startEmployees,
         done: (g) => g.player.employees + g.traineeCount(g.player) > this.startEmployees,
       },
       {
         id: 'ads',
         anchor: '.action-bar .push',
-        text: '📢 Cash piling up? <b>Ads</b> turn cash into sales push, so you win streets faster. Each ad costs more than the last for a while, and a loan can pay for them if they earn more than the interest.',
+        text: '📢 Idle cash? Try <b>Ads</b>.',
         when: (g) => g.day > 90 && g.player.cash > g.adOffer(g.player).cost * 3,
         done: (g) => g.player.oneOff.advertising < 0,
       },
       {
         id: 'cards',
         anchor: '.card-picker',
-        text: '🎁 <b>Opportunity!</b> Pick one card. The further behind you are, the more often they come and the bigger they are.',
+        text: '🎁 Pick a card. Behind = bigger cards.',
         when: (g) => g.player.offer !== null,
         done: (g) => g.player.offer === null,
       },
       {
         id: 'wealth',
         anchor: '.wealth-legend',
-        text: '💎 <b>Golden buildings</b> are rich neighbourhoods: customers there spend up to ×' + CONFIG.wealth[3].spend + ' more, and cost the same to serve. Hover a street to see its numbers.',
+        text: '💎 <b>Gold</b> buildings = customers who spend more.',
         when: (g) => g.day > 45,
         done: () => false,
       },
       {
         id: 'race',
         anchor: '.race',
-        text: '🦄 This is the <b>race to $1B</b>. Valuation = cash − debt + ' + CONFIG.valuation.earningsMultiple + '× yearly profit, so profit counts more than size.',
+        text: '🦄 Valuation follows profit more than size.',
         when: (g) => g.day > 80,
         done: () => false,
       },

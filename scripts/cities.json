@@ -1,5 +1,8 @@
 {
   "paris-opera": {
+    "flag": "🇫🇷",
+    "city": "Paris",
+    "area": "Opéra & Monceau",
     "name": "Paris · Opéra & Monceau",
     "bbox": [
       48.868,
@@ -102,6 +105,9 @@
     ]
   },
   "geneva": {
+    "flag": "🇨🇭",
+    "city": "Genève",
+    "area": "Centre",
     "name": "Genève · Centre",
     "bbox": [
       46.19,
@@ -203,6 +209,9 @@
     ]
   },
   "new-york": {
+    "flag": "🇺🇸",
+    "city": "New York",
+    "area": "Lower Manhattan",
     "name": "New York · Lower Manhattan",
     "bbox": [
       40.714,
@@ -290,6 +299,9 @@
     ]
   },
   "london": {
+    "flag": "🇬🇧",
+    "city": "London",
+    "area": "West End",
     "name": "London · West End",
     "bbox": [
       51.506,
@@ -384,6 +396,9 @@
     ]
   },
   "berlin": {
+    "flag": "🇩🇪",
+    "city": "Berlin",
+    "area": "Mitte",
     "name": "Berlin · Mitte",
     "bbox": [
       52.5,
@@ -471,6 +486,9 @@
     ]
   },
   "san-francisco": {
+    "flag": "🇺🇸",
+    "city": "San Francisco",
+    "area": "Downtown",
     "name": "San Francisco · Downtown",
     "bbox": [
       37.758,
@@ -565,6 +583,9 @@
     ]
   },
   "toronto": {
+    "flag": "🇨🇦",
+    "city": "Toronto",
+    "area": "Downtown",
     "name": "Toronto · Downtown",
     "bbox": [
       43.642,
@@ -641,6 +662,766 @@
         "lon": -79.37,
         "radius": 400,
         "weight": -2
+      }
+    ]
+  },
+  "lyon": {
+    "flag": "🇫🇷",
+    "city": "Lyon",
+    "area": "Presqu'île",
+    "name": "Lyon · Presqu'île",
+    "bbox": [
+      45.748,
+      4.82,
+      45.775,
+      4.858
+    ],
+    "wealthShares": [
+      0.25,
+      0.35,
+      0.25,
+      0.15
+    ],
+    "wealthHints": [
+      {
+        "name": "Bellecour & Ainay",
+        "lat": 45.7555,
+        "lon": 4.8305,
+        "radius": 550,
+        "weight": 2.5
+      },
+      {
+        "name": "Brotteaux",
+        "lat": 45.7665,
+        "lon": 4.8545,
+        "radius": 550,
+        "weight": 2.5
+      },
+      {
+        "name": "Rue Édouard Herriot",
+        "lat": 45.7625,
+        "lon": 4.834,
+        "radius": 350,
+        "weight": 2
+      },
+      {
+        "name": "Cordeliers",
+        "lat": 45.7635,
+        "lon": 4.836,
+        "radius": 300,
+        "weight": 1
+      },
+      {
+        "name": "Guillotière",
+        "lat": 45.752,
+        "lon": 4.844,
+        "radius": 550,
+        "weight": -2.5
+      },
+      {
+        "name": "Pentes de la Croix-Rousse",
+        "lat": 45.77,
+        "lon": 4.832,
+        "radius": 450,
+        "weight": -1
+      },
+      {
+        "name": "Perrache",
+        "lat": 45.75,
+        "lon": 4.827,
+        "radius": 450,
+        "weight": -1.5
+      },
+      {
+        "name": "Vieux Lyon",
+        "lat": 45.762,
+        "lon": 4.827,
+        "radius": 350,
+        "weight": 0.8
+      }
+    ]
+  },
+  "munich": {
+    "flag": "🇩🇪",
+    "city": "München",
+    "area": "Altstadt",
+    "name": "München · Altstadt",
+    "bbox": [
+      48.128,
+      11.555,
+      48.155,
+      11.6
+    ],
+    "wealthShares": [
+      0.15,
+      0.35,
+      0.3,
+      0.2
+    ],
+    "wealthHints": [
+      {
+        "name": "Maximilianstraße",
+        "lat": 48.1395,
+        "lon": 11.583,
+        "radius": 450,
+        "weight": 3
+      },
+      {
+        "name": "Lehel",
+        "lat": 48.14,
+        "lon": 11.59,
+        "radius": 550,
+        "weight": 2.5
+      },
+      {
+        "name": "Odeonsplatz & Residenz",
+        "lat": 48.1425,
+        "lon": 11.5775,
+        "radius": 400,
+        "weight": 2.5
+      },
+      {
+        "name": "Englischer Garten edge",
+        "lat": 48.15,
+        "lon": 11.588,
+        "radius": 500,
+        "weight": 2
+      },
+      {
+        "name": "Hauptbahnhof",
+        "lat": 48.1405,
+        "lon": 11.56,
+        "radius": 550,
+        "weight": -2.5
+      },
+      {
+        "name": "Schlachthofviertel",
+        "lat": 48.13,
+        "lon": 11.56,
+        "radius": 500,
+        "weight": -2
+      },
+      {
+        "name": "Glockenbach",
+        "lat": 48.131,
+        "lon": 11.572,
+        "radius": 400,
+        "weight": 0.8
+      },
+      {
+        "name": "Maxvorstadt",
+        "lat": 48.15,
+        "lon": 11.57,
+        "radius": 500,
+        "weight": 0.5
+      }
+    ]
+  },
+  "amsterdam": {
+    "flag": "🇳🇱",
+    "city": "Amsterdam",
+    "area": "Centrum",
+    "name": "Amsterdam · Centrum",
+    "bbox": [
+      52.355,
+      4.87,
+      52.382,
+      4.915
+    ],
+    "wealthShares": [
+      0.2,
+      0.35,
+      0.28,
+      0.17
+    ],
+    "wealthHints": [
+      {
+        "name": "Grachtengordel (Golden Bend)",
+        "lat": 52.365,
+        "lon": 4.89,
+        "radius": 550,
+        "weight": 3
+      },
+      {
+        "name": "Jordaan west canals",
+        "lat": 52.372,
+        "lon": 4.883,
+        "radius": 450,
+        "weight": 1.5
+      },
+      {
+        "name": "PC Hooftstraat & Museumplein",
+        "lat": 52.36,
+        "lon": 4.879,
+        "radius": 500,
+        "weight": 3
+      },
+      {
+        "name": "Vondelpark edge",
+        "lat": 52.358,
+        "lon": 4.87,
+        "radius": 400,
+        "weight": 2
+      },
+      {
+        "name": "De Wallen",
+        "lat": 52.3735,
+        "lon": 4.8985,
+        "radius": 350,
+        "weight": -2
+      },
+      {
+        "name": "Centraal Station",
+        "lat": 52.379,
+        "lon": 4.9,
+        "radius": 400,
+        "weight": -1.5
+      },
+      {
+        "name": "Oosterpark",
+        "lat": 52.36,
+        "lon": 4.913,
+        "radius": 500,
+        "weight": -1.5
+      },
+      {
+        "name": "De Pijp",
+        "lat": 52.355,
+        "lon": 4.894,
+        "radius": 450,
+        "weight": -0.5
+      }
+    ]
+  },
+  "madrid": {
+    "flag": "🇪🇸",
+    "city": "Madrid",
+    "area": "Centro & Salamanca",
+    "name": "Madrid · Centro & Salamanca",
+    "bbox": [
+      40.405,
+      -3.715,
+      40.432,
+      -3.675
+    ],
+    "wealthShares": [
+      0.3,
+      0.35,
+      0.22,
+      0.13
+    ],
+    "wealthHints": [
+      {
+        "name": "Barrio de Salamanca",
+        "lat": 40.427,
+        "lon": -3.683,
+        "radius": 700,
+        "weight": 3
+      },
+      {
+        "name": "Jerónimos & Retiro",
+        "lat": 40.414,
+        "lon": -3.689,
+        "radius": 550,
+        "weight": 2.5
+      },
+      {
+        "name": "Almagro & Chamberí",
+        "lat": 40.43,
+        "lon": -3.695,
+        "radius": 500,
+        "weight": 2
+      },
+      {
+        "name": "Lavapiés",
+        "lat": 40.4085,
+        "lon": -3.701,
+        "radius": 550,
+        "weight": -3
+      },
+      {
+        "name": "Embajadores",
+        "lat": 40.406,
+        "lon": -3.704,
+        "radius": 400,
+        "weight": -2
+      },
+      {
+        "name": "Sol",
+        "lat": 40.4168,
+        "lon": -3.7038,
+        "radius": 350,
+        "weight": -0.5
+      },
+      {
+        "name": "Malasaña",
+        "lat": 40.426,
+        "lon": -3.705,
+        "radius": 400,
+        "weight": -0.5
+      },
+      {
+        "name": "Palacio Real",
+        "lat": 40.418,
+        "lon": -3.713,
+        "radius": 350,
+        "weight": 1.5
+      }
+    ]
+  },
+  "barcelona": {
+    "flag": "🇪🇸",
+    "city": "Barcelona",
+    "area": "Eixample",
+    "name": "Barcelona · Eixample",
+    "bbox": [
+      41.372,
+      2.15,
+      41.4,
+      2.185
+    ],
+    "wealthShares": [
+      0.3,
+      0.38,
+      0.2,
+      0.12
+    ],
+    "wealthHints": [
+      {
+        "name": "Passeig de Gràcia",
+        "lat": 41.393,
+        "lon": 2.164,
+        "radius": 550,
+        "weight": 3
+      },
+      {
+        "name": "Dreta de l'Eixample",
+        "lat": 41.395,
+        "lon": 2.17,
+        "radius": 550,
+        "weight": 2.5
+      },
+      {
+        "name": "Rambla de Catalunya",
+        "lat": 41.391,
+        "lon": 2.161,
+        "radius": 400,
+        "weight": 2
+      },
+      {
+        "name": "El Raval",
+        "lat": 41.38,
+        "lon": 2.168,
+        "radius": 500,
+        "weight": -3
+      },
+      {
+        "name": "Poble-sec",
+        "lat": 41.374,
+        "lon": 2.16,
+        "radius": 500,
+        "weight": -2
+      },
+      {
+        "name": "Sant Antoni",
+        "lat": 41.379,
+        "lon": 2.16,
+        "radius": 400,
+        "weight": -0.5
+      },
+      {
+        "name": "Barri Gòtic",
+        "lat": 41.383,
+        "lon": 2.177,
+        "radius": 350,
+        "weight": 0
+      },
+      {
+        "name": "El Born",
+        "lat": 41.385,
+        "lon": 2.182,
+        "radius": 350,
+        "weight": 1
+      }
+    ]
+  },
+  "rome": {
+    "flag": "🇮🇹",
+    "city": "Roma",
+    "area": "Centro Storico",
+    "name": "Roma · Centro Storico",
+    "bbox": [
+      41.885,
+      12.465,
+      41.91,
+      12.505
+    ],
+    "wealthShares": [
+      0.25,
+      0.35,
+      0.25,
+      0.15
+    ],
+    "wealthHints": [
+      {
+        "name": "Via Condotti & Piazza di Spagna",
+        "lat": 41.9055,
+        "lon": 12.481,
+        "radius": 450,
+        "weight": 3
+      },
+      {
+        "name": "Via Veneto",
+        "lat": 41.907,
+        "lon": 12.489,
+        "radius": 400,
+        "weight": 2.5
+      },
+      {
+        "name": "Piazza Navona & Pantheon",
+        "lat": 41.899,
+        "lon": 12.474,
+        "radius": 450,
+        "weight": 1.5
+      },
+      {
+        "name": "Via Giulia",
+        "lat": 41.896,
+        "lon": 12.468,
+        "radius": 350,
+        "weight": 2
+      },
+      {
+        "name": "Esquilino & Termini",
+        "lat": 41.896,
+        "lon": 12.502,
+        "radius": 550,
+        "weight": -3
+      },
+      {
+        "name": "Trastevere",
+        "lat": 41.889,
+        "lon": 12.47,
+        "radius": 500,
+        "weight": -0.5
+      },
+      {
+        "name": "Monti",
+        "lat": 41.895,
+        "lon": 12.492,
+        "radius": 400,
+        "weight": 0
+      },
+      {
+        "name": "Ghetto",
+        "lat": 41.8925,
+        "lon": 12.4775,
+        "radius": 300,
+        "weight": 0.5
+      }
+    ]
+  },
+  "chicago": {
+    "flag": "🇺🇸",
+    "city": "Chicago",
+    "area": "Loop & Gold Coast",
+    "name": "Chicago · Loop & Gold Coast",
+    "bbox": [
+      41.87,
+      -87.645,
+      41.91,
+      -87.615
+    ],
+    "wealthShares": [
+      0.35,
+      0.3,
+      0.2,
+      0.15
+    ],
+    "wealthHints": [
+      {
+        "name": "Gold Coast",
+        "lat": 41.904,
+        "lon": -87.628,
+        "radius": 600,
+        "weight": 3
+      },
+      {
+        "name": "Magnificent Mile",
+        "lat": 41.896,
+        "lon": -87.624,
+        "radius": 500,
+        "weight": 3
+      },
+      {
+        "name": "Streeterville",
+        "lat": 41.893,
+        "lon": -87.619,
+        "radius": 450,
+        "weight": 2
+      },
+      {
+        "name": "River North",
+        "lat": 41.892,
+        "lon": -87.633,
+        "radius": 450,
+        "weight": 1
+      },
+      {
+        "name": "South Loop",
+        "lat": 41.873,
+        "lon": -87.63,
+        "radius": 500,
+        "weight": -1.5
+      },
+      {
+        "name": "West Loop edge",
+        "lat": 41.88,
+        "lon": -87.644,
+        "radius": 500,
+        "weight": -2
+      },
+      {
+        "name": "Near North west",
+        "lat": 41.902,
+        "lon": -87.642,
+        "radius": 500,
+        "weight": -2.5
+      },
+      {
+        "name": "Printer's Row",
+        "lat": 41.874,
+        "lon": -87.629,
+        "radius": 300,
+        "weight": 0
+      }
+    ]
+  },
+  "montreal": {
+    "flag": "🇨🇦",
+    "city": "Montréal",
+    "area": "Centre-ville",
+    "name": "Montréal · Centre-ville",
+    "bbox": [
+      45.495,
+      -73.595,
+      45.525,
+      -73.555
+    ],
+    "wealthShares": [
+      0.35,
+      0.35,
+      0.2,
+      0.1
+    ],
+    "wealthHints": [
+      {
+        "name": "Golden Square Mile",
+        "lat": 45.502,
+        "lon": -73.583,
+        "radius": 600,
+        "weight": 3
+      },
+      {
+        "name": "Vieux-Montréal",
+        "lat": 45.505,
+        "lon": -73.556,
+        "radius": 450,
+        "weight": 2
+      },
+      {
+        "name": "Rue Sherbrooke Ouest",
+        "lat": 45.499,
+        "lon": -73.58,
+        "radius": 450,
+        "weight": 2.5
+      },
+      {
+        "name": "Centre-Sud",
+        "lat": 45.518,
+        "lon": -73.56,
+        "radius": 600,
+        "weight": -3
+      },
+      {
+        "name": "Milton-Parc",
+        "lat": 45.511,
+        "lon": -73.575,
+        "radius": 400,
+        "weight": -1.5
+      },
+      {
+        "name": "Quartier chinois",
+        "lat": 45.5075,
+        "lon": -73.561,
+        "radius": 350,
+        "weight": -1
+      },
+      {
+        "name": "Plateau Mont-Royal",
+        "lat": 45.522,
+        "lon": -73.58,
+        "radius": 500,
+        "weight": 0.5
+      },
+      {
+        "name": "Shaughnessy Village",
+        "lat": 45.496,
+        "lon": -73.585,
+        "radius": 400,
+        "weight": -1
+      }
+    ]
+  },
+  "sao-paulo": {
+    "flag": "🇧🇷",
+    "city": "São Paulo",
+    "area": "Paulista & Jardins",
+    "name": "São Paulo · Paulista & Jardins",
+    "bbox": [
+      -23.575,
+      -46.675,
+      -23.545,
+      -46.635
+    ],
+    "wealthShares": [
+      0.4,
+      0.3,
+      0.18,
+      0.12
+    ],
+    "wealthHints": [
+      {
+        "name": "Jardins & Oscar Freire",
+        "lat": -23.565,
+        "lon": -46.668,
+        "radius": 700,
+        "weight": 3
+      },
+      {
+        "name": "Cerqueira César",
+        "lat": -23.56,
+        "lon": -46.662,
+        "radius": 500,
+        "weight": 2
+      },
+      {
+        "name": "Avenida Paulista",
+        "lat": -23.562,
+        "lon": -46.656,
+        "radius": 500,
+        "weight": 1.5
+      },
+      {
+        "name": "Higienópolis",
+        "lat": -23.546,
+        "lon": -46.657,
+        "radius": 500,
+        "weight": 2.5
+      },
+      {
+        "name": "Bela Vista & Bixiga",
+        "lat": -23.556,
+        "lon": -46.643,
+        "radius": 550,
+        "weight": -2.5
+      },
+      {
+        "name": "República",
+        "lat": -23.545,
+        "lon": -46.642,
+        "radius": 450,
+        "weight": -2.5
+      },
+      {
+        "name": "Liberdade",
+        "lat": -23.558,
+        "lon": -46.635,
+        "radius": 450,
+        "weight": -1.5
+      },
+      {
+        "name": "Consolação",
+        "lat": -23.553,
+        "lon": -46.657,
+        "radius": 350,
+        "weight": -0.5
+      }
+    ]
+  },
+  "warsaw": {
+    "flag": "🇵🇱",
+    "city": "Warszawa",
+    "area": "Śródmieście",
+    "name": "Warszawa · Śródmieście",
+    "bbox": [
+      52.218,
+      20.99,
+      52.245,
+      21.03
+    ],
+    "wealthShares": [
+      0.4,
+      0.35,
+      0.17,
+      0.08
+    ],
+    "wealthHints": [
+      {
+        "name": "Nowy Świat & Krakowskie Przedmieście",
+        "lat": 52.235,
+        "lon": 21.018,
+        "radius": 500,
+        "weight": 2.5
+      },
+      {
+        "name": "Plac Trzech Krzyży & Mokotowska",
+        "lat": 52.228,
+        "lon": 21.022,
+        "radius": 450,
+        "weight": 3
+      },
+      {
+        "name": "Powiśle",
+        "lat": 52.238,
+        "lon": 21.028,
+        "radius": 450,
+        "weight": 1.5
+      },
+      {
+        "name": "Stare Miasto",
+        "lat": 52.249,
+        "lon": 21.012,
+        "radius": 350,
+        "weight": 1
+      },
+      {
+        "name": "Wola",
+        "lat": 52.235,
+        "lon": 20.993,
+        "radius": 600,
+        "weight": -2
+      },
+      {
+        "name": "Muranów",
+        "lat": 52.245,
+        "lon": 20.995,
+        "radius": 500,
+        "weight": -1.5
+      },
+      {
+        "name": "Dworzec Centralny",
+        "lat": 52.229,
+        "lon": 21.003,
+        "radius": 450,
+        "weight": -1.5
+      },
+      {
+        "name": "Plac Zbawiciela",
+        "lat": 52.2195,
+        "lon": 21.015,
+        "radius": 350,
+        "weight": 1
       }
     ]
   }

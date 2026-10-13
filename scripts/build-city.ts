@@ -9,6 +9,8 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import type { CityData } from '@unicornrush/engine-api/game/City';
+import { encodeCity } from '@unicornrush/engine-lib/game/CityCodec';
+import { writeCityIndex } from './cityIndex';
 
 const OVERPASS = process.env.OVERPASS_URL ?? 'https://overpass.kumi.systems/api/interpreter';
 
@@ -49,6 +51,9 @@ interface WealthHint {
 }
 interface CityConfig {
   name: string;
+  flag: string;
+  city: string;
+  area: string;
   bbox: [number, number, number, number]; // south, west, north, east
   wealthHints?: WealthHint[];
   /** Each city's own mix of street wealth: it decides which strategies pay there. */
@@ -347,6 +352,8 @@ const city: CityData = {
 };
 mkdirSync('public/cities', { recursive: true });
 const out = `public/cities/${id}.json`;
-writeFileSync(out, JSON.stringify(city));
+writeFileSync(out, JSON.stringify(encodeCity(city)));
 const avg = city.segments.customers.reduce((a, b) => a + b, 0) / S.length;
 console.log(`Wrote ${out}: ${S.length} segments, ${rings.length} buildings, avg ${avg.toFixed(2)} customers/segment`);
+writeCityIndex();
+console.log('Updated public/cities/index.json and the thumbnail.');

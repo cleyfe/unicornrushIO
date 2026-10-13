@@ -1057,6 +1057,21 @@ table {
   padding: 16px;
   z-index: 30;
 }
+.overlay[hidden] {
+  display: none;
+}
+/* After the match: back to the results while exploring the final map. */
+.results-pill {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 31;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
 .intro-bg {
   background:
     radial-gradient(1200px 600px at 20% 10%, rgba(59, 130, 246, 0.18), transparent),
@@ -1097,98 +1112,200 @@ table {
 .lead b {
   color: var(--gold);
 }
-.steps {
+/* Start menu: settings on the left, cities on the right. */
+.menu {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-top: 16px;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  width: 100%;
+  max-width: 1100px;
+  height: min(720px, 100%);
 }
-.steps div {
-  background: rgba(255, 255, 255, 0.04);
+.menu-side,
+.menu-cities {
+  background: var(--glass-strong);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.4;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
-.steps span {
-  display: inline-flex;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  margin-right: 6px;
-}
-.steps b {
-  color: var(--text);
-  font-size: 13px;
-  display: inline-block;
-  margin-bottom: 6px;
-}
-.steps div {
+.menu-side {
   display: flex;
   flex-direction: column;
+  gap: 14px;
+  padding: 24px 22px;
+  overflow-y: auto;
 }
-.steps div > span {
-  margin-bottom: 6px;
+.logo {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: -0.5px;
 }
-.cities {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
+.logo b {
+  background: var(--unicorn);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
-.city-card {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0 8px;
-  text-align: left;
-  padding: 8px 10px;
-  border-radius: 10px;
-}
-.city-card .flag {
-  grid-row: span 2;
-  font-size: 22px;
-  align-self: center;
-}
-.city-blurb {
-  margin: 8px 2px 0;
-  font-size: 13px;
+.tagline {
+  margin: -8px 0 6px;
   color: var(--muted);
-  min-height: 1.4em;
 }
-.city-card small {
-  font-size: 12px;
+.tagline b {
+  color: var(--gold);
 }
-.city-card.active {
-  background: rgba(59, 130, 246, 0.18);
-  border-color: var(--accent);
-}
-.difficulty button {
-  padding: 8px 4px;
-}
-.intro-actions {
+.field {
   display: flex;
-  gap: 8px;
-  margin-top: 18px;
+  flex-direction: column;
+  gap: 6px;
 }
-.intro-actions input {
-  flex: 1;
+.field > span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+}
+.field input {
   font: inherit;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border-radius: 8px;
   border: 1px solid var(--line-strong);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text);
 }
-.rivals {
+.menu-side .seg button {
+  padding: 8px 4px;
+}
+.play {
+  margin-top: auto;
+  padding: 14px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.docs-link {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.menu-side .legal {
+  margin: 0;
+  text-align: center;
+}
+.menu-cities {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 18px 18px 0;
+}
+.menu-cities-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.menu-cities-head h3 {
+  margin: 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+}
+.menu-cities-head input {
+  font: inherit;
+  font-size: 13px;
+  width: 180px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+.city-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  align-content: start;
+  gap: 10px;
+  overflow-y: auto;
+  padding-bottom: 18px;
+}
+.city-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 8px;
+  border-radius: 12px;
+}
+.city-card[hidden] {
+  display: none;
+}
+.city-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #0d141f;
+  margin-bottom: 6px;
+}
+.city-name {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.city-card .flag {
+  font-size: 16px;
+}
+.city-card small {
   font-size: 12px;
   color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.city-card.active {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: var(--accent);
+}
+.mix {
+  display: flex;
+  gap: 2px;
+  height: 4px;
+  margin-top: 6px;
+}
+.mix i {
+  border-radius: 2px;
+}
+.mix .w0 {
+  background: #56606e;
+}
+.mix .w1 {
+  background: #8a8470;
+}
+.mix .w2 {
+  background: #c29a45;
+}
+.mix .w3 {
+  background: #fcd34d;
+}
+.muted {
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  .overlay:has(.menu) {
+    align-items: stretch;
+    overflow-y: auto;
+  }
+  .menu {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .menu-cities {
+    order: -1;
+  }
+  .city-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    max-height: 50vh;
+  }
 }
 .legal {
   font-size: 11px;
@@ -1628,6 +1745,9 @@ td i {
 }
 .seg.rival-count {
   grid-template-columns: repeat(4, 1fr);
+}
+.seg.difficulty {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .race-rank {
