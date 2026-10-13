@@ -24,8 +24,8 @@ export class TopBar {
         <span data-v="day"></span><div class="timebar"><div data-v="timeFill"></div></div>
       </div>
       <div class="events" data-v="events"></div>
-      <div class="speed" title="Space = pause · 1, 2, 3 = speed">
-        <button data-speed="0" aria-label="Pause">⏸</button><button data-speed="1">1×</button><button data-speed="2">2×</button><button data-speed="4">4×</button>
+      <div class="speed" title="Space = pause / play">
+        <button data-speed="0" aria-label="Pause">⏸</button><button data-speed="1" aria-label="Play">▶</button>
       </div>
       <button class="help-btn" aria-label="How to play">?</button>`,
     );

@@ -71,11 +71,11 @@ export const CONFIG = {
     // pricier (the cheapest ad slots go first); the extra cost fades over time.
     // Ad campaigns are a fixed pack at a rising price: the first costs adBaseCost,
     // each recent one adds adStepCost; the extra cost fades over time.
-    adPush: 150,
-    adBaseCost: 100_000,
-    adStepCost: 50_000,
-    adHeatDecayPerDay: 0.03,
-    adCooldownDays: 7, // your agency runs one campaign at a time
+    adPush: 400,
+    adBaseCost: 200_000,
+    adStepCost: 200_000,
+    adHeatDecayPerDay: 0.01,
+    adCooldownDays: 30, // your agency runs one big campaign a month
     maxAdPushMult: 2, // ads can fill the push pool up to twice its normal cap
     maxServiceLevel: 1.5, // spare operations capacity makes customers loyal, up to this
   },

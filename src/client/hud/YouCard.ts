@@ -17,7 +17,6 @@ export class YouCard {
 
   constructor(
     private game: GameImpl,
-    onFinances: () => void,
     onLocate: () => void,
   ) {
     const me = game.player;
@@ -26,9 +25,9 @@ export class YouCard {
       'you-card glass',
       `<div class="you-head"><i style="background:${rgb(me.color)}"></i><b>${me.name}</b>
         <button class="link" data-act="locate" title="Show my company on the map">📍</button>
-        <button class="link" data-act="finances" title="Finances (F)">🏦</button></div>
+</div>
       <div class="you-value" title="Valuation = cash − debt + ${CONFIG.valuation.earningsMultiple}× yearly profit"><span data-v="value"></span><small>valuation</small></div>
-      <div class="unicorn-bar" title="Progress to $1B (log scale)"><div data-v="bar"></div><span data-v="barText"></span></div>
+      <div class="unicorn-bar" title="Progress to $1B"><div data-v="bar"></div><span data-v="barText"></span></div>
       <div class="cash-row">
         <div title="Cash in the bank. Below zero for ${CONFIG.bankruptcyGraceDays} days = bankrupt."><small>Cash</small><b data-v="cash"></b><span class="spend-pops" data-v="pops"></span></div>
         <div title="Revenue minus every cost, per day"><small>Profit / day</small><b data-v="profit"></b></div>
@@ -40,7 +39,6 @@ export class YouCard {
       <div class="you-stake" data-v="stake" hidden></div>
       <div class="alert" data-v="alert" hidden></div>`,
     );
-    $(this.root, '[data-act="finances"]').addEventListener('click', onFinances);
     $(this.root, '[data-act="locate"]').addEventListener('click', onLocate);
     this.spentSoFar = this.spent();
   }

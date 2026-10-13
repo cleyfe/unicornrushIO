@@ -17,6 +17,8 @@ export type ClickMode = 'expand' | 'ad' | 'guard' | 'buy';
 export class InputHandler {
   /** What the next click on the map does: expand (default), aim an ad, or guard an area. */
   private mode: ClickMode = 'expand';
+  /** The street under the mouse, or -1. */
+  private hoverSeg = -1;
   onModeChange: (mode: ClickMode) => void = () => {};
   /** Command hotkeys (letters); returns true if the key was used. */
   onHotkey: (key: string) => boolean = () => false;
@@ -81,18 +83,12 @@ export class InputHandler {
       map.getCanvas().style.cursor = seg >= 0 ? 'pointer' : '';
       this.view.setHover(seg);
       if (seg < 0) {
+        this.hoverSeg = -1;
         this.tooltip.style.display = 'none';
         return;
       }
-      const g = this.client.game;
-      this.tooltip.innerHTML =
-        this.mode === 'guard'
-          ? describeGuard(g, seg)
-          : this.mode === 'ad'
-            ? describeAd(g, this.city, seg)
-            : this.mode === 'buy'
-              ? describeDeal(g, seg)
-              : describeSegment(g, this.city, seg, this.view.isFrontier(seg), !this.isStarted());
+      this.hoverSeg = seg;
+      this.refreshHover();
       const w = this.tooltip.offsetWidth || 260;
       const box = map.getContainer().getBoundingClientRect();
       const x = e.point.x + 16 + w > box.width ? e.point.x - w - 16 : e.point.x + 16;
@@ -101,6 +97,7 @@ export class InputHandler {
       this.tooltip.style.display = 'block';
     });
     map.on('mouseout', () => {
+      this.hoverSeg = -1;
       this.tooltip.style.display = 'none';
       this.view.setHover(-1);
     });
@@ -110,7 +107,7 @@ export class InputHandler {
       const t = ev.target;
       if ((t instanceof HTMLInputElement && t.type === 'text') || t instanceof HTMLSelectElement) return;
       if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
-      const speeds: Record<string, number> = { ' ': 0, '1': 1, '2': 2, '3': 4 };
+      const speeds: Record<string, number> = { ' ': 0 };
       if (ev.key in speeds) {
         ev.preventDefault();
         this.onSpeedKey(ev.key === ' ' && this.client.speed === 0 ? 1 : speeds[ev.key]);
@@ -129,6 +126,22 @@ export class InputHandler {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('click', blurButtons, true);
     };
+  }
+
+  /** Redraws the hover card for the street under the mouse (called as the game runs, so it stays current). */
+  refreshHover(): void {
+    const seg = this.hoverSeg;
+    if (seg < 0) return;
+    const g = this.client.game;
+    const html =
+      this.mode === 'guard'
+        ? describeGuard(g, seg)
+        : this.mode === 'ad'
+          ? describeAd(g, this.city, seg)
+          : this.mode === 'buy'
+            ? describeDeal(g, seg)
+            : describeSegment(g, this.city, seg, this.view.isFrontier(seg), !this.isStarted());
+    if (html !== this.tooltip.innerHTML) this.tooltip.innerHTML = html;
   }
 
   /** Sets what the next map click does; pressing the same command again cancels it. */

@@ -615,20 +615,35 @@ export class GameImpl {
     // Candidate starts: ordinary middle-income streets away from the edges.
     const inside = (i: number) =>
       m.x[i] >= minX + marginX && m.x[i] <= maxX - marginX && m.y[i] >= minY + marginY && m.y[i] <= maxY - marginY;
+    // Small matches start everyone in middle-income areas, so nobody gets a richer start.
+    // Big matches also allow budget and upscale areas, so starts can cover the whole city.
+    const startWealth = (w: number) => w === Wealth.Middle || (this.companies.length > 4 && w !== Wealth.Luxury);
     let candidates: number[] = [];
     for (let i = 0; i < m.size; i++) {
-      if (inside(i) && m.wealth[i] === Wealth.Middle && m.demand[i] <= median * 1.5) candidates.push(i);
+      if (inside(i) && startWealth(m.wealth[i]) && m.demand[i] <= median * 1.5) candidates.push(i);
     }
     if (candidates.length < this.companies.length) candidates = [...Array(m.size).keys()];
-    // Pick the most spread-out set among many random tries, so no start is cramped.
+    // Spread the starts as evenly as possible: from a random first start, each next one
+    // goes to the candidate farthest from all starts so far. Keep the best of a few tries.
     const n = this.companies.length;
     let best: number[] = [];
     let bestSpread = -1;
-    for (let attempt = 0; attempt < 300; attempt++) {
-      const set = Array.from({ length: n }, () => candidates[this.rng.int(0, candidates.length)]);
+    const nearest = new Float64Array(candidates.length);
+    for (let attempt = 0; attempt < 24; attempt++) {
+      const set = [candidates[this.rng.int(0, candidates.length)]];
+      nearest.fill(Infinity);
       let spread = Infinity;
-      for (let a = 0; a < n; a++)
-        for (let b = a + 1; b < n; b++) spread = Math.min(spread, Math.hypot(m.x[set[a]] - m.x[set[b]], m.y[set[a]] - m.y[set[b]]));
+      while (set.length < n) {
+        const last = set[set.length - 1];
+        let far = -1;
+        for (let k = 0; k < candidates.length; k++) {
+          const c = candidates[k];
+          nearest[k] = Math.min(nearest[k], Math.hypot(m.x[c] - m.x[last], m.y[c] - m.y[last]));
+          if (far < 0 || nearest[k] > nearest[far]) far = k;
+        }
+        spread = Math.min(spread, nearest[far]);
+        set.push(candidates[far]);
+      }
       if (spread > bestSpread) (bestSpread = spread), (best = set);
     }
     // Shuffle which company gets which start, so no seat is favoured.

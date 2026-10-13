@@ -32,7 +32,7 @@ Investors pay for profit, so a smaller, profitable company can beat a big one th
 | **Hire / Fire** | $500 to hire, $100/day salary, 8 days of training before new hires are productive. $300 severance. | Hiring is an investment that pays back over time |
 | **Price** (Low / Medium / High) | $28 / $40 / $55 per purchase. Middle-income customers buy ×1.4 / ×1 / ×0.8 as much; budget customers react more, luxury ones barely. Low prices also win and keep customers more easily. | Price elasticity of demand, margin vs volume |
 | **Campaigns** | Click a street (or a building on it) next to yours: the campaign commits a share of your push (10–100%, slider next to the meter, 50% by default) and wins that street and its neighbours until the budget runs out; unspent push comes back. | Customer acquisition cost |
-| **Advertising** 📢 | Aim an ad campaign at any street: 150 push that wins streets toward it. The first costs $100K, each recent one $50K more (fading over a few weeks); one campaign every 7 days. | Customer acquisition cost, diminishing returns |
+| **Advertising** 📢 | Aim an ad campaign at any street: 400 push that wins streets toward it. The first costs $200K, each recent one $200K more (fading over a few months); one campaign every 30 days. | Customer acquisition cost, diminishing returns |
 | **Street deals** 🏢 | Buy a block of up to 6 rival streets next to yours, instantly, for $1,500 per push they'd cost (+25% per recent deal). You buy out the local shops' contracts, so the money leaves the game, and the streets can't be bought back with cash for 60 days. | Buying vs building, paying for speed |
 | **Bank loan** | $25K at a time, 24%/year interest, credit limit = 60 days of revenue | Leverage and risk |
 | **Lawsuit** ⚖️ | Sue a rival for unfair competition. Fees scale with your size (10 days of revenue, at least $25K); the court decides on evidence. See below. | Legal risk, damages as lost profits, contingency fees |
@@ -118,7 +118,7 @@ Stealing a rival's street costs more when the rival:
 
 ### Controls
 
-Everything you do lives in the command bar at the bottom: Space pause · 1 2 3 speed ·
+Everything you do lives in the command bar at the bottom: Space pause/play ·
 H hire 10 · A ads · G guard · S sue · Q W E price · F money · R race chart · Esc close.
 
 ### Unfair-competition lawsuits ⚖️

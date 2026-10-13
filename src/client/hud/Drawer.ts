@@ -75,16 +75,6 @@ export class Drawer {
         <tr><td title="Average daily profit over the last ${CONFIG.valuation.profitWindowDays} days × 365 × ${CONFIG.valuation.earningsMultiple}">+ ${CONFIG.valuation.earningsMultiple}× yearly profit</td><td data-v="vEarnings"></td></tr>
         <tr class="total"><td>= Valuation</td><td data-v="vTotal"></td></tr>
       </table>
-      <h3>One-off spending <small>so far</small></h3>
-      <table class="pnl">
-        <tr><td>Recruiting</td><td data-v="ooHiring"></td></tr>
-        <tr><td>Severance</td><td data-v="ooSeverance"></td></tr>
-        <tr><td>Ads</td><td data-v="ooAds"></td></tr>
-        <tr><td>Guards</td><td data-v="ooGuards"></td></tr>
-        <tr><td>Street deals</td><td data-v="ooDeals"></td></tr>
-        <tr><td>Legal fees and fines</td><td data-v="ooLegal"></td></tr>
-        <tr><td>Lawsuit damages</td><td data-v="ooDamages"></td></tr>
-      </table>
       <h3>Bank <small data-v="limit"></small></h3>
       <div class="row"><span>Debt</span><b data-v="debt"></b></div>
       <div class="buttons">
@@ -136,14 +126,6 @@ export class Drawer {
       this.set('vTotal', money(v.total));
       this.set('debt', money(c.debt));
       this.set('limit', `limit ${money(g.maxDebt(c))}`);
-      const signed = (v: number) => [money(v), v > 0 ? 'pos' : v < 0 ? 'neg' : ''] as const;
-      this.set('ooHiring', ...signed(c.oneOff.hiring));
-      this.set('ooSeverance', ...signed(c.oneOff.severance));
-      this.set('ooLegal', ...signed(c.oneOff.legalFees));
-      this.set('ooAds', ...signed(c.oneOff.advertising));
-      this.set('ooGuards', ...signed(c.oneOff.guards));
-      this.set('ooDeals', ...signed(c.oneOff.streetDeals));
-      this.set('ooDamages', ...signed(c.oneOff.damages));
       if (g.tick % 10 === 0) {
         this.valueChart.update(this.history.valuation);
         this.profitChart.update(this.history.profit);

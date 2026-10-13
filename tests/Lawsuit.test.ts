@@ -40,16 +40,21 @@ describe('lawsuits', () => {
   });
 
   it('cost a losing defendant customers all over its territory, plus damages', () => {
-    const r = suingSetup(42, 30); // strong case: 85% chance
-    const d = r.game.companies[1];
-    runDays(r, 5);
-    const tiles = d.tiles;
-    act(r, { type: 'lawsuit', companyId: 0, targetId: 1 });
-    runDays(r, L.courtDays + 1);
-    expect(r.game.lawsuits).toHaveLength(0);
-    expect(d.tiles).toBeLessThanOrEqual(Math.ceil(tiles * (1 - L.customerLoss)) + 1);
-    expect(r.game.log.some((l) => l.text.includes('lost the lawsuit'))).toBe(true);
-    expect(r.game.player.oneOff.damages).toBeGreaterThan(0);
+    // A strong case (85%) still loses now and then: look at the first seed where it wins.
+    for (let seed = 42; seed < 60; seed++) {
+      const r = suingSetup(seed, 30);
+      const d = r.game.companies[1];
+      runDays(r, 5);
+      const tiles = d.tiles;
+      act(r, { type: 'lawsuit', companyId: 0, targetId: 1 });
+      runDays(r, L.courtDays + 1);
+      expect(r.game.lawsuits).toHaveLength(0);
+      if (!r.game.log.some((l) => l.text.includes('lost the lawsuit'))) continue;
+      expect(d.tiles).toBeLessThanOrEqual(Math.ceil(tiles * (1 - L.customerLoss)) + 1);
+      expect(r.game.player.oneOff.damages).toBeGreaterThan(0);
+      return;
+    }
+    throw new Error('a strong case never won');
   });
 
   it('are decided by evidence: more streets taken, better odds', () => {

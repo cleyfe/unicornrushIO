@@ -84,11 +84,7 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
     },
     (street) => view.map.flyTo({ center: view.zoneCenter(street), zoom: 15, duration: 1200 }),
   );
-  const you = new YouCard(
-    game,
-    () => drawer.toggle('finances'),
-    () => view.focusOnPlayer(),
-  );
+  const you = new YouCard(game, () => view.focusOnPlayer());
   const race = new RaceBoard(game);
   const actions = new ActionBar(game, (i) => client.send(i), (d) => drawer.toggle(d));
   const cards = new CardPicker(game, (i) => client.send(i));
@@ -153,6 +149,7 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
       race.update();
       actions.update();
       cards.update();
+      input.refreshHover();
       view.updateZones();
       view.update(); // guards expire over time
       drawer.update();

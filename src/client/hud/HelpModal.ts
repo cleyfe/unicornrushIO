@@ -28,7 +28,7 @@ export function showHelp(onClose: () => void): void {
         <li><b>🔮 Events:</b> recessions and booms are forecast ${CONFIG.events.warningDays} days ahead; new metro stations, roadworks and festivals ${CONFIG.localEvents.warningDays} days ahead. Prepare, or race there first.</li>
         <li><b>📰 Being big:</b> unions, journalists and hackers go after the leader, and big companies take longer to change prices.</li>
       </ol>
-      <p class="tip">Keys: Space pause · 1 2 3 speed · H hire 10 · A ads · G guard · S sue · B buy · Q W E price · F money · R race · Esc close.</p>
+      <p class="tip">Keys: Space pause/play · H hire 10 · A ads · G guard · S sue · B buy · Q W E price · F money · R race · Esc close.</p>
       ${LEGAL_FOOTER}
     </div>`,
   );

@@ -1628,3 +1628,11 @@ td i {
 .seg.rival-count {
   grid-template-columns: repeat(4, 1fr);
 }
+
+.race-rank {
+  display: inline-block;
+  min-width: 18px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}

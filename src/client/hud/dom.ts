@@ -9,7 +9,7 @@ export function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: str
   return e;
 }
 
-/** Progress from $1M to $1B on a log scale, so early growth is visible. */
+/** Progress to a $1B valuation, on a plain linear scale. */
 export function unicornProgress(valuation: number): number {
-  return Math.max(0, Math.min(1, Math.log10(Math.max(1, valuation) / 1e6) / 3));
+  return Math.max(0, Math.min(1, valuation / 1e9));
 }
