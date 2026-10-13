@@ -14,6 +14,8 @@ export class TopBar {
     private onSpeed: (speed: number) => void,
     onHelp: () => void,
     private onZone: (street: number) => void = () => {},
+    private theme: 'light' | 'dark' = 'light',
+    onTheme: (theme: 'light' | 'dark') => void = () => {},
   ) {
     this.root = el(
       'header',
@@ -27,12 +29,25 @@ export class TopBar {
       <div class="speed" title="Space = pause / play">
         <button data-speed="0" aria-label="Pause">⏸</button><button data-speed="1" aria-label="Play">▶</button>
       </div>
+      <button class="theme-btn" aria-label="Switch between the day and night map"></button>
       <button class="help-btn" aria-label="How to play">?</button>`,
     );
     this.root.querySelectorAll<HTMLButtonElement>('[data-speed]').forEach((b) =>
       b.addEventListener('click', () => this.onSpeed(Number(b.dataset.speed))),
     );
     $(this.root, '.help-btn').addEventListener('click', onHelp);
+    const themeBtn = $<HTMLButtonElement>(this.root, '.theme-btn');
+    const showTheme = () => {
+      themeBtn.textContent = this.theme === 'light' ? '🌙' : '☀️';
+      themeBtn.title = this.theme === 'light' ? 'Night map' : 'Day map';
+    };
+    showTheme();
+    themeBtn.addEventListener('click', () => {
+      this.theme = this.theme === 'light' ? 'dark' : 'light';
+      showTheme();
+      onTheme(this.theme);
+      themeBtn.blur();
+    });
     this.root.addEventListener('click', (e) => {
       const chip = (e.target as HTMLElement).closest<HTMLElement>('[data-zone]');
       if (chip) this.onZone(Number(chip.dataset.zone));

@@ -9,20 +9,38 @@ import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 
 maplibregl.setWorkerUrl(workerUrl);
 
-// A light, daytime street map; the game draws its own streets and buildings on top.
-const BASE_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
-const NEUTRAL_STREET = '#8a94a3';
-const FRONTIER_STREET = '#1d4ed8'; // streets you can win: a dashed blue line
-const HOVER_STREET = '#f59e0b';
-const COURT_STREET = '#facc15'; // a company on trial
+export type MapTheme = 'light' | 'dark';
 
-/** Building colour by wealth when nobody owns its street: light grey to gold. */
-export const WEALTH_COLORS: Record<Wealth, string> = {
-  [Wealth.Budget]: '#d9d6d0',
-  [Wealth.Middle]: '#e3d6bd',
-  [Wealth.Upscale]: '#e8c784',
-  [Wealth.Luxury]: '#d9a43c',
+/** Everything that changes between the daytime and the night map. */
+const THEMES: Record<MapTheme, { style: string; neutral: string; neutralOpacity: number; frontier: string; hover: string; outline: string; wealth: Record<Wealth, string> }> = {
+  light: {
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    neutral: '#8a94a3',
+    neutralOpacity: 0.35,
+    frontier: '#1d4ed8',
+    hover: '#f59e0b',
+    outline: 'rgba(0,0,0,0.18)',
+    // Unowned buildings by wealth: light grey to gold.
+    wealth: { [Wealth.Budget]: '#d9d6d0', [Wealth.Middle]: '#e3d6bd', [Wealth.Upscale]: '#e8c784', [Wealth.Luxury]: '#d9a43c' },
+  },
+  dark: {
+    style: 'https://tiles.openfreemap.org/styles/dark',
+    neutral: '#6f7988',
+    neutralOpacity: 0.5,
+    frontier: '#c7d2e0',
+    hover: '#ffffff',
+    outline: 'rgba(0,0,0,0.35)',
+    // Unowned buildings by wealth: dark to gold.
+    wealth: { [Wealth.Budget]: '#262b33', [Wealth.Middle]: '#3f3d33', [Wealth.Upscale]: '#625533', [Wealth.Luxury]: '#93773a' },
+  },
 };
+
+/** Building colours by wealth for a theme (the map key uses them too). */
+export function wealthColors(theme: MapTheme): Record<Wealth, string> {
+  return THEMES[theme].wealth;
+}
+
+const COURT_STREET = '#facc15'; // a company on trial
 
 /** Expressions built at runtime don't fit MapLibre's tuple types; they are checked when the layer is added. */
 const expr = (e: unknown) => e as ExpressionSpecification;
@@ -45,6 +63,7 @@ const ZONE_COLORS = { metro: '#34d399', roadworks: '#fb923c', festival: '#f472b6
 export class CityMapView {
   readonly map: maplibregl.Map;
   private ready = false;
+  private theme: MapTheme;
   private drawnOwner: Int16Array;
   private drawnBorder: Uint8Array;
   private drawnGuard: Uint8Array;
@@ -59,7 +78,9 @@ export class CityMapView {
     container: HTMLElement,
     private game: GameImpl,
     private city: CityData,
+    theme: MapTheme = 'light',
   ) {
+    this.theme = theme;
     const n = city.segments.coords.length;
     this.drawnOwner = new Int16Array(n).fill(NEUTRAL);
     this.drawnBorder = new Uint8Array(n);
@@ -72,7 +93,7 @@ export class CityMapView {
     const padY = (nth - s) * 0.25;
     this.map = new maplibregl.Map({
       container,
-      style: BASE_STYLE,
+      style: THEMES[theme].style,
       bounds: [w, s, e, nth],
       maxBounds: [w - padX, s - padY, e + padX, nth + padY],
       minZoom: 12,
@@ -85,7 +106,12 @@ export class CityMapView {
       new maplibregl.AttributionControl({ compact: true, customAttribution: `Game map: ${city.attribution}` }),
     );
     this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-    this.map.on('load', () => this.addLayers());
+    // Runs on the first load and again after every theme switch (setStyle drops our layers).
+    let first = true;
+    this.map.on('style.load', () => {
+      this.addLayers(first);
+      first = false;
+    });
   }
 
   private ownerColor(): ExpressionSpecification {
@@ -93,8 +119,25 @@ export class CityMapView {
     return expr(['match', ['coalesce', ['feature-state', 'owner'], NEUTRAL], ...pairs, '#000000']);
   }
 
-  private addLayers(): void {
+  /** Switches between the daytime and night map, keeping the game state drawn. */
+  setTheme(theme: MapTheme): void {
+    if (theme === this.theme) return;
+    this.theme = theme;
+    this.ready = false;
+    // Forget what was drawn, so every street's state is set again on the new style.
+    this.drawnOwner.fill(NEUTRAL);
+    this.drawnBorder.fill(0);
+    this.drawnGuard.fill(0);
+    this.drawnCourt = '';
+    this.drawnZones = '';
+    this.frontier = new Set();
+    this.hovered = -1;
+    this.map.setStyle(THEMES[theme].style, { diff: false });
+  }
+
+  private addLayers(first: boolean): void {
     const map = this.map;
+    const T = THEMES[this.theme];
     // Our buildings replace the base map's; keep its roads, water, parks and labels.
     for (const layer of map.getStyle().layers ?? []) {
       if (layer.id.startsWith('building') || layer.id.startsWith('poi')) map.setLayoutProperty(layer.id, 'visibility', 'none');
@@ -129,7 +172,7 @@ export class CityMapView {
     const wealthColor = [
       'match',
       ['get', 'w'],
-      ...Object.entries(WEALTH_COLORS).flatMap(([k, v]) => [Number(k), v]),
+      ...Object.entries(T.wealth).flatMap(([k, v]) => [Number(k), v]),
       '#333333',
     ];
     // Owned buildings: the owner's colour, shaded by wealth, so you still see where the money is.
@@ -149,7 +192,7 @@ export class CityMapView {
       paint: {
         'fill-color': expr(['case', owned, ownedColor, wealthColor]),
         'fill-opacity': expr(['case', owned, ['match', ['get', 'w'], 0, 0.5, 1, 0.65, 2, 0.8, 0.9], 0.9]),
-        'fill-outline-color': 'rgba(0,0,0,0.18)',
+        'fill-outline-color': T.outline,
       },
     });
     // Owned rich buildings get a gold rim, so the wealth still shows under the owner's colour.
@@ -201,8 +244,8 @@ export class CityMapView {
           this.ownerColor(),
           // Hovering an untapped street lights it up; owned streets keep their colour.
           ['boolean', ['feature-state', 'hover'], false],
-          HOVER_STREET,
-          NEUTRAL_STREET,
+          T.hover,
+          T.neutral,
         ]),
         'line-width': expr([
           'interpolate',
@@ -221,7 +264,7 @@ export class CityMapView {
           1,
           ['boolean', ['feature-state', 'frontier'], false],
           0,
-          0.35,
+          T.neutralOpacity,
         ]),
       },
     });
@@ -232,7 +275,7 @@ export class CityMapView {
       source: 'streets',
       layout: { 'line-cap': 'butt', 'line-join': 'round' },
       paint: {
-        'line-color': FRONTIER_STREET,
+        'line-color': T.frontier,
         'line-width': expr(['interpolate', ['linear'], ['zoom'], 13, 2, 16, 4, 18, 7]),
         'line-dasharray': [2, 1.2],
         'line-opacity': expr([
@@ -261,6 +304,7 @@ export class CityMapView {
     map.addLayer({ id: 'streets-hit', type: 'line', source: 'streets', paint: { 'line-width': 16, 'line-opacity': 0 } });
     this.ready = true;
     this.update();
+    if (!first) return;
     this.onReady();
     // Start on the whole city so you see where your rivals are, then fly to you.
     window.setTimeout(() => this.focusOnPlayer(true), 1200);

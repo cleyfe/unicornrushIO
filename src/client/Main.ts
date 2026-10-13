@@ -21,7 +21,7 @@ import { TopBar } from './hud/TopBar';
 import { YouCard } from './hud/YouCard';
 import { History } from './History';
 import { InputHandler } from './InputHandler';
-import { CityMapView, WEALTH_COLORS } from './render/CityMapView';
+import { CityMapView, type MapTheme, wealthColors } from './render/CityMapView';
 import { CompanyLabels } from './render/CompanyLabels';
 import { GuardMarkers } from './render/GuardMarkers';
 
@@ -64,7 +64,14 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
   stage.append(mapEl, tooltip);
   app.append(stage);
 
-  const view = new CityMapView(mapEl, game, city);
+  // Light (daytime) or dark (night) map: the player's choice, remembered between matches.
+  let theme: MapTheme = 'light';
+  try {
+    if (localStorage.getItem('unicornrush.theme') === 'dark') theme = 'dark';
+  } catch {
+    // Storage blocked: keep the default.
+  }
+  const view = new CityMapView(mapEl, game, city, theme);
   // Keep a loading screen up until the map has drawn, instead of a black screen.
   const loading = el('div', 'overlay intro-bg', `<div class="card loading"><h2>${info.flag} Loading ${info.name}…</h2><p>Drawing streets and buildings</p></div>`);
   app.append(loading);
@@ -85,6 +92,19 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
       showHelp(() => (client.speed = started ? speedBeforeHelp : 0));
     },
     (street) => view.map.flyTo({ center: view.zoneCenter(street), zoom: 15, duration: 1200 }),
+    theme,
+    (t) => {
+      theme = t;
+      view.setTheme(t);
+      const open = legend.open;
+      legend.innerHTML = legendHtml();
+      legend.open = open;
+      try {
+        localStorage.setItem('unicornrush.theme', t);
+      } catch {
+        // Storage blocked: the choice lasts for this match only.
+      }
+    },
   );
   const you = new YouCard(game, () => view.focusOnPlayer(), (i) => client.send(i));
   const race = new RaceBoard(game);
@@ -92,16 +112,14 @@ async function startGame(name: string, cityId: CityId, difficulty: Difficulty, r
   const cards = new CardPicker(game, (i) => client.send(i));
   const news = new NewsFeed(() => drawer.toggle('news'));
   const coach = new Coach(game);
-  const legend = el(
-    'details',
-    'wealth-legend glass',
+  const legendHtml = () =>
     '<summary>🗺 Map key</summary>' +
     CONFIG.wealth
-      .map((t, i) => `<span><i style="background:${WEALTH_COLORS[i as Wealth]}"></i>${'$'.repeat(i + 1)} ${t.label} ×${t.spend}</span>`)
+      .map((t, i) => `<span><i style="background:${wealthColors(theme)[i as Wealth]}"></i>${'$'.repeat(i + 1)} ${t.label} ×${t.spend}</span>`)
       .join('') +
       `<span title="Owned buildings take the owner's colour: brighter on richer streets, with a gold rim on the richest"><i class="rim"></i>Owned: brighter = richer</span>` +
-      `<span class="legend-sep"><i class="line frontier"></i>Streets you can win</span><span><i class="line court"></i>Company on trial</span>`,
-  );
+      `<span class="legend-sep"><i class="line frontier"></i>Streets you can win</span><span><i class="line court"></i>Company on trial</span>`;
+  const legend = el('details', 'wealth-legend glass', legendHtml());
   legend.title = 'Building colour = neighbourhood wealth: how much each customer spends. Owned buildings take the owner colour, brighter on richer streets, and rich ones get a gold rim.';
   const paused = el('div', 'paused-badge', '⏸ Click a glowing street to start · or click anywhere else to move your start');
   const guardBanner = el('div', 'guard-banner', '🛡 Click one of your streets to guard its neighbourhood · Esc to cancel');
