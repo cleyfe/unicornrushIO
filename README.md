@@ -65,12 +65,15 @@ ones, or in between) earns a similar profit per unit of sales effort; they diffe
 | City | Area |
 | --- | --- |
 | 🇫🇷 Paris | Opéra & Monceau: from Parc Monceau and the Golden Triangle to Pigalle |
-| 🇨🇭 Genève | Centre: lakefront luxury, the Old Town, Pâquis and Plainpalais |
+| 🇨🇭 Genève | Centre: lakefront luxury, the Old Town, Pâquis and Plainpalais. Rich city (25% luxury): premium prices pay |
 | 🇺🇸 New York | Lower Manhattan: Tribeca, SoHo and the West Village next to Chinatown and the Lower East Side |
 | 🇬🇧 London | West End: Mayfair and Bond Street, Soho, Covent Garden and Holborn |
-| 🇩🇪 Berlin | Mitte: Friedrichstraße and Hackescher Markt down to Kreuzberg |
-| 🇺🇸 San Francisco | Downtown: Nob Hill, the Financial District, SoMa and the Mission |
+| 🇩🇪 Berlin | Mitte: Friedrichstraße and Hackescher Markt down to Kreuzberg. Budget city (45% budget): low prices win |
+| 🇺🇸 San Francisco | Downtown: Nob Hill, the Financial District, SoMa and the Mission. Split city: every price can work |
 | 🇨🇦 Toronto | Downtown: Yorkville, Kensington Market and the Financial District |
+
+Each city has its own mix of budget, middle, upscale and luxury streets (`wealthShares` in
+`scripts/cities.json`), so the best pricing strategy depends on where you play.
 
 #### Adding a city
 
