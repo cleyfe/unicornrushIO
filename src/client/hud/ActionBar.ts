@@ -69,7 +69,7 @@ export class ActionBar {
           ${cmd('data-act="advertise"', '📢', 'Ads', 'A', 'Ad campaign: aim it at a street and it wins streets toward it until its budget runs out.')}
           ${cmd('data-act="guard"', '🛡', 'Guard', 'G', `Post an account team on a neighbourhood: click one of your streets. Your streets within ${CONFIG.guard.radius} m cost rivals ×${CONFIG.guard.defenceMult} to steal for ${CONFIG.guard.days} days.`)}
           ${cmd('data-open="lawsuit"', '⚖️', 'Sue', 'S', 'Sue a rival for unfair competition')}
-          ${cmd('data-act="buy"', '🏢', 'Buy', 'B', `Buy a block of a rival's streets next to yours, instantly: up to ${CONFIG.streetDeal.blockSize} streets. Dearer than ads, and the rival is paid.`)}
+          ${cmd('data-act="buy"', '🏢', 'Buy', 'B', `Buy a block of a rival's streets next to yours, instantly: up to ${CONFIG.streetDeal.blockSize} streets. Dearer than ads; they're then under contract for ${CONFIG.streetDeal.lockDays} days.`)}
         </div>
         <div class="grp price">
           ${PRICE_LEVELS.map((p, i) => cmd(`data-price="${p}"`, '$'.repeat(i + 1), P[p].label, PRICE_KEYS[p], PRICE_TIPS[p])).join('')}

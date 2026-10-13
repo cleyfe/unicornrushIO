@@ -50,6 +50,8 @@ export class GameImpl {
   readonly guardUntil: Float32Array;
   /** Bumped whenever a guard is posted. */
   guardVersion = 0;
+  /** Streets bought in a deal can't be bought back with cash until this day. */
+  readonly dealLockUntil: Float32Array;
 
   /** Evidence for lawsuits: streets (and their spend) attacker took from victim, decaying over time. */
   private takenStreets = new Map<string, number>();
@@ -70,6 +72,7 @@ export class GameImpl {
     this.owner = new Int16Array(this.map.size).fill(NEUTRAL);
     this.guardOwner = new Int16Array(this.map.size).fill(NEUTRAL);
     this.guardUntil = new Float32Array(this.map.size);
+    this.dealLockUntil = new Float32Array(this.map.size);
     specs.forEach((s, id) => this.companies.push(newCompany(id, s)));
     this.placeSpawns();
   }
@@ -485,7 +488,7 @@ export class GameImpl {
   streetDeal(buyer: Company, tile: number): { seller: number; streets: number[]; cost: number } | null {
     const D = CONFIG.streetDeal;
     const seller = this.owner[tile];
-    if (seller < 0 || seller === buyer.id || !this.companies[seller].alive) return null;
+    if (seller < 0 || seller === buyer.id || !this.companies[seller].alive || this.dealLocked(tile)) return null;
     const streets: number[] = [];
     const seen = new Set([tile]);
     const queue = [tile];
@@ -493,11 +496,16 @@ export class GameImpl {
       const t = queue.shift()!;
       streets.push(t);
       for (const n of neighbors(this.map, t, this.nb)) {
-        if (!seen.has(n) && this.owner[n] === seller) (seen.add(n), queue.push(n));
+        if (!seen.has(n) && this.owner[n] === seller && !this.dealLocked(n)) (seen.add(n), queue.push(n));
       }
     }
     const push = streets.reduce((s, t) => s + this.tileCost(buyer, seller, t), 0);
     return { seller, streets, cost: Math.round(push * D.dollarsPerPush * (1 + D.stepShare * buyer.dealHeat)) };
+  }
+
+  /** Was `tile` bought in a deal recently (so it can't be bought back with cash yet)? */
+  dealLocked(tile: number): boolean {
+    return this.day < this.dealLockUntil[tile];
   }
 
   /** Is `tile` next to one of `c`'s streets? */

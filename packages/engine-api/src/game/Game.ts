@@ -19,7 +19,7 @@ export interface OneOffFlows {
   legalFees: number; // lawsuit fees and costs paid (negative)
   advertising: number; // ad purchases (negative)
   guards: number; // neighbourhood account teams (negative)
-  streetDeals: number; // streets bought (−) or sold (+) in deals
+  streetDeals: number; // streets bought in deals (negative)
   damages: number; // lawsuit damages received (+) or paid (−)
 }
 

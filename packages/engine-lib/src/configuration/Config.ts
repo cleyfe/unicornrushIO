@@ -111,9 +111,11 @@ export const CONFIG = {
 
   // Buying a block of a rival's streets: instant, so dearer than winning them with an
   // ad. Price = the push they'd cost × dollarsPerPush, +stepShare per recent deal
-  // (fading over time). The seller is paid.
+  // (fading over time). You buy out the local shops' contracts, so the money leaves
+  // the game, and the streets can't be bought back with cash for lockDays.
   streetDeal: {
     blockSize: 6,
+    lockDays: 60,
     dollarsPerPush: 1_500,
     stepShare: 0.25,
     heatDecayPerDay: 0.03,

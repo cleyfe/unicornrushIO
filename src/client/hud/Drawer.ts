@@ -81,7 +81,7 @@ export class Drawer {
         <tr><td>Severance</td><td data-v="ooSeverance"></td></tr>
         <tr><td>Ads</td><td data-v="ooAds"></td></tr>
         <tr><td>Guards</td><td data-v="ooGuards"></td></tr>
-        <tr><td title="Streets bought (−) or sold (+) in deals">Street deals</td><td data-v="ooDeals"></td></tr>
+        <tr><td>Street deals</td><td data-v="ooDeals"></td></tr>
         <tr><td>Legal fees and fines</td><td data-v="ooLegal"></td></tr>
         <tr><td>Lawsuit damages</td><td data-v="ooDamages"></td></tr>
       </table>

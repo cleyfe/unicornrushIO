@@ -150,13 +150,16 @@ function describeAd(g: GameImpl, city: CityData, seg: number): string {
 /** The hover card in buy mode: which rival streets you'd get, and the price. */
 function describeDeal(g: GameImpl, seg: number): string {
   const me = g.player;
+  if (g.owner[seg] > 0 && g.dealLocked(seg)) {
+    return `<div class="hc-title">🏢 Under contract</div><div class="hc-action muted">Can't be bought for ${Math.ceil(g.dealLockUntil[seg] - g.day)} more days</div>`;
+  }
   const deal = g.streetDeal(me, seg);
   if (!deal) return '<div class="hc-title">🏢 Buy streets</div><div class="hc-action muted">Pick a rival\'s street</div>';
   const seller = g.companies[deal.seller];
   if (!g.borders(me, seg)) return `<div class="hc-title">🏢 Buy from ${seller.name}</div><div class="hc-action muted">Only streets next to yours</div>`;
   const ok = me.cash >= deal.cost;
   return `<div class="hc-title">🏢 Buy ${deal.streets.length} streets from ${seller.name}</div>
-    <div class="hc-row"><span>Instant · ${seller.name} is paid</span></div>
+    <div class="hc-row"><span>Instant · under contract ${CONFIG.streetDeal.lockDays} days</span></div>
     <div class="hc-action ${ok ? 'ok' : 'wait'}">${ok ? `Click to buy · ${money(deal.cost)}` : `Costs ${money(deal.cost)}: not enough cash`}</div>`;
 }
 

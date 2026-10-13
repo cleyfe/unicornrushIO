@@ -175,7 +175,11 @@ export class SetCampaignShareExecution extends InstantExecution {
   }
 }
 
-/** Buys a block of a rival's streets next to yours; the rival is paid. */
+/**
+ * Buys a block of a rival's streets next to yours by buying out the local shops'
+ * contracts: the money leaves the game, and the streets are locked against
+ * cash buybacks for a while (they can still be won with push).
+ */
 export class BuyStreetsExecution extends InstantExecution {
   constructor(
     private companyId: number,
@@ -187,19 +191,24 @@ export class BuyStreetsExecution extends InstantExecution {
     const c = game.companies[this.companyId];
     if (!c.alive) return;
     if (this.tile < 0 || this.tile >= game.owner.length) return game.message(c.id, 'Pick a street.');
+    if (game.dealLocked(this.tile)) {
+      return game.message(c.id, `Those streets are under contract for ${Math.ceil(game.dealLockUntil[this.tile] - game.day)} more days.`);
+    }
     const deal = game.streetDeal(c, this.tile);
     if (!deal) return game.message(c.id, "Pick a rival's street.");
     if (!game.borders(c, this.tile)) return game.message(c.id, 'You can only buy streets next to yours.');
     if (c.cash < deal.cost) return game.message(c.id, `These ${deal.streets.length} streets cost ${money(deal.cost)}: not enough cash.`);
     const seller = game.companies[deal.seller];
     c.cash -= deal.cost;
-    seller.cash += deal.cost;
     c.oneOff.streetDeals -= deal.cost;
-    seller.oneOff.streetDeals += deal.cost;
     c.dealHeat += 1;
-    for (const t of deal.streets) game.setOwner(t, c.id);
+    const lock = game.day + CONFIG.streetDeal.lockDays;
+    for (const t of deal.streets) {
+      game.setOwner(t, c.id);
+      game.dealLockUntil[t] = lock;
+    }
     const n = deal.streets.length;
-    if (!c.isBot) game.message(c.id, `🏢 You bought ${n} streets from ${seller.name} for ${money(deal.cost)}.`, 'good');
-    if (!seller.isBot) game.message(seller.id, `🏢 ${c.name} bought ${n} of your streets for ${money(deal.cost)}.`, 'info');
+    if (!c.isBot) game.message(c.id, `🏢 You bought out ${n} of ${seller.name}'s streets for ${money(deal.cost)}. They're under contract for ${CONFIG.streetDeal.lockDays} days.`, 'good');
+    if (!seller.isBot) game.message(seller.id, `🏢 ${c.name} bought out ${n} of your streets' shops.`, 'bad');
   }
 }

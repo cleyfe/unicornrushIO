@@ -215,7 +215,7 @@ describe('buying a block of streets', () => {
     throw new Error('no free street next to the rival');
   }
 
-  it('moves up to a block of the rival\'s streets to you at once, and pays the rival', () => {
+  it('moves up to a block of the rival\'s streets to you at once; the money leaves the game', () => {
     const r = quietSetup();
     const g = r.game;
     const me = g.player;
@@ -230,8 +230,25 @@ describe('buying a block of streets', () => {
     act(r, { type: 'buyStreets', companyId: 0, tile });
     expect(me.tiles).toBe(mine + deal.streets.length);
     expect(me.oneOff.streetDeals).toBe(-deal.cost);
-    expect(rival.cash).toBeGreaterThan(theirCash + deal.cost - 1000);
+    expect(rival.cash).toBeLessThan(theirCash + 1000);
     for (const t of deal.streets) expect(g.owner[t]).toBe(0);
+  });
+
+  it('locks the bought streets against cash buybacks for a while', () => {
+    const r = quietSetup();
+    const g = r.game;
+    const me = g.player;
+    const rival = g.companies[1];
+    me.cash = 1e7;
+    rival.cash = 1e7;
+    const tile = rivalNextDoor(r);
+    act(r, { type: 'buyStreets', companyId: 0, tile });
+    expect(g.owner[tile]).toBe(0);
+    act(r, { type: 'buyStreets', companyId: 1, tile });
+    expect(g.owner[tile]).toBe(0);
+    expect(lastMessage(r, 1)).toMatch(/under contract/);
+    runDays(r, CONFIG.streetDeal.lockDays + 1);
+    expect(g.dealLocked(tile)).toBe(false);
   });
 
   it('costs more than winning the same streets with ads, and more each time', () => {

@@ -19,7 +19,7 @@ export function showHelp(onClose: () => void): void {
         <li><b>💎 Wealth:</b> golden buildings are rich streets: customers spend up to ×${CONFIG.wealth[3].spend} more. Once owned, they stay brighter and keep a gold rim.</li>
         <li><b>💰 Every day:</b> revenue − costs = profit, added to cash. Below zero for ${CONFIG.bankruptcyGraceDays} days = bankrupt.</li>
         <li><b>🏦 Bank:</b> borrow to grow faster; interest is due every day.</li>
-        <li><b>🏢 Buy:</b> buy a block of up to ${CONFIG.streetDeal.blockSize} rival streets next to yours, instantly. It costs more than winning them with ads, and the rival is paid.</li>
+        <li><b>🏢 Buy:</b> buy a block of up to ${CONFIG.streetDeal.blockSize} rival streets next to yours, instantly. It costs more than winning them with ads; they're then under contract for ${CONFIG.streetDeal.lockDays} days, so nobody can buy them back with cash.</li>
         <li><b>📢 Ads:</b> ${CONFIG.sales.adPush} push for ${money(CONFIG.sales.adBaseCost)}, then ${money(CONFIG.sales.adStepCost)} more for each recent ad (it eases off over a few weeks).</li>
         <li><b>🎯 Push per click:</b> the slider next to the push meter sets how much each click commits (10–100%). Unspent push comes back.</li>
         <li><b>🛡 Defence:</b> a rival's street costs more push than an untapped one: spare Ops staff, unspent push, a price that suits the street and a <b>Guard</b> on the area all make it harder to steal. Hover a street to see why it costs what it does.</li>
