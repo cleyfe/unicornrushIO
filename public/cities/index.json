@@ -102,5 +102,18 @@
    0.15
   ],
   "streets": 3340
+ },
+ {
+  "id": "munich",
+  "flag": "🇩🇪",
+  "city": "München",
+  "area": "Altstadt",
+  "mix": [
+   0.15,
+   0.35,
+   0.3,
+   0.2
+  ],
+  "streets": 2696
  }
 ]
