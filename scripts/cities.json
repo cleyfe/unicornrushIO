@@ -208,6 +208,103 @@
       }
     ]
   },
+  "zurich": {
+    "flag": "🇨🇭",
+    "city": "Zürich",
+    "area": "Centre",
+    "name": "Zürich · Centre",
+    "bbox": [
+      47.358,
+      8.518,
+      47.388,
+      8.562
+    ],
+    "wealthShares": [
+      0.2,
+      0.35,
+      0.28,
+      0.17
+    ],
+    "wealthHints": [
+      {
+        "name": "Bahnhofstrasse & Paradeplatz",
+        "lat": 47.37,
+        "lon": 8.539,
+        "radius": 380,
+        "weight": 3
+      },
+      {
+        "name": "Altstadt & Lindenhof",
+        "lat": 47.3725,
+        "lon": 8.5415,
+        "radius": 300,
+        "weight": 2.5
+      },
+      {
+        "name": "Seefeld",
+        "lat": 47.36,
+        "lon": 8.552,
+        "radius": 500,
+        "weight": 2.5
+      },
+      {
+        "name": "Fluntern & Zürichberg",
+        "lat": 47.3745,
+        "lon": 8.56,
+        "radius": 550,
+        "weight": 2.5
+      },
+      {
+        "name": "Hottingen & Hohe Promenade",
+        "lat": 47.368,
+        "lon": 8.5515,
+        "radius": 350,
+        "weight": 2
+      },
+      {
+        "name": "Enge (lakeside)",
+        "lat": 47.362,
+        "lon": 8.531,
+        "radius": 450,
+        "weight": 2
+      },
+      {
+        "name": "Niederdorf",
+        "lat": 47.3735,
+        "lon": 8.5445,
+        "radius": 280,
+        "weight": 0.5
+      },
+      {
+        "name": "Langstrasse (Kreis 4)",
+        "lat": 47.378,
+        "lon": 8.528,
+        "radius": 450,
+        "weight": -2
+      },
+      {
+        "name": "Hauptbahnhof",
+        "lat": 47.378,
+        "lon": 8.54,
+        "radius": 300,
+        "weight": -1
+      },
+      {
+        "name": "Kreis 5 & Escher-Wyss",
+        "lat": 47.387,
+        "lon": 8.524,
+        "radius": 500,
+        "weight": -1.2
+      },
+      {
+        "name": "Wiedikon & Aussersihl",
+        "lat": 47.37,
+        "lon": 8.522,
+        "radius": 450,
+        "weight": -1.5
+      }
+    ]
+  },
   "new-york": {
     "flag": "🇺🇸",
     "city": "New York",

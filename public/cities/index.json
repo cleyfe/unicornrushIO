@@ -26,6 +26,19 @@
   "streets": 3429
  },
  {
+  "id": "zurich",
+  "flag": "🇨🇭",
+  "city": "Zürich",
+  "area": "Centre",
+  "mix": [
+   0.2,
+   0.35,
+   0.28,
+   0.17
+  ],
+  "streets": 3363
+ },
+ {
   "id": "new-york",
   "flag": "🇺🇸",
   "city": "New York",
