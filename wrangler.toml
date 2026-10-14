@@ -1,0 +1,4 @@
+# Cloudflare Pages: the game is a static site built to dist/ (see .github/workflows/deploy.yml).
+name = "unicornrush"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-10-01"

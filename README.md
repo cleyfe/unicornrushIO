@@ -14,6 +14,14 @@ npm run fairness  # controlled balance experiments (add a city id to test a real
 
 The full rules are on the in-game **How to play** page (`docs.html`), generated from the game's config.
 
+## Deploying
+
+The game is a static site, hosted on **Cloudflare Pages** at unicornrush.io.
+`.github/workflows/deploy.yml` tests and builds every push; pushes to `main` go live and pull
+requests get a preview URL. It needs two repository secrets: `CLOUDFLARE_API_TOKEN` (a token with
+*Cloudflare Pages: Edit*) and `CLOUDFLARE_ACCOUNT_ID`. Without them the workflow still builds and
+tests, and skips the deploy. Cache rules are in `public/_headers`.
+
 ## How to win
 
 - 🦄 **Become the first unicorn**: the first company valued at **$1B** wins instantly.
