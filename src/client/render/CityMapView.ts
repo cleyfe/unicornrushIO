@@ -126,6 +126,13 @@ export class CityMapView {
     this.map.addControl(
       new maplibregl.AttributionControl({ compact: true, customAttribution: `Game map: ${city.attribution}` }),
     );
+    // On phones the credits fill two lines: show them at first, then fold them into the ⓘ button
+    // after a few seconds or the first touch (OpenStreetMap's guidelines allow this).
+    if (window.matchMedia('(max-width: 600px)').matches) {
+      const fold = () => container.querySelector('.maplibregl-ctrl-attrib.maplibregl-compact-show')?.classList.remove('maplibregl-compact-show');
+      const timer = setTimeout(fold, 5000);
+      this.map.once('dragstart', () => (clearTimeout(timer), fold()));
+    }
     this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
     // Runs on the first load and again after every theme switch (setStyle drops our layers).
     let first = true;

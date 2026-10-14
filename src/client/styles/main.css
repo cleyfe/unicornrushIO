@@ -1931,18 +1931,37 @@ ul.what li {
     width: auto;
     padding: 6px;
   }
+  .stage > .action-bar {
+    gap: 6px;
+  }
+  /* Every command on screen, no scrolling: actions and panels on top, staff and prices below. */
   .dock-cmds {
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    overflow-x: auto;
-    scrollbar-width: none;
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 4px;
   }
   .dock-cmds .grp {
-    flex-shrink: 0;
+    display: contents;
+  }
+  .dock-cmds .grp:nth-child(2) .cmd {
+    order: 1;
+  }
+  .dock-cmds .grp.view .cmd {
+    order: 2;
+  }
+  .dock-cmds .grp:nth-child(1) .cmd {
+    order: 3;
+  }
+  .dock-cmds .grp.price .cmd {
+    order: 4;
   }
   .cmd {
-    min-width: 46px;
-    padding: 4px 2px;
+    min-width: 0;
+    padding: 4px 0;
+    gap: 1px;
+  }
+  .cmd .ic {
+    font-size: 16px;
   }
   .cmd kbd,
   .dock-team .side kbd {
@@ -1950,9 +1969,39 @@ ul.what li {
   }
   .cmd .lb {
     font-size: 10px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dock-status,
+  .dock-team {
+    gap: 6px;
+    font-size: 12px;
+  }
+  .dock-status .rate {
+    display: none;
+  }
+  .push-meter {
+    height: 18px;
+  }
+  .push-meter span {
+    font-size: 11px;
   }
   .per-click input {
     width: 54px;
+  }
+  .dock-team .side {
+    padding: 2px 0;
+  }
+  .dock-team .split {
+    min-width: 90px;
+  }
+  .capacity {
+    min-width: 0;
+    font-size: 11px;
+  }
+  .toast {
+    bottom: 176px;
   }
   .wealth-legend {
     display: none;
