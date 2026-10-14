@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { CityData } from '@unicornrush/engine-api/game/City';
 import { NEUTRAL, Wealth } from '@unicornrush/engine-api/game/GameMap';
+import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -14,7 +15,7 @@ export type MapTheme = 'light' | 'dark';
 /** Everything that changes between the daytime and the night map. */
 const THEMES: Record<
   MapTheme,
-  { style: string; veil: string; neutral: string; neutralOpacity: number; frontier: string; hover: string; outline: string; casing: number; unowned: number; wealth: Record<Wealth, string> }
+  { style: string; veil: string; neutral: string; neutralOpacity: number; frontier: string; exposed: string; hover: string; outline: string; casing: number; unowned: number; wealth: Record<Wealth, string> }
 > = {
   light: {
     style: 'https://tiles.openfreemap.org/styles/liberty',
@@ -25,6 +26,7 @@ const THEMES: Record<
     neutral: '#8a94a3',
     neutralOpacity: 0.35,
     frontier: '#1d4ed8',
+    exposed: '#b91c1c',
     hover: '#f59e0b',
     outline: 'rgba(0,0,0,0.18)',
     // Unowned buildings by wealth: light grey to gold.
@@ -38,6 +40,7 @@ const THEMES: Record<
     neutral: '#6f7988',
     neutralOpacity: 0.5,
     frontier: '#c7d2e0',
+    exposed: '#fca5a5',
     hover: '#ffffff',
     outline: 'rgba(0,0,0,0.35)',
     // Unowned buildings by wealth: dark to gold.
@@ -77,6 +80,12 @@ const ZONE_COLORS = { metro: '#34d399', roadworks: '#fb923c', festival: '#f472b6
  * on top of an OpenFreeMap base map and coloured by owner using feature state,
  * so ownership changes don't re-upload any geometry.
  */
+/** Owned streets' opacity by age (0 = just won … 3 = regulars at their full bonus). */
+const AGE_SHADE: ExpressionSpecification = ['match', ['coalesce', ['feature-state', 'age'], 3], 0, 0.55, 1, 0.7, 2, 0.85, 1];
+/** Defence thresholds for the attack view's five colours, cheap to dear. */
+const ATTACK_STEPS = [1.2, 1.6, 2.2, 3];
+const ATTACK_COLORS = ['#16a34a', '#84cc16', '#eab308', '#f97316', '#dc2626'];
+
 export class CityMapView {
   readonly map: maplibregl.Map;
   private ready = false;
@@ -84,6 +93,18 @@ export class CityMapView {
   private drawnOwner: Int16Array;
   private drawnBorder: Uint8Array;
   private drawnGuard: Uint8Array;
+  /** How long each street has been with its owner, in 4 steps (regulars): older streets look deeper. */
+  private drawnAge: Uint8Array;
+  /** Streets that just changed hands between companies, and when: they flash for a moment. */
+  private flashing = new Map<number, number>();
+  /** After a theme switch every street is redrawn: don't flash them all. */
+  private quiet = true;
+  /** Hold-Space attack view: rival streets coloured by how cheap they are to take. */
+  private attackOn = false;
+  private attackDrawn = new Set<number>();
+  private attackAt = 0;
+  private exposedKey = '';
+  private exposedAt = 0;
   private drawnCourt = '';
   private frontier = new Set<number>();
   private hovered = -1;
@@ -102,6 +123,7 @@ export class CityMapView {
     this.drawnOwner = new Int16Array(n).fill(NEUTRAL);
     this.drawnBorder = new Uint8Array(n);
     this.drawnGuard = new Uint8Array(n);
+    this.drawnAge = new Uint8Array(n);
     this.buildingsOf = Array.from({ length: n }, () => []);
     city.buildings.segment.forEach((s, b) => this.buildingsOf[s].push(b));
 
@@ -168,6 +190,11 @@ export class CityMapView {
     this.drawnOwner.fill(NEUTRAL);
     this.drawnBorder.fill(0);
     this.drawnGuard.fill(0);
+    this.drawnAge.fill(0);
+    this.flashing.clear();
+    this.quiet = true;
+    this.attackDrawn.clear();
+    this.exposedKey = '';
     this.drawnCourt = '';
     this.drawnZones = '';
     this.frontier = new Set();
@@ -240,7 +267,8 @@ export class CityMapView {
       source: 'buildings',
       paint: {
         'fill-color': expr(['case', owned, ownedColor, wealthColor]),
-        'fill-opacity': expr(['case', owned, ['match', ['get', 'w'], 0, 0.8, 1, 0.88, 0.95], T.unowned]),
+        // Newly won streets look lighter; regulars (held a long time) look deep.
+        'fill-opacity': expr(['case', owned, ['*', ['match', ['get', 'w'], 0, 0.8, 1, 0.88, 0.95], AGE_SHADE], T.unowned]),
         'fill-outline-color': T.outline,
       },
     });
@@ -322,7 +350,9 @@ export class CityMapView {
         ]),
         'line-opacity': expr([
           'case',
-          ['any', owned, ['boolean', ['feature-state', 'hover'], false]],
+          owned,
+          AGE_SHADE,
+          ['boolean', ['feature-state', 'hover'], false],
           1,
           ['boolean', ['feature-state', 'frontier'], false],
           0,
@@ -346,6 +376,45 @@ export class CityMapView {
           0.9,
           0,
         ]),
+      },
+    });
+    // Streets that just changed hands flash: red if they were yours, the taker's colour otherwise.
+    map.addLayer({
+      id: 'streets-flash',
+      type: 'line',
+      source: 'streets',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': expr(['case', ['boolean', ['feature-state', 'lost'], false], '#ef4444', borderColor]),
+        'line-width': expr(['interpolate', ['linear'], ['zoom'], 13, 7, 16, 16, 18, 26]),
+        'line-blur': 2,
+        'line-opacity': expr(['match', ['coalesce', ['feature-state', 'flash'], 0], 3, 0.95, 2, 0.6, 1, 0.3, 0]),
+      },
+    });
+    // Exposed borders (overloaded, or push reserve spent): a dashed line, an opening for attackers.
+    map.addSource('exposed', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({
+      id: 'exposed',
+      type: 'line',
+      source: 'exposed',
+      layout: { 'line-cap': 'butt', 'line-join': 'round' },
+      paint: {
+        'line-color': T.exposed,
+        'line-width': expr(['interpolate', ['linear'], ['zoom'], 13, 1.5, 16, 3, 18, 5]),
+        'line-dasharray': [1, 1.4],
+        'line-opacity': 0.95,
+      },
+    });
+    // Attack view (hold Space): rival streets from green (cheap to take) to red (well defended).
+    map.addLayer({
+      id: 'streets-attack',
+      type: 'line',
+      source: 'streets',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': expr(['match', ['coalesce', ['feature-state', 'atk'], 0], ...ATTACK_COLORS.flatMap((c, i) => [i + 1, c]), '#000000']),
+        'line-width': expr(['interpolate', ['linear'], ['zoom'], 13, 4, 16, 10, 18, 18]),
+        'line-opacity': expr(['case', ['==', ['coalesce', ['feature-state', 'atk'], 0], 0], 0, ['boolean', ['feature-state', 'atkNear'], false], 0.95, 0.5]),
       },
     });
     // Local events (a new metro station, roadworks, a festival): a tinted circle over the area.
@@ -417,26 +486,88 @@ export class CityMapView {
     const courtKey = [...defendants].join(',');
     const courtChanged = courtKey !== this.drawnCourt;
     this.drawnCourt = courtKey;
+    const now = performance.now();
+    const ageSteps = 3 / CONFIG.loyalty.maxBonus;
     for (let i = 0; i < g.owner.length; i++) {
       const o = g.owner[i];
       const border = o >= 0 && g.companies[o].border.has(i) ? 1 : 0;
       const guard = o >= 0 && g.isGuarded(i, o) ? 1 : 0;
-      const ownerChanged = o !== this.drawnOwner[i];
-      if (!ownerChanged && border === this.drawnBorder[i] && guard === this.drawnGuard[i] && !(courtChanged && o >= 0)) continue;
+      const age = o >= 0 ? Math.round(g.loyalty(i) * ageSteps) : 0;
+      const was = this.drawnOwner[i];
+      const ownerChanged = o !== was;
+      if (!ownerChanged && border === this.drawnBorder[i] && guard === this.drawnGuard[i] && age === this.drawnAge[i] && !(courtChanged && o >= 0)) continue;
+      const ageChanged = age !== this.drawnAge[i];
       this.drawnOwner[i] = o;
       this.drawnBorder[i] = border;
       this.drawnGuard[i] = guard;
+      this.drawnAge[i] = age;
+      // A street taken from a company (not won from the untapped market) flashes.
+      const flash = ownerChanged && !this.quiet && was >= 0 && o >= 0;
+      if (flash) this.flashing.set(i, now);
       this.map.setFeatureState(
         { source: 'streets', id: i },
         // Only the border of a company on trial glows, so it doesn't swamp the map.
-        { owner: o, border: border === 1, court: border === 1 && defendants.has(o), guard: guard === 1 },
+        { owner: o, border: border === 1, court: border === 1 && defendants.has(o), guard: guard === 1, age, ...(flash ? { flash: 3, lost: was === g.playerId } : {}) },
       );
-      if (ownerChanged) {
-        for (const b of this.buildingsOf[i]) this.map.setFeatureState({ source: 'buildings', id: b }, { owner: o });
+      if (ownerChanged || ageChanged) {
+        for (const b of this.buildingsOf[i]) this.map.setFeatureState({ source: 'buildings', id: b }, { owner: o, age });
       }
+    }
+    this.quiet = false;
+    // Flashes fade in three steps over about a second.
+    for (const [i, start] of this.flashing) {
+      const level = 3 - Math.floor((now - start) / 350);
+      this.map.setFeatureState({ source: 'streets', id: i }, { flash: Math.max(0, level) });
+      if (level <= 0) this.flashing.delete(i);
     }
     this.updateFrontier();
     this.updateZones();
+    if (now - this.exposedAt > 500) this.updateExposed(now);
+    if (this.attackOn && now - this.attackAt > 400) this.drawAttack(now);
+  }
+
+  /** Borders of companies whose defence is down (overloaded, or push reserve spent): where to attack. */
+  private updateExposed(now: number): void {
+    this.exposedAt = now;
+    const g = this.game;
+    const exposed = g.companies.filter((c) => c.alive && c.tiles > 0 && g.defence(c) < CONFIG.sales.exposedBelow);
+    const key = exposed.length ? `${exposed.map((c) => c.id).join(',')}@${g.ownershipVersion}` : '';
+    if (key === this.exposedKey) return;
+    this.exposedKey = key;
+    const features = exposed.flatMap((c) =>
+      [...c.border].map((t) => ({ type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: this.city.segments.coords[t] } })),
+    );
+    (this.map.getSource('exposed') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features });
+  }
+
+  /** Turns the attack view on (while Space is held) or off. */
+  setAttackView(on: boolean): void {
+    if (on === this.attackOn) return;
+    this.attackOn = on;
+    if (on) this.drawAttack(performance.now());
+    else {
+      for (const t of this.attackDrawn) this.map.setFeatureState({ source: 'streets', id: t }, { atk: 0, atkNear: false });
+      this.attackDrawn.clear();
+    }
+  }
+
+  /** Colours every rival street by its defence against you: what taking it costs per customer, compared with an untapped street. */
+  private drawAttack(now: number): void {
+    if (!this.ready) return;
+    this.attackAt = now;
+    const g = this.game;
+    const me = g.player;
+    const next = new Set<number>();
+    for (let t = 0; t < g.owner.length; t++) {
+      const o = g.owner[t];
+      if (o < 0 || o === g.playerId) continue;
+      const d = g.streetCost(me, o, t).defence;
+      const atk = 1 + ATTACK_STEPS.filter((s) => d > s).length;
+      next.add(t);
+      this.map.setFeatureState({ source: 'streets', id: t }, { atk, atkNear: this.frontier.has(t) });
+    }
+    for (const t of this.attackDrawn) if (!next.has(t)) this.map.setFeatureState({ source: 'streets', id: t }, { atk: 0, atkNear: false });
+    this.attackDrawn = next;
   }
 
   private drawnZones = '';

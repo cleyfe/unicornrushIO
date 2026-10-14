@@ -1,12 +1,11 @@
 import type { Company } from '@unicornrush/engine-api/game/Game';
-import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
 import type { GameImpl } from '../game/GameImpl';
 import type { Execution } from './Execution';
 
 const DT = 1 / CONFIG.ticksPerDay;
 
-/** Runs one company's day-to-day business: staff, churn, P&L and cash. */
+/** Runs one company's day-to-day business: staff, P&L and cash. */
 export class CompanyExecution implements Execution {
   private c!: Company;
 
@@ -29,15 +28,15 @@ export class CompanyExecution implements Execution {
     if (c.push < cap) c.push = Math.min(cap, c.push + game.pushPerDay(c) * DT);
     c.adHeat *= 1 - CONFIG.sales.adHeatDecayPerDay * DT;
     c.dealHeat *= 1 - CONFIG.streetDeal.heatDecayPerDay * DT;
-    this.churn(game);
     this.economy(game);
     c.peakTiles = Math.max(c.peakTiles, c.tiles);
     c.peakValuation = Math.max(c.peakValuation, game.valuation(c).total);
     this.checkSolvency(game);
     if (game.tick % (CONFIG.ticksPerDay * 10) === 0) game.reportLosses(c.id);
-    // Drop this company's expired guards, and guards on streets it no longer owns.
-    if (game.isNewDay()) {
-      game.guardPosts = game.guardPosts.filter((p) => p.owner !== c.id || (game.day < p.untilDay && game.owner[p.center] === c.id));
+    // A front with none of our streets left in it is gone.
+    if (c.guarded <= 0 && game.isNewDay() && game.guardPosts.some((p) => p.owner === c.id)) {
+      game.guardPosts = game.guardPosts.filter((p) => p.owner !== c.id);
+      game.guardVersion++;
     }
   }
 
@@ -57,33 +56,6 @@ export class CompanyExecution implements Execution {
     c.price = c.pendingPrice.price;
     c.pendingPrice = null;
     if (!c.isBot) game.message(c.id, `Your new ${CONFIG.prices[c.price].label} prices are now in every shop.`, 'info');
-  }
-
-  /** Customers the operations team cannot serve drift away. */
-  private churn(game: GameImpl): void {
-    const c = this.c;
-    // Unserved customers, expressed in streets.
-    const excessCustomers = c.customers - game.capacity(c);
-    const excess = c.tiles > 0 ? (excessCustomers * c.tiles) / c.customers : 0;
-    if (excess <= 0) {
-      c.churnCarry = 0;
-      return;
-    }
-    c.churnCarry += Math.max(0.5, excess * CONFIG.churn.ratePerDay) * DT;
-    if (c.churnCarry < 1) return;
-    const lose = Math.floor(c.churnCarry);
-    c.churnCarry -= lose;
-    const border = [...c.border];
-    for (let i = 0; i < lose && border.length > 0; i++) {
-      const j = game.rng.int(0, border.length);
-      const tile = border[j];
-      border[j] = border[border.length - 1];
-      border.pop();
-      if (game.owner[tile] === c.id) {
-        game.recordLoss(c.id, 'churn');
-        game.setOwner(tile, NEUTRAL);
-      }
-    }
   }
 
   private economy(game: GameImpl): void {

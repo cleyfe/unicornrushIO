@@ -23,6 +23,12 @@ export class InputHandler {
   /** Command hotkeys (letters); returns true if the key was used. */
   onHotkey: (key: string) => boolean = () => false;
   onEscape: () => void = () => {};
+  /** Shows or hides the attack view's legend. */
+  onAttackView: (on: boolean) => void = () => {};
+  private attackView = false;
+  /** Your push per click, next to the cursor: the number that decides whether a click wins. */
+  private cursorChip = Object.assign(document.createElement('div'), { className: 'cursor-chip' });
+  private cursorAt: { x: number; y: number } | null = null;
 
   constructor(
     private client: ClientGameRunner,
@@ -78,7 +84,9 @@ export class InputHandler {
       map.getContainer().append(ripple);
       ripple.addEventListener('animationend', () => ripple.remove());
     });
+    map.getContainer().append(this.cursorChip);
     map.on('mousemove', (e: MapMouseEvent) => {
+      this.cursorAt = e.point;
       const seg = this.view.segmentAt(e.point);
       map.getCanvas().style.cursor = seg >= 0 ? 'pointer' : '';
       this.view.setHover(seg);
@@ -97,6 +105,8 @@ export class InputHandler {
       this.tooltip.style.display = 'block';
     });
     map.on('mouseout', () => {
+      this.cursorAt = null;
+      this.cursorChip.style.display = 'none';
       this.hoverSeg = -1;
       this.tooltip.style.display = 'none';
       this.view.setHover(-1);
@@ -107,10 +117,13 @@ export class InputHandler {
       const t = ev.target;
       if ((t instanceof HTMLInputElement && t.type === 'text') || t instanceof HTMLSelectElement) return;
       if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
-      const speeds: Record<string, number> = { ' ': 0 };
-      if (ev.key in speeds) {
+      if (ev.key === ' ') {
+        // Hold Space: the attack view.
         ev.preventDefault();
-        this.onSpeedKey(ev.key === ' ' && this.client.speed === 0 ? 1 : speeds[ev.key]);
+        if (!ev.repeat) this.setAttackView(true);
+      } else if (ev.key === 'Enter') {
+        ev.preventDefault();
+        this.onSpeedKey(this.client.speed === 0 ? 1 : 0);
       } else if (ev.key === 'Escape') {
         if (this.mode !== 'expand') this.setMode('expand');
         else this.onEscape();
@@ -119,17 +132,51 @@ export class InputHandler {
       }
     };
     window.addEventListener('keydown', onKey);
+    const onKeyUp = (ev: KeyboardEvent) => ev.key === ' ' && this.setAttackView(false);
+    const onBlur = () => this.setAttackView(false);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
     // A focused button would also be "clicked" by Space; drop focus after clicks.
     const blurButtons = (e: MouseEvent) => (e.target as HTMLElement).closest('button')?.blur();
     window.addEventListener('click', blurButtons, true);
     return () => {
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+      this.cursorChip.remove();
       window.removeEventListener('click', blurButtons, true);
     };
   }
 
+  private setAttackView(on: boolean): void {
+    if (on === this.attackView) return;
+    this.attackView = on;
+    this.view.setAttackView(on);
+    this.onAttackView(on);
+  }
+
+  /** Keeps the push chip next to the cursor: green when a click here wins, amber when you need more. */
+  private updateCursorChip(): void {
+    const chip = this.cursorChip;
+    const g = this.client.game;
+    const me = g.player;
+    const at = this.cursorAt;
+    const seg = this.hoverSeg;
+    if (!at || !me.alive || this.mode !== 'expand' || seg < 0 || g.owner[seg] === g.playerId || !this.view.isFrontier(seg)) {
+      chip.style.display = 'none';
+      return;
+    }
+    const budget = Math.floor(me.push * me.campaignShare);
+    const ok = budget >= g.tileCost(me, g.owner[seg], seg);
+    chip.textContent = `🤝 ${budget}`;
+    chip.className = `cursor-chip ${ok ? 'ok' : 'short'}`;
+    chip.style.display = 'block';
+    chip.style.transform = `translate(${at.x + 14}px, ${at.y - 28}px)`;
+  }
+
   /** Redraws the hover card for the street under the mouse (called as the game runs, so it stays current). */
   refreshHover(): void {
+    this.updateCursorChip();
     const seg = this.hoverSeg;
     if (seg < 0) return;
     const g = this.client.game;
@@ -183,14 +230,13 @@ function describeDeal(g: GameImpl, seg: number): string {
     <div class="hc-action ${ok ? 'ok' : 'wait'}">${ok ? `Click to buy · ${money(deal.cost)}` : `Costs ${money(deal.cost)}: not enough cash`}</div>`;
 }
 
-/** The hover card in guard mode: which streets a guard would cover, and the price. */
+/** The hover card in guard mode: which streets the front would cover. */
 function describeGuard(g: GameImpl, seg: number): string {
   if (g.owner[seg] !== g.playerId) return '<div class="hc-title">🛡 Guard</div><div class="hc-action muted">Pick one of your streets</div>';
   const offer = g.guardOffer(g.player, seg);
-  const ok = g.player.cash >= offer.cost;
-  return `<div class="hc-title">🛡 Guard this area</div>
-    <div class="hc-row"><span>${offer.streets.length} of your streets · ${CONFIG.guard.days} days</span><span>×${CONFIG.guard.defenceMult} defence</span></div>
-    <div class="hc-action ${ok ? 'ok' : 'wait'}">${ok ? `Click to guard · ${money(offer.cost)}` : `Costs ${money(offer.cost)}: not enough cash`}</div>`;
+  return `<div class="hc-title">🛡 Set your front here</div>
+    <div class="hc-row"><span>${offer.streets.length} of your streets</span><span>${Math.round(CONFIG.guard.reserveShare * 100)}% of your reserve</span></div>
+    <div class="hc-action ${offer.wait ? 'wait' : 'ok'}">${offer.wait ? `You can move it in ${offer.wait}d` : 'Click to set your front · free'}</div>`;
 }
 
 /** The parts of a defence worth naming in the hover card. */
@@ -236,10 +282,10 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
   // Rivals' streets: how well defended, in one line.
   if (o >= 0 && o !== g.playerId) {
     const s = g.streetCost(me, o, seg);
-    lines.push(`<div class="hc-cost">🛡 ×${s.defence.toFixed(1)}${s.guard > 1 ? ' · guarded' : ''}</div>`);
+    lines.push(`<div class="hc-cost">🛡 ×${s.defence.toFixed(1)}${s.guarded ? ' · front' : ''}</div>`);
   }
   if (loyal >= 0.01) lines.push(`<div class="hc-cost" title="Customers who stay spend more, up to +${Math.round(CONFIG.loyalty.maxBonus * 100)}% after ${CONFIG.loyalty.fullDays} days. A new owner starts over.">⭐ Regulars +${Math.round(loyal * 100)}%</div>`);
-  if (o === 0 && g.isGuarded(seg, 0)) lines.push(`<div class="hc-cost">🛡 Guarded · ${Math.ceil(g.guardUntil[seg] - g.day)}d</div>`);
+  if (o === g.playerId && g.isGuarded(seg, o)) lines.push(`<div class="hc-cost">🛡 Your front · ×${g.retentionAt(g.player, seg).toFixed(1)} reserve</div>`);
   for (const e of g.localEvents.filter((ev) => ev.streets.includes(seg))) {
     const info = LOCAL_EVENT_INFO[e.kind];
     const when = !e.active && g.day < e.startsDay ? ` in ${Math.ceil(e.startsDay - g.day)}d` : '';

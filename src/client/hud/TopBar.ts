@@ -27,7 +27,7 @@ export class TopBar {
         <span data-v="day"></span><div class="timebar"><div data-v="timeFill"></div></div>
       </div>
       <div class="events" data-v="events"></div>
-      <div class="speed" title="Space = pause / play">
+      <div class="speed" title="Enter = pause / play">
         <button data-speed="0" aria-label="Pause">⏸</button><button data-speed="1" aria-label="Play">▶</button>
       </div>
       <button class="theme-btn" aria-label="Switch between the day and night map"></button>

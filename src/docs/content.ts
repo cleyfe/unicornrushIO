@@ -64,18 +64,23 @@ const SECTIONS: Section[] = [
       <ul>
         <li>The slider next to the push meter sets how much of your push one click commits (${pct(C.sales.minCampaignShare)}–100%). Unspent push comes back.</li>
         <li>An untapped street costs about ${C.sales.neutralTileCost}× its customers in push; a rival's about ${C.sales.rivalTileCost}× its customers × its defence.</li>
-        <li>Hover any street to see its cost and why.</li>
-      </ul>`,
+        <li>Hover any street to see its cost and why. Your push per click follows the cursor: green when a click wins the street.</li>
+        <li>Hold <b>Space</b> for the <b>attack view</b>: every rival street from green (cheap to take) to red (well defended).</li>
+      </ul>
+      <p><b>Reading the map:</b> a street taken from a company flashes (red if it was yours).
+      A <b>dashed red border</b> marks an <b>exposed</b> company (defence below ×${C.sales.exposedBelow}): overloaded, or its push
+      reserve just spent on a big campaign. That's the moment to attack. Your newly won streets look paler and
+      deepen as their customers become regulars.</p>`,
   },
   {
     id: 'defence',
     title: '🛡 Defence',
     body: `<p>A rival's street costs more to steal when its owner:</p>
       <ul>
-        <li>has spare <b>Ops</b> staff: service, up to ×${C.sales.maxServiceLevel},</li>
+        <li>has spare <b>Ops</b> staff: service, up to ×${C.sales.maxServiceLevel}. When overloaded, defence falls with the square of service (down to ×${C.sales.minServiceDefence}),</li>
         <li>keeps <b>unspent push</b>: push reserve, up to ×${C.sales.maxRetention},</li>
         <li>charges a price that suits the street (low on budget streets, high on rich ones),</li>
-        <li>has a <b>Guard</b> on the area (×${C.guard.defenceMult}).</li>
+        <li>is inside the owner's <b>front</b> (🛡 Guard), where most of its push reserve is focused.</li>
       </ul>
       <p>The 🛡 number is service × push reserve. A big push reserve can show a high 🛡 while you're short of Ops,
       so watch the ⚙️ service number to know whether everyone is served.</p>`,
@@ -87,10 +92,10 @@ const SECTIONS: Section[] = [
       New hires train for ${C.staff.trainingDays} days. The slider splits staff between:</p>
       <ul>
         <li><b>💼 Sales</b>: build push to win streets.</li>
-        <li><b>⚙️ Ops</b>: serve customers, ${C.staff.customersPerOps} each. Unserved customers leave.</li>
+        <li><b>⚙️ Ops</b>: serve customers, ${C.staff.customersPerOps} each. Unserved customers don't pay.</li>
       </ul>
       <p><b>Service</b> (⚙️ in the action bar) is what your Ops can serve divided by your customers.
-      Below ×1, customers go unserved and leave. Between ×1 and ×${C.sales.maxServiceLevel}, spare Ops make your streets
+      Below ×1, unserved customers don't pay, and your defence falls fast (×0.8 service gives ×0.64 defence), so rivals take your streets cheaply. Between ×1 and ×${C.sales.maxServiceLevel}, spare Ops make your streets
       harder to steal. Above ×${C.sales.maxServiceLevel}, extra Ops do nothing. Marks on the slider show where ×1 and
       ×${C.sales.maxServiceLevel} are. New hires don't serve anyone until they finish training.</p>
       <p><b>Auto</b> keeps service at about ×1.05: everyone served, as many people as possible in Sales.
@@ -122,7 +127,7 @@ const SECTIONS: Section[] = [
       ['Action', 'What it does', 'Cost'],
       [
         ['📢 Ads', `+${C.sales.adPush} push aimed at a street: it spreads from there. One campaign every ${C.sales.adCooldownDays} days.`, `${money(C.sales.adBaseCost)}, +${money(C.sales.adStepCost)} per recent ad`],
-        ['🛡 Guard', `Your streets within ${C.guard.radius} m cost rivals ×${C.guard.defenceMult} to steal, for ${C.guard.days} days.`, `${money(C.guard.costPerCustomer)} per customer (min ${money(C.guard.minCost)})`],
+        ['🛡 Guard', `Set your front: your streets within ${C.guard.radius} m share ${pct(C.guard.reserveShare)} of your push reserve's defence (up to ×${C.guard.maxRetention}); the rest of your streets share the remainder. Move it every ${C.guard.moveCooldownDays} days.`, 'Free'],
         ['🏢 Buy', `Buy a block of up to ${C.streetDeal.blockSize} rival streets next to yours, instantly. Locked for ${C.streetDeal.lockDays} days.`, `${money(C.streetDeal.dollarsPerPush)} per push it would cost, +${pct(C.streetDeal.stepShare)} per recent deal`],
         ['🕵️ Poach', `Hire away part of any rival's sales team, wherever they are: ${pct(C.poach.share)} of it, divided by their 🛡 defence (at most ${C.poach.maxPeople}). They join you trained and take their push. Once every ${C.poach.cooldownDays} days; a poached company is safe for ${C.poach.immunityDays} days.`, `${money(C.poach.costPerPerson)} per person`],
         ['⚖️ Sue', `Unfair competition: if you win, the rival loses ${pct(C.lawsuit.customerLoss)} of its customers and pays you damages. Ruling after ${C.lawsuit.courtDays} days.`, `${C.lawsuit.feeRevenueDays} days of your revenue (min ${money(C.lawsuit.minFee)})`],
@@ -190,11 +195,12 @@ const SECTIONS: Section[] = [
     body: table(
       ['Key', 'Action'],
       [
-        ['Space', 'Pause / play'],
+        ['Enter', 'Pause / play'],
+        ['Space (hold)', 'Attack view: rival streets from green (cheap to take) to red (well defended)'],
         ['H', 'Hire 10'],
         ['O / P', 'Move 5% of staff to Ops / to Sales'],
         ['A', 'Aim an ad'],
-        ['G', 'Guard'],
+        ['G', 'Guard: set your front'],
         ['B', 'Buy streets'],
         ['S', 'Sue'],
         ['T', 'Poach'],

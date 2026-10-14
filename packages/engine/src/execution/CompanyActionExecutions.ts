@@ -149,18 +149,10 @@ export class GuardExecution extends InstantExecution {
   protected apply(game: GameImpl): void {
     const c = game.companies[this.companyId];
     if (!c.alive || game.owner[this.tile] !== c.id) return game.message(c.id, 'Pick one of your own streets to guard.');
-    const offer = game.guardOffer(c, this.tile);
-    if (c.cash < offer.cost) return game.message(c.id, `Guarding this area costs ${money(offer.cost)}: not enough cash.`);
-    c.cash -= offer.cost;
-    c.oneOff.guards -= offer.cost;
-    const until = game.day + CONFIG.guard.days;
-    for (const t of offer.streets) {
-      game.guardOwner[t] = c.id;
-      game.guardUntil[t] = until;
-    }
-    game.guardPosts.push({ owner: c.id, center: this.tile, untilDay: until });
-    game.guardVersion++;
-    if (!c.isBot) game.message(c.id, `🛡 ${offer.streets.length} streets guarded for ${CONFIG.guard.days} days.`, 'good');
+    const { wait } = game.guardOffer(c, this.tile);
+    if (wait > 0) return game.message(c.id, `You can move your front again in ${wait} day${wait === 1 ? '' : 's'}.`);
+    game.setFront(c, this.tile);
+    if (!c.isBot) game.message(c.id, `🛡 Front set: ${c.guarded} streets get ${Math.round(CONFIG.guard.reserveShare * 100)}% of your push reserve's defence.`, 'good');
   }
 }
 

@@ -59,7 +59,7 @@ export class Coach {
       {
         id: 'overload',
         anchor: '.action-bar .team',
-        text: '⚙️ <b>Overloaded</b>: customers are leaving. Turn on <b>Auto</b> or hire.',
+        text: '⚙️ <b>Overloaded</b>: unserved customers don\'t pay, and your streets are easy to steal. Turn on <b>Auto</b> or hire.',
         when: (g) => g.coverage(g.player) < 0.97,
         done: (g) => g.coverage(g.player) >= 1,
       },

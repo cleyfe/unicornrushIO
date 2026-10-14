@@ -163,25 +163,67 @@ describe('scrutiny of the leader', () => {
   });
 });
 
-describe('guarding a neighbourhood', () => {
-  it('makes your nearby streets harder to steal, for a while, at a price', () => {
+describe('guarding a front', () => {
+  it('focuses the push reserve on one area, for free, and spreads the rest thinner', () => {
     const r = quietSetup();
     const g = r.game;
     const me = g.player;
     const rival = g.companies[1];
+    me.push = 400; // a reserve worth focusing
+    const G = CONFIG.guard as { radius: number };
+    const radius = G.radius;
+    G.radius = 60; // a tight front inside the small starting territory
     const tile = [...me.border][0];
+    const far = [...me.border].find((t) => !g.guardOffer(me, tile).streets.includes(t));
     const before = g.tileCost(rival, 0, tile);
-    const offer = g.guardOffer(me, tile);
-    expect(offer.streets).toContain(tile);
-    const cash = me.cash;
     act(r, { type: 'guard', companyId: 0, tile });
-    expect(me.cash).toBeCloseTo(cash - offer.cost, -3);
-    expect(g.tileCost(rival, 0, tile)).toBeCloseTo(before * CONFIG.guard.defenceMult, 0);
-    expect(g.streetCost(rival, 0, tile).guard).toBe(CONFIG.guard.defenceMult);
+    expect(me.oneOff.guards).toBe(0); // free
+    expect(g.isGuarded(tile, 0)).toBe(true);
+    expect(g.streetCost(rival, 0, tile).guarded).toBe(true);
+    expect(g.tileCost(rival, 0, tile)).toBeGreaterThan(before);
+    if (far !== undefined) expect(g.retentionAt(me, far)).toBeLessThan(g.retentionAt(me, tile));
     expect(g.guardPosts).toEqual([expect.objectContaining({ owner: 0, center: tile })]);
-    runDays(r, CONFIG.guard.days + 1);
-    expect(g.isGuarded(tile, 0)).toBe(false);
-    expect(g.guardPosts).toHaveLength(0);
+    G.radius = radius;
+  });
+
+  it('never weakens a front that covers all your streets', () => {
+    const r = quietSetup();
+    const g = r.game;
+    const me = g.player;
+    me.push = 50;
+    const tile = [...me.border][0];
+    const before = g.retentionAt(me, tile);
+    act(r, { type: 'guard', companyId: 0, tile });
+    expect(me.guarded).toBe(me.tiles);
+    expect(g.retentionAt(me, tile)).toBeCloseTo(before);
+  });
+
+  it('can only be moved after a cooldown, and keeps one front per company', () => {
+    const r = quietSetup();
+    const g = r.game;
+    const me = g.player;
+    const tiles = [...me.border];
+    act(r, { type: 'guard', companyId: 0, tile: tiles[0] });
+    act(r, { type: 'guard', companyId: 0, tile: tiles[tiles.length - 1] });
+    expect(lastMessage(r)).toMatch(/move your front again/);
+    runDays(r, CONFIG.guard.moveCooldownDays + 1);
+    const t = [...me.border][0];
+    act(r, { type: 'guard', companyId: 0, tile: t });
+    expect(g.guardPosts.filter((p) => p.owner === 0)).toEqual([expect.objectContaining({ center: t })]);
+  });
+
+  it('counts streets that join or leave the front', () => {
+    const r = quietSetup();
+    const g = r.game;
+    const me = g.player;
+    const tile = [...me.border][0];
+    act(r, { type: 'guard', companyId: 0, tile });
+    const n = me.guarded;
+    g.setOwner(tile, 1);
+    expect(me.guarded).toBe(n - 1);
+    expect(g.isGuarded(tile, 1)).toBe(false);
+    g.setOwner(tile, 0);
+    expect(me.guarded).toBe(n);
   });
 
   it('only works on your own streets', () => {
@@ -195,7 +237,7 @@ describe('guarding a neighbourhood', () => {
     const g = quietSetup().game;
     const tile = [...g.companies[1].border][0];
     const s = g.streetCost(g.player, 1, tile);
-    expect(s.total).toBeCloseTo(s.base * s.service * s.loyalty * s.reserve * s.priceGap * s.guard);
+    expect(s.total).toBeCloseTo(s.base * s.service * s.loyalty * s.reserve * s.priceGap);
     expect(s.defence).toBeCloseTo(s.total / s.base);
   });
 });

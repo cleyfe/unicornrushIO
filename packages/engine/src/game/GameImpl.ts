@@ -47,12 +47,11 @@ export class GameImpl {
   result: GameResult | null = null;
   /** Bumped whenever tile ownership changes, so renderers can skip redraws. */
   ownershipVersion = 0;
-  /** Guarded streets: who guards each one, and until when. */
+  /** Guarded fronts: whose front each street lies in (it counts for them while they own it). */
   readonly guardOwner: Int16Array;
-  readonly guardUntil: Float32Array;
-  /** Bumped whenever a guard is posted. */
+  /** Bumped whenever a front is moved. */
   guardVersion = 0;
-  /** Guards currently posted (expired ones are dropped each day). */
+  /** Each company's guarded front, if any. */
   guardPosts: GuardPost[] = [];
   /** Streets bought in a deal can't be bought back with cash until this day. */
   readonly dealLockUntil: Float32Array;
@@ -62,8 +61,8 @@ export class GameImpl {
   /** Evidence for lawsuits: streets (and their spend) attacker took from victim, decaying over time. */
   private takenStreets = new Map<string, number>();
   private takenSpend = new Map<string, number>();
-  /** Streets each company lost since its last report, by cause (a rival's id, or churn). */
-  private losses = new Map<number, Map<number | 'churn', number>>();
+  /** Streets each company lost since its last report, by who took them. */
+  private losses = new Map<number, Map<number, number>>();
   private executions: Execution[] = [];
   private pending: Execution[] = [];
   private nb: number[] = [];
@@ -77,7 +76,6 @@ export class GameImpl {
     this.streetNames = city ? city.segments.names : [];
     this.owner = new Int16Array(this.map.size).fill(NEUTRAL);
     this.guardOwner = new Int16Array(this.map.size).fill(NEUTRAL);
-    this.guardUntil = new Float32Array(this.map.size);
     this.dealLockUntil = new Float32Array(this.map.size);
     this.ownedSince = new Float32Array(this.map.size);
     specs.forEach((s, id) => this.companies.push(newCompany(id, s)));
@@ -199,9 +197,33 @@ export class GameImpl {
     return c.customers <= 0 ? 1 : Math.min(CONFIG.sales.maxServiceLevel, this.capacity(c) / c.customers);
   }
 
-  /** Push the defender holds per street: its customer-retention effort. */
+  /** Push the defender holds per street: its customer-retention effort, on average. */
   retention(c: Company): number {
     return Math.min(CONFIG.sales.maxRetention, 1 + (CONFIG.sales.retentionPerPush * c.push) / Math.max(1, c.tiles));
+  }
+
+  /**
+   * Retention on one street. With a guarded front, the front gets `reserveShare` of the reserve
+   * (or its share of the streets, if bigger) and the rest is spread over the other streets.
+   * The tighter the front, the higher its cap: from maxRetention up to the guard's.
+   */
+  retentionAt(c: Company, tile: number): number {
+    if (c.guarded <= 0) return this.retention(c);
+    const S = CONFIG.sales;
+    const G = CONFIG.guard;
+    const covered = Math.min(1, c.guarded / Math.max(1, c.tiles));
+    const frontShare = Math.max(G.reserveShare, covered);
+    if (this.isGuarded(tile, c.id)) {
+      const cap = S.maxRetention + (G.maxRetention - S.maxRetention) * (1 - covered);
+      return Math.min(cap, 1 + (S.retentionPerPush * c.push * frontShare) / c.guarded);
+    }
+    return Math.min(S.maxRetention, 1 + (S.retentionPerPush * c.push * (1 - frontShare)) / Math.max(1, c.tiles - c.guarded));
+  }
+
+  /** Service's effect on defence: spare Ops help; when overloaded, defence falls with the square of service. */
+  serviceDefence(c: Company): number {
+    const s = this.serviceLevel(c);
+    return s >= 1 ? s : Math.max(CONFIG.sales.minServiceDefence, s * s);
   }
 
   /** Share of customers actually served. */
@@ -279,7 +301,7 @@ export class GameImpl {
     const d = this.map.demand[tile] * w.pushCost;
     if (target === NEUTRAL) {
       const base = CONFIG.sales.neutralTileCost * d;
-      return { base, defence: 1, service: 1, loyalty: 1, reserve: 1, priceGap: 1, guard: 1, total: base };
+      return { base, defence: 1, service: 1, loyalty: 1, reserve: 1, priceGap: 1, guarded: false, total: base };
     }
     const def = this.companies[target];
     // Price matters a lot to budget customers and little to luxury ones,
@@ -288,32 +310,46 @@ export class GameImpl {
     let loyalty = 1 + (CONFIG.prices[def.price].loyalty - 1) * sens;
     if (def.price === 'high') loyalty *= w.prestige;
     if (def.price === 'low') loyalty /= w.prestige;
-    const service = Math.max(0.3, this.serviceLevel(def));
-    const reserve = this.retention(def);
+    const service = this.serviceDefence(def);
+    const reserve = this.retentionAt(def, tile);
     const ar = CONFIG.prices[attacker.price].revenue;
     const dr = CONFIG.prices[def.price].revenue;
     const priceGap = ar < dr ? 1 - 0.25 * sens : ar > dr ? 1 + 0.25 * sens : 1;
-    const guard = this.isGuarded(tile, target) ? CONFIG.guard.defenceMult : 1;
-    const defence = service * loyalty * reserve * priceGap * guard;
+    const defence = service * loyalty * reserve * priceGap;
     const base = CONFIG.sales.rivalTileCost * d;
-    return { base, defence, service, loyalty, reserve, priceGap, guard, total: base * defence };
+    return { base, defence, service, loyalty, reserve, priceGap, guarded: this.isGuarded(tile, target), total: base * defence };
   }
 
   /** How hard a company's streets are to steal, before street-specific factors (price fit, guards). */
   defence(c: Company): number {
-    return Math.max(0.3, this.serviceLevel(c)) * this.retention(c);
+    return this.serviceDefence(c) * this.retention(c);
   }
 
+  /** Is `tile` one of `owner`'s streets inside its guarded front? */
   isGuarded(tile: number, owner: number): boolean {
-    return this.guardOwner[tile] === owner && this.day < this.guardUntil[tile];
+    return owner >= 0 && this.guardOwner[tile] === owner && this.owner[tile] === owner;
   }
 
-  /** Your streets near `tile` that a guard would cover, and what it costs. */
-  guardOffer(c: Company, tile: number): { streets: number[]; cost: number } {
-    const G = CONFIG.guard;
-    const streets = this.streetsNear(tile, G.radius).filter((t) => this.owner[t] === c.id);
-    const customers = streets.reduce((s, t) => s + this.map.demand[t], 0);
-    return { streets, cost: Math.max(G.minCost, Math.round(customers * G.costPerCustomer)) };
+  /** Your streets a front on `tile` would cover, and how many days until you can move your front. */
+  guardOffer(c: Company, tile: number): { streets: number[]; wait: number } {
+    const streets = this.streetsNear(tile, CONFIG.guard.radius).filter((t) => this.owner[t] === c.id);
+    return { streets, wait: Math.max(0, Math.ceil(c.lastGuardDay + CONFIG.guard.moveCooldownDays - this.day)) };
+  }
+
+  /** Moves company `c`'s guarded front to the area around `tile` (one front per company). */
+  setFront(c: Company, tile: number): void {
+    for (let t = 0; t < this.guardOwner.length; t++) if (this.guardOwner[t] === c.id) this.guardOwner[t] = NEUTRAL;
+    for (const t of this.streetsNear(tile, CONFIG.guard.radius)) {
+      // Keep another company's front on its own streets.
+      const g = this.guardOwner[t];
+      if (g >= 0 && this.owner[t] === g) continue;
+      this.guardOwner[t] = c.id;
+    }
+    c.guarded = 0;
+    for (let t = 0; t < this.guardOwner.length; t++) if (this.isGuarded(t, c.id)) c.guarded++;
+    c.lastGuardDay = this.day;
+    this.guardPosts = this.guardPosts.filter((p) => p.owner !== c.id).concat({ owner: c.id, center: tile });
+    this.guardVersion++;
   }
 
   activeLawsuitBy(c: Company): Lawsuit | undefined {
@@ -476,7 +512,7 @@ export class GameImpl {
     return Math.max(0, lostPerDay * L.damagesDays);
   }
 
-  recordLoss(loser: number, cause: number | 'churn'): void {
+  recordLoss(loser: number, cause: number): void {
     const c = this.companies[loser];
     c.lostTo[cause] = (c.lostTo[cause] ?? 0) + 1;
     if (c.isBot) return;
@@ -491,10 +527,7 @@ export class GameImpl {
     if (!m || m.size === 0) return;
     const streets = (n: number) => (n === 1 ? '1 street' : `${n} streets`);
     const parts: string[] = [];
-    for (const [cause, n] of m) {
-      if (cause === 'churn') parts.push(`${streets(n)} left because you were overloaded`);
-      else parts.push(`${this.companies[cause].name} stole ${streets(n)}`);
-    }
+    for (const [cause, n] of m) parts.push(`${this.companies[cause].name} stole ${streets(n)}`);
     this.message(companyId, `You lost streets: ${parts.join('; ')}.`, 'bad');
     m.clear();
   }
@@ -615,6 +648,7 @@ export class GameImpl {
       const oc = this.companies[old];
       const w = this.map.wealth[tile];
       oc.tierLoyalSpend[w] = Math.max(0, oc.tierLoyalSpend[w] - this.map.spend[tile] * this.loyalty(tile));
+      if (this.guardOwner[tile] === old) oc.guarded--;
       oc.tiles--;
       oc.customers -= d;
       oc.spend -= this.map.spend[tile];
@@ -626,6 +660,7 @@ export class GameImpl {
     this.ownedSince[tile] = this.day;
     if (newOwner >= 0) {
       const nc = this.companies[newOwner];
+      if (this.guardOwner[tile] === newOwner) nc.guarded++;
       nc.tiles++;
       nc.customers += d;
       nc.spend += this.map.spend[tile];
@@ -822,7 +857,8 @@ function newCompany(id: number, s: CompanySpec): Company {
     pnl: emptyPnl(),
     oneOff: { hiring: 0, severance: 0, legalFees: 0, fines: 0, damages: 0, advertising: 0, guards: 0, streetDeals: 0, poaching: 0 },
     avgProfit: 0,
-    churnCarry: 0,
+    guarded: 0,
+    lastGuardDay: -Infinity,
     negativeCashDays: 0,
     peakTiles: 0,
     peakValuation: 0,

@@ -73,7 +73,7 @@ export class ActionBar {
         </div>
         <div class="grp">
           ${cmd('data-act="advertise"', '📢', 'Ads', 'A', 'Ad campaign: aim it at a street and it wins streets toward it until its budget runs out.')}
-          ${cmd('data-act="guard"', '🛡', 'Guard', 'G', `Post an account team on a neighbourhood: click one of your streets. Your streets within ${CONFIG.guard.radius} m cost rivals ×${CONFIG.guard.defenceMult} to steal for ${CONFIG.guard.days} days.`)}
+          ${cmd('data-act="guard"', '🛡', 'Guard', 'G', `Set your front: click one of your streets. Your streets within ${CONFIG.guard.radius} m get ${Math.round(CONFIG.guard.reserveShare * 100)}% of your push reserve's defence. Free; you can move it every ${CONFIG.guard.moveCooldownDays} days.`)}
           ${cmd('data-open="lawsuit"', '⚖️', 'Sue', 'S', 'Sue a rival for unfair competition')}
           ${cmd('data-open="poach"', '🕵️', 'Poach', 'T', `Hire away part of any rival's sales team, wherever they are (${money(CONFIG.poach.costPerPerson)} per person)`)}
           ${cmd('data-act="buy"', '🏢', 'Buy', 'B', `Buy a block of a rival's streets next to yours, instantly: up to ${CONFIG.streetDeal.blockSize} streets. Dearer than ads; they're then under contract for ${CONFIG.streetDeal.lockDays} days.`)}

@@ -184,7 +184,9 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
       .map((t, i) => `<span><i style="background:${wealthColors(theme)[i as Wealth]}"></i>${'$'.repeat(i + 1)} ${t.label} ×${t.spend}</span>`)
       .join('') +
       `<span><i class="rim"></i>Owned: brighter = richer</span>` +
-      `<span class="legend-sep"><i class="line frontier"></i>You can win</span><span><i class="line court"></i>On trial</span>`;
+      `<span>Paler = newly won; deep = regulars</span>` +
+      `<span class="legend-sep"><i class="line frontier"></i>You can win</span><span><i class="line exposed"></i>Exposed: cheap to take</span>` +
+      `<span><i class="line court"></i>On trial</span><span>Hold <b>Space</b>: attack view</span>`;
   const legend = el('details', 'wealth-legend glass', legendHtml());
   const paused = el('div', 'paused-badge', 'Click a glowing street to start · elsewhere to move');
   const guardBanner = el('div', 'guard-banner', '');
@@ -202,6 +204,15 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
   };
   input.onHotkey = (key) => actions.hotkey(key);
   input.onEscape = () => drawer.close();
+  // Hold Space: the attack view, with a one-line legend.
+  const attackLegend = el(
+    'div',
+    'attack-legend glass',
+    `<b>Attack view</b> ${['cheap', '', '', '', 'well defended'].map((t, i) => `<i class="a${i + 1}"></i>${t ? `<span>${t}</span>` : ''}`).join('')}`,
+  );
+  attackLegend.hidden = true;
+  stage.append(attackLegend);
+  input.onAttackView = (on) => (attackLegend.hidden = !on);
 
   // Dev builds only: lets scripts (trailer capture, screenshots) drive a match.
   if (import.meta.env.DEV) Object.assign(window, { __unicornrush: { client, game, view, setSpeed, drawer, CONFIG } });

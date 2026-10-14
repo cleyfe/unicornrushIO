@@ -44,7 +44,7 @@ export const CONFIG = {
   // Revenue per customer per day, before the street's wealth multiplier.
   prices: {
   // volume: price elasticity of demand. Cheaper prices make customers buy more.
-    low: { revenue: 25, volume: 1.4, push: 1.2, loyalty: 1.25, label: 'Low' },
+    low: { revenue: 27, volume: 1.4, push: 1.2, loyalty: 1.35, label: 'Low' },
     medium: { revenue: 35, volume: 1.0, push: 1.0, loyalty: 1.0, label: 'Medium' },
     high: { revenue: 48, volume: 0.8, push: 0.9, loyalty: 0.9, label: 'High' },
   } satisfies Record<PriceLevel, { revenue: number; volume: number; push: number; loyalty: number; label: string }>,
@@ -78,9 +78,11 @@ export const CONFIG = {
     adCooldownDays: 30, // your agency runs one big campaign a month
     maxAdPushMult: 2, // ads can fill the push pool up to twice its normal cap
     maxServiceLevel: 1.5, // spare operations capacity makes customers loyal, up to this
+    // Overloaded (service below 1): unserved customers don't pay, and defence falls with
+    // the square of service (×0.8 service → ×0.64 defence), down to this.
+    minServiceDefence: 0.25,
+    exposedBelow: 1.15, // defence under this shows as an exposed (dashed) border: overloaded, or reserve spent
   },
-
-  churn: { ratePerDay: 0.05 }, // share of over-capacity areas lost per day
 
   bankruptcyGraceDays: 10,
 
@@ -135,12 +137,14 @@ export const CONFIG = {
     immunityDays: 20, // a poached company can't be poached again for this long
   },
 
+  // Guard: focus your push reserve on one front. Your streets within `radius` of the
+  // chosen one share `reserveShare` of the reserve's defence (up to `maxRetention`);
+  // the rest of your streets share what's left. Free, one front at a time.
   guard: {
-    radius: 250, // metres
-    days: 60,
-    defenceMult: 1.6,
-    costPerCustomer: 250, // per customer you own in the area
-    minCost: 5_000,
+    radius: 350, // metres
+    reserveShare: 0.6,
+    maxRetention: 3,
+    moveCooldownDays: 15,
   },
 
   // Big companies are slower: a price change takes a day per this many employees to roll out.
@@ -153,8 +157,8 @@ export const CONFIG = {
     minGap: 70,
     maxGap: 110,
     offerDays: 30, // time to pick before the offer expires
-    leaderLuck: 0.6,
-    lastLuck: 1.6,
+    leaderLuck: 0.75,
+    lastLuck: 1.35,
     viralPushShare: 0.35, // × push cap × luck
     starTeamShare: 0.05, // × staff × luck, trained and ready (at least 3)
     supplierDealDays: 30, // × luck; variable costs × supplierDealMult
@@ -174,12 +178,12 @@ export const CONFIG = {
     firstDay: 120,
     minGap: 70,
     maxGap: 110,
-    minLead: 1.4, // only when the leader is worth this many times the runner-up
+    minLead: 1.6, // only when the leader is worth this many times the runner-up
     strikeWarningDays: 7,
     strikeDays: 8,
-    strikeCapacity: 0.6, // operations capacity during a strike
-    pressStreetShare: 0.05, // streets lost to an exposé
-    breachRevenueDays: 5, // fine for a data breach
+    strikeCapacity: 0.75, // operations capacity during a strike
+    pressStreetShare: 0.03, // streets lost to an exposé
+    breachRevenueDays: 3, // fine for a data breach
   },
 
   // Regulars: customers spend more the longer their street stays with the same company,
@@ -226,7 +230,7 @@ export const CONFIG = {
     hard: { reserveMult: 1, repDays: 20, growth: 0.5, extraPushReserve: 0, leaderFocus: true, expandEveryDays: 1, salesMult: 1, serviceBonus: 0.1, streetJudgement: 1, aggressionMult: 1, advanced: true, dealAppetite: 0.05, hireBase: 3, humanCostMult: 1 },
   },
 
-  events: { firstDay: 150, minGap: 120, maxGap: 180, warningDays: 10 },
+  events: { firstDay: 150, minGap: 150, maxGap: 220, warningDays: 10 },
 
   valuation: {
     earningsMultiple: 18, // investors pay 18x annual profit

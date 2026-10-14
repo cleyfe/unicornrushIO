@@ -1481,6 +1481,9 @@ td i {
 .wealth-legend i.court {
   background: #facc15;
 }
+.wealth-legend i.exposed {
+  background: repeating-linear-gradient(90deg, #dc2626 0 3px, transparent 3px 6px);
+}
 
 /* ---------- animations ---------- */
 
@@ -2186,3 +2189,65 @@ ul.what li {
   padding-left: 0;
   border-left: 0;
 }
+
+/* ---------- attack view, cursor push ---------- */
+
+.cursor-chip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 25;
+  pointer-events: none;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
+}
+.cursor-chip.ok {
+  background: #15803d;
+}
+.cursor-chip.short {
+  background: #b45309;
+}
+@media (pointer: coarse) {
+  .cursor-chip {
+    display: none !important;
+  }
+}
+.attack-legend {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  pointer-events: none;
+}
+.attack-legend[hidden] {
+  display: none;
+}
+.attack-legend b {
+  margin-right: 6px;
+}
+.attack-legend i {
+  width: 18px;
+  height: 6px;
+  border-radius: 3px;
+}
+.attack-legend span {
+  color: var(--muted);
+}
+.attack-legend .a1 { background: #16a34a; }
+.attack-legend .a2 { background: #84cc16; }
+.attack-legend .a3 { background: #eab308; }
+.attack-legend .a4 { background: #f97316; }
+.attack-legend .a5 { background: #dc2626; }

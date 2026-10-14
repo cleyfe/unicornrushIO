@@ -34,7 +34,7 @@ function whatHappened(game: GameImpl, history: History): string {
   const me = game.player;
   const lost = Object.entries(me.lostTo).sort((a, b) => b[1] - a[1]);
   if (lost.length) {
-    const who = lost.slice(0, 4).map(([k, n]) => (k === 'churn' ? `${n} left because you were overloaded` : `${game.companies[Number(k)].name} took ${n}`));
+    const who = lost.slice(0, 4).map(([k, n]) => `${game.companies[Number(k)].name} took ${n}`);
     rows.push(`<li>Streets lost over the match: ${who.join(' · ')}.</li>`);
   }
   return `<h3>What happened</h3><ul class="what">${rows.join('')}</ul>`;

@@ -43,7 +43,6 @@ export class BotExecution implements Execution {
   private c!: Company;
   private p!: Persona;
   private nb: number[] = [];
-  private lastGuardDay = -Infinity;
   private lastCampaignDay = -Infinity;
 
   constructor(private companyId: number) {}
@@ -140,14 +139,7 @@ export class BotExecution implements Execution {
 
     // 3b. Guard the front line against a rival that keeps taking our streets.
     const front = advanced ? this.frontToGuard(g) : -1;
-    if (front >= 0) {
-      const offer = g.guardOffer(c, front);
-      if (cash > offer.cost + reserve * 2) {
-        this.act(g, { type: 'guard', companyId: id, tile: front });
-        cash -= offer.cost;
-        this.lastGuardDay = g.day;
-      }
-    }
+    if (front >= 0) this.act(g, { type: 'guard', companyId: id, tile: front });
 
     // 4. Hiring, from surplus cash only, up to the staff the business needs.
     if (staff < wanted && cash > reserve + s.hireCost * 2) {
@@ -204,7 +196,7 @@ export class BotExecution implements Execution {
   /** A border street facing the rival that took most of our streets lately, if it's worth guarding. */
   private frontToGuard(g: GameImpl): number {
     const c = this.c;
-    if (g.day - this.lastGuardDay < CONFIG.guard.days * 0.75) return -1;
+    if (g.guardOffer(c, c.border.values().next().value ?? 0).wait > 0) return -1;
     let attacker = -1;
     let most = 3; // at least this many streets lost recently
     for (const r of g.companies) {

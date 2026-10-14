@@ -84,13 +84,15 @@ export interface Company {
   tierSpend: number[];
   /** Extra spend per wealth level from regulars (streets held a long time). */
   tierLoyalSpend: number[];
+  /** Its streets inside its guarded front, and when it last moved the front. */
+  guarded: number;
+  lastGuardDay: number;
   border: Set<number>;
 
   pnl: Pnl; // per day, latest
   /** One-off cash flows since the start, outside the daily P&L. */
   oneOff: OneOffFlows;
   avgProfit: number; // trailing average per day
-  churnCarry: number;
   negativeCashDays: number;
 
   peakTiles: number;
@@ -98,7 +100,7 @@ export interface Company {
   closedDay: number | null;
   /** Why it closed ("ran out of cash", "lost every customer"), once closed. */
   closedWhy: string | null;
-  /** Streets this company lost over the match, by who took them (a company id, or 'churn'). */
+  /** Streets this company lost over the match, by who took them (a company id). */
   lostTo: Record<string, number>;
 }
 
@@ -186,7 +188,8 @@ export interface StreetCost {
   loyalty: number;
   reserve: number;
   priceGap: number;
-  guard: number;
+  /** Inside the defender's guarded front (its push reserve is focused there). */
+  guarded: boolean;
   total: number;
 }
 
@@ -195,7 +198,6 @@ export interface GuardPost {
   owner: number;
   /** The street it was posted on. */
   center: number;
-  untilDay: number;
 }
 
 export interface ValuationBreakdown {
