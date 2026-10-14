@@ -15,14 +15,14 @@ export class RaceBoard {
     const g = this.game;
     // Big matches: show the top of the race, plus you wherever you are.
     const ranked = [...g.companies].sort((a, b) => g.valuation(b).total - g.valuation(a).total);
-    const shown = ranked.length <= 6 ? ranked : ranked.filter((c, i) => i < 5 || c.id === 0);
+    const shown = ranked.length <= 6 ? ranked : ranked.filter((c, i) => i < 5 || c.id === g.playerId);
     const hidden = ranked.length - shown.length;
     const rows = shown
       .map((c) => {
         const v = g.valuation(c).total;
         const margin = c.pnl.revenue > 0 ? c.pnl.profit / c.pnl.revenue : 0;
-        return `<li class="${c.alive ? '' : 'dead'} ${c.isBot ? '' : 'me'}" title="${c.name}: ${CONFIG.prices[c.price].label} prices · margin ${pct(margin)} · ${c.tiles} streets · defence ×${g.defence(c).toFixed(1)}">
-          <div class="race-name"><b class="race-rank">${ranked.indexOf(c) + 1}</b><i style="background:${rgb(c.color)}"></i>${c.isBot ? c.name : `${c.name} (you)`}<span>${c.alive ? money(v) : 'closed'}</span></div>
+        return `<li class="${c.alive ? '' : 'dead'} ${c.id === g.playerId ? 'me' : ''}" title="${c.name}: ${CONFIG.prices[c.price].label} prices · margin ${pct(margin)} · ${c.tiles} streets · defence ×${g.defence(c).toFixed(1)}">
+          <div class="race-name"><b class="race-rank">${ranked.indexOf(c) + 1}</b><i style="background:${rgb(c.color)}"></i>${c.id === g.playerId ? `${c.name} (you)` : c.name}<span>${c.alive ? money(v) : 'closed'}</span></div>
           <div class="race-sub">${c.alive ? `<span class="${c.pnl.profit >= 0 ? 'pos' : 'neg'}">${c.pnl.profit >= 0 ? '+' : ''}${money(c.pnl.profit)}/day</span>` : ''}</div>
           <div class="race-bar"><div style="width:${pct(c.alive ? unicornProgress(v) : 0)};background:${rgb(c.color)}"></div></div>
         </li>`;

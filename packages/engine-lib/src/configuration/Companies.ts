@@ -64,3 +64,31 @@ export function defaultCompanies(playerName = 'You', playerIsBot = false, diffic
     ...all.slice(0, n).map((r) => ({ ...r, difficulty })),
   ];
 }
+
+/** Colours for human players online, picked to stay apart from each other and from the bots' red, green and purple. */
+const HUMAN_COLORS: [number, number, number][] = [
+  [59, 130, 246], // blue
+  [249, 115, 22], // orange
+  [6, 182, 212], // cyan
+  [236, 72, 153], // pink
+  [234, 179, 8], // yellow
+  [20, 184, 166], // teal
+  [99, 102, 241], // indigo
+  [132, 204, 22], // lime
+];
+
+/** Most human players in one online match. */
+export const MAX_HUMANS = HUMAN_COLORS.length;
+
+/** An online match: the humans (in seat order), then `bots` rivals at `difficulty`. */
+export function multiplayerCompanies(names: string[], difficulty: Difficulty = 'normal', bots = 0): CompanySpec[] {
+  const humans = names.slice(0, MAX_HUMANS).map((name, i) => ({
+    name,
+    color: HUMAN_COLORS[i],
+    isBot: false,
+    personality: 'balanced' as const,
+    difficulty,
+  }));
+  const rivals = Math.max(0, Math.min(MAX_RIVALS, Math.floor(bots)));
+  return [...humans, ...(rivals > 0 ? defaultCompanies('', true, difficulty, rivals).slice(1) : [])];
+}

@@ -26,7 +26,7 @@ export class Drawer {
     this.root.hidden = true;
     this.raceChart = new RaceChart(game, history);
     // Contents are redrawn, so listen once on the drawer itself.
-    const send = (i: Record<string, unknown>) => this.sendIntent({ ...i, companyId: 0 } as Intent);
+    const send = (i: Record<string, unknown>) => this.sendIntent({ ...i, companyId: this.game.playerId } as Intent);
     this.root.addEventListener('click', (e) => {
       const f = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-news]');
       if (f) {
@@ -149,7 +149,7 @@ export class Drawer {
     }
     if (this.kind === 'news') {
       const entries = g.log
-        .filter((l) => (this.newsFilter === 'mine' ? l.recipient === 0 : l.recipient === undefined || l.recipient === 0))
+        .filter((l) => (this.newsFilter === 'mine' ? l.recipient === this.game.playerId : l.recipient === undefined || l.recipient === this.game.playerId))
         .slice()
         .reverse();
       const html = entries.map((l) => `<li class="news-item ${l.tone}"><span>Day ${l.day}</span>${l.text}</li>`).join('') || '<li class="muted">Nothing yet.</li>';

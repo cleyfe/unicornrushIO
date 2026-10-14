@@ -41,23 +41,23 @@ export class InputHandler {
       const seg = this.view.segmentAt(e.point);
       if (seg < 0) return;
       if (this.mode === 'guard') {
-        if (this.client.game.owner[seg] === 0) {
-          this.client.send({ type: 'guard', companyId: 0, tile: seg });
+        if (this.client.game.owner[seg] === this.client.game.playerId) {
+          this.client.send({ type: 'guard', companyId: this.client.game.playerId, tile: seg });
           this.setMode('expand');
         }
         return;
       }
       if (this.mode === 'buy') {
         const g = this.client.game;
-        if (g.owner[seg] > 0 && g.borders(g.player, seg)) {
-          this.client.send({ type: 'buyStreets', companyId: 0, tile: seg });
+        if (g.owner[seg] >= 0 && g.owner[seg] !== g.playerId && g.borders(g.player, seg)) {
+          this.client.send({ type: 'buyStreets', companyId: this.client.game.playerId, tile: seg });
           this.setMode('expand');
         }
         return;
       }
       if (this.mode === 'ad') {
-        if (this.client.game.owner[seg] !== 0) {
-          this.client.send({ type: 'advertise', companyId: 0, tile: seg });
+        if (this.client.game.owner[seg] !== this.client.game.playerId) {
+          this.client.send({ type: 'advertise', companyId: this.client.game.playerId, tile: seg });
           this.onFirstMove();
           this.setMode('expand');
         }
@@ -65,10 +65,10 @@ export class InputHandler {
       }
       const g = this.client.game;
       if (!this.isStarted() && g.owner[seg] === NEUTRAL && !this.view.isFrontier(seg)) {
-        this.client.send({ type: 'relocate', companyId: 0, tile: seg });
+        this.client.send({ type: 'relocate', companyId: this.client.game.playerId, tile: seg });
         return;
       }
-      this.client.send({ type: 'campaign', companyId: 0, tile: seg });
+      this.client.send({ type: 'campaign', companyId: this.client.game.playerId, tile: seg });
       this.onFirstMove();
       // A ripple where you clicked: instant feedback before the street changes hands.
       const ripple = document.createElement('div');
@@ -161,7 +161,7 @@ function describeAd(g: GameImpl, city: CityData, seg: number): string {
   const offer = g.adOffer(g.player);
   const ok = g.player.cash >= offer.cost;
   const name = city.segments.names[seg] || 'this street';
-  if (g.owner[seg] === 0) return '<div class="hc-title">📢 Ad campaign</div><div class="hc-action muted">Aim at a street that isn\'t yours</div>';
+  if (g.owner[seg] === g.playerId) return '<div class="hc-title">📢 Ad campaign</div><div class="hc-action muted">Aim at a street that isn\'t yours</div>';
   return `<div class="hc-title">📢 Ad campaign toward ${name}</div>
     <div class="hc-row"><span>+${offer.push} push, spent winning streets on the way</span></div>
     <div class="hc-action ${ok ? 'ok' : 'wait'}">${ok ? `Click to launch · ${money(offer.cost)}` : `Costs ${money(offer.cost)}: not enough cash`}</div>`;
@@ -170,7 +170,7 @@ function describeAd(g: GameImpl, city: CityData, seg: number): string {
 /** The hover card in buy mode: which rival streets you'd get, and the price. */
 function describeDeal(g: GameImpl, seg: number): string {
   const me = g.player;
-  if (g.owner[seg] > 0 && g.dealLocked(seg)) {
+  if (g.owner[seg] >= 0 && g.owner[seg] !== g.playerId && g.dealLocked(seg)) {
     return `<div class="hc-title">🏢 Under contract</div><div class="hc-action muted">Can't be bought for ${Math.ceil(g.dealLockUntil[seg] - g.day)} more days</div>`;
   }
   const deal = g.streetDeal(me, seg);
@@ -185,7 +185,7 @@ function describeDeal(g: GameImpl, seg: number): string {
 
 /** The hover card in guard mode: which streets a guard would cover, and the price. */
 function describeGuard(g: GameImpl, seg: number): string {
-  if (g.owner[seg] !== 0) return '<div class="hc-title">🛡 Guard</div><div class="hc-action muted">Pick one of your streets</div>';
+  if (g.owner[seg] !== g.playerId) return '<div class="hc-title">🛡 Guard</div><div class="hc-action muted">Pick one of your streets</div>';
   const offer = g.guardOffer(g.player, seg);
   const ok = g.player.cash >= offer.cost;
   return `<div class="hc-title">🛡 Guard this area</div>
@@ -237,10 +237,10 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
   const perDay =
     vol * (g.map.spend[seg] * CONFIG.prices[me.price].revenue * g.revenueMult() - g.map.demand[seg] * CONFIG.variableCostPerCustomer * g.variableCostMult(me));
   const customers = Math.max(1, Math.round(g.map.demand[seg]));
-  const owner = o === NEUTRAL ? 'Untapped' : o === 0 ? 'Yours' : `<i style="background:rgb(${g.companies[o].color.join(',')})"></i>${g.companies[o].name}`;
+  const owner = o === NEUTRAL ? 'Untapped' : o === g.playerId ? 'Yours' : `<i style="background:rgb(${g.companies[o].color.join(',')})"></i>${g.companies[o].name}`;
   const lines: string[] = [];
   // Rivals' streets: how well defended, in one line.
-  if (o > 0) {
+  if (o >= 0 && o !== g.playerId) {
     const s = g.streetCost(me, o, seg);
     const why = DEFENCE_PARTS.filter(([k]) => s[k] > 1.1).map(([, label]) => label);
     lines.push(`<div class="hc-cost">🛡 ×${s.defence.toFixed(1)}${why.length ? ` · ${why.join(', ')}` : ''}</div>`);
@@ -253,7 +253,7 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
   }
   if (beforeStart && o === NEUTRAL && !reachable) {
     lines.push('<div class="hc-action ok">📍 Click to start here</div>');
-  } else if (o !== 0) {
+  } else if (o !== g.playerId) {
     const cost = g.tileCost(me, o, seg);
     const budget = me.push * me.campaignShare;
     if (!reachable) lines.push('<div class="hc-action muted">Not next to your streets</div>');
@@ -263,6 +263,6 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
     } else lines.push(`<div class="hc-action wait">Needs ${Math.ceil(cost)} push (you commit ${Math.floor(budget)})</div>`);
   }
   return `<div class="hc-title">${street} <span class="w${level}" title="${CONFIG.wealth[level].label}: customers spend ×${CONFIG.wealth[level].spend}">${'$'.repeat(level + 1)}</span></div>
-    <div class="hc-row"><span>${owner} · ${customers} customer${customers === 1 ? '' : 's'}</span><span class="pos">${o === 0 ? '' : '≈ '}+${money(perDay)}/day</span></div>
+    <div class="hc-row"><span>${owner} · ${customers} customer${customers === 1 ? '' : 's'}</span><span class="pos">${o === g.playerId ? '' : '≈ '}+${money(perDay)}/day</span></div>
     ${lines.join('')}`;
 }

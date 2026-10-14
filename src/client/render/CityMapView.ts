@@ -250,7 +250,7 @@ export class CityMapView {
     const borderColor = [
       'match',
       ['coalesce', ['feature-state', 'owner'], NEUTRAL],
-      ...this.game.companies.flatMap((c) => [c.id, lighten(c.color, c.id === 0 ? 0.25 : 0.15)]),
+      ...this.game.companies.flatMap((c) => [c.id, lighten(c.color, c.id === this.game.playerId ? 0.25 : 0.15)]),
       '#ffffff',
     ];
     // Guarded streets get a soft halo underneath.
@@ -369,7 +369,7 @@ export class CityMapView {
     let e = -Infinity;
     let n = -Infinity;
     for (let i = 0; i < g.owner.length; i++) {
-      if (g.owner[i] !== 0) continue;
+      if (g.owner[i] !== g.playerId) continue;
       for (const [lon, lat] of this.city.segments.coords[i]) {
         w = Math.min(w, lon);
         e = Math.max(e, lon);
@@ -463,7 +463,7 @@ export class CityMapView {
     if (me.alive) {
       const { adjStart, adj } = g.map;
       for (const b of me.border) {
-        for (let k = adjStart[b]; k < adjStart[b + 1]; k++) if (g.owner[adj[k]] !== 0) next.add(adj[k]);
+        for (let k = adjStart[b]; k < adjStart[b + 1]; k++) if (g.owner[adj[k]] !== g.playerId) next.add(adj[k]);
       }
     }
     for (const t of this.frontier) if (!next.has(t)) this.map.setFeatureState({ source: 'streets', id: t }, { frontier: false });

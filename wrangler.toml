@@ -1,6 +1,8 @@
-# Cloudflare Workers with static assets: the game is a static site built to dist/
-# (see .github/workflows/deploy.yml). Multiplayer rooms (Durable Objects) will join this Worker later.
+# Cloudflare Worker: serves the game (static files built to dist/) and runs the
+# multiplayer rooms (server/worker.ts, one GameRoom Durable Object per room).
+# Deployed by .github/workflows/deploy.yml.
 name = "unicornrush"
+main = "server/worker.ts"
 compatibility_date = "2026-09-01"
 # The game lives on unicornrush.io; pull requests still get preview links.
 workers_dev = false
@@ -15,3 +17,12 @@ routes = [
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "GameRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameRoom"]

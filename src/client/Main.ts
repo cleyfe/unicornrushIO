@@ -153,10 +153,10 @@ async function startGame(name: string, info: CityInfo, difficulty: Difficulty, r
     history.update();
     const fresh = client.newLogEntries();
     // When a lawsuit involves you, show your personal message instead of the public one.
-    const personalSuit = fresh.some((l) => l.recipient === 0 && l.text.startsWith('⚖️'));
+    const personalSuit = fresh.some((l) => l.recipient === game.playerId && l.text.startsWith('⚖️'));
     for (const l of fresh) {
-      if (l.recipient === 0 && l.tone === 'error') toast(l.text);
-      else if (l.recipient === 0) news.push(l);
+      if (l.recipient === game.playerId && l.tone === 'error') toast(l.text);
+      else if (l.recipient === game.playerId) news.push(l);
       else if (l.recipient === undefined && !(personalSuit && l.text.startsWith('⚖️'))) news.push(l);
     }
     uiTimer += elapsed;

@@ -17,7 +17,7 @@ export class CardPicker {
     this.root.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>('[data-card]');
       if (!b) return;
-      this.sendIntent({ type: 'pickCard', companyId: 0, index: Number(b.dataset.card) });
+      this.sendIntent({ type: 'pickCard', companyId: this.game.playerId, index: Number(b.dataset.card) });
       (b as HTMLButtonElement).blur();
     });
   }

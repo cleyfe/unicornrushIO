@@ -91,7 +91,7 @@ export class ActionBar {
   }
 
   private send(i: WithoutCompany<Intent>): void {
-    this.sendIntent({ ...i, companyId: 0 } as Intent);
+    this.sendIntent({ ...i, companyId: this.game.playerId } as Intent);
   }
 
   private bind(): void {

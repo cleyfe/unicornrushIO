@@ -68,7 +68,7 @@ export class GameImpl {
   private logId = 0;
 
   /** Plays on `city` (from OpenStreetMap) when given, otherwise on a synthetic grid city. */
-  constructor(seed: number, specs: CompanySpec[], city?: CityData) {
+  constructor(seed: number, specs: CompanySpec[], city?: CityData, multiplayer = false) {
     this.rng = new PseudoRandom(seed);
     this.map = city ? mapFromCity(city) : generateGridCity(this.rng);
     this.streetNames = city ? city.segments.names : [];
@@ -77,6 +77,7 @@ export class GameImpl {
     this.guardUntil = new Float32Array(this.map.size);
     this.dealLockUntil = new Float32Array(this.map.size);
     specs.forEach((s, id) => this.companies.push(newCompany(id, s)));
+    this.multiplayer = multiplayer;
     this.placeSpawns();
   }
 
@@ -121,8 +122,17 @@ export class GameImpl {
     return this.tick % CONFIG.ticksPerDay === 0;
   }
 
+  /**
+   * The company this screen plays (0 in single player; each client's own seat in
+   * multiplayer). It only changes what the client shows, never the simulation.
+   */
+  playerId = 0;
+
+  /** An online match: one human closing doesn't end it, and news names every company. */
+  readonly multiplayer: boolean;
+
   get player(): Company {
-    return this.companies[0];
+    return this.companies[this.playerId];
   }
 
   // ---------- derived numbers ----------
@@ -528,7 +538,7 @@ export class GameImpl {
     for (let i = 0; i < this.owner.length; i++) if (this.owner[i] === c.id) this.setOwner(i, NEUTRAL);
     this.lawsuits = this.lawsuits.filter((l) => l.plaintiff !== c.id && l.defendant !== c.id);
     this.news(
-      c.isBot ? `${c.name} ${why} and closed. Its customers are up for grabs.` : `Your company ${why} and closed.`,
+      c.isBot || this.multiplayer ? `${c.name} ${why} and closed. Its customers are up for grabs.` : `Your company ${why} and closed.`,
       c.isBot ? 'good' : 'bad',
     );
   }

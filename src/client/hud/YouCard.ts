@@ -44,7 +44,7 @@ export class YouCard {
     $(this.root, '[data-act="locate"]').addEventListener('click', onLocate);
     $(this.root, '[data-act="borrow"]').addEventListener('click', (e) => {
       const amount = Number((e.currentTarget as HTMLElement).dataset.amount);
-      if (amount > 0) this.sendIntent({ type: 'borrow', companyId: 0, amount });
+      if (amount > 0) this.sendIntent({ type: 'borrow', companyId: this.game.playerId, amount });
     });
     this.spentSoFar = this.spent();
   }

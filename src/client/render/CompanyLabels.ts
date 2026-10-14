@@ -33,9 +33,9 @@ export class CompanyLabels {
     this.root.className = 'company-labels';
     this.labels = game.companies.map((c) => {
       const root = document.createElement('div');
-      root.className = `company-label${c.isBot ? '' : ' me'}`;
+      root.className = `company-label${c.id === this.game.playerId ? ' me' : ''}`;
       root.style.setProperty('--company', `rgb(${c.color.join(',')})`);
-      root.innerHTML = `<div class="pops"></div><div class="name"><i></i>${c.isBot ? c.name : `${c.name} (you)`}</div><div class="value"></div>`;
+      root.innerHTML = `<div class="pops"></div><div class="name"><i></i>${c.id === this.game.playerId ? `${c.name} (you)` : c.name}</div><div class="value"></div>`;
       this.root.append(root);
       return {
         root,

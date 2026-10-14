@@ -26,9 +26,9 @@ export class GuardMarkers {
       if (!badge) {
         const c = g.companies[p.owner];
         badge = document.createElement('div');
-        badge.className = `guard-badge${p.owner === 0 ? ' me' : ''}`;
+        badge.className = `guard-badge${p.owner === g.playerId ? ' me' : ''}`;
         badge.style.setProperty('--company', `rgb(${c.color.join(',')})`);
-        badge.title = `${c.isBot ? c.name : 'Your'} guard: streets here cost rivals more push to win`;
+        badge.title = `${c.id === g.playerId ? 'Your' : c.name} guard: streets here cost rivals more push to win`;
         this.root.append(badge);
         this.badges.set(key, badge);
       }

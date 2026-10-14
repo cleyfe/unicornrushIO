@@ -30,7 +30,7 @@ export class RaceChart {
       'div',
       'race-chart',
       `<div class="rc-legend">${game.companies
-        .map((c) => `<span><i style="background:${rgb(c.color)}"></i>${c.isBot ? c.name : `${c.name} (you)`}</span>`)
+        .map((c) => `<span><i style="background:${rgb(c.color)}"></i>${c.id === this.game.playerId ? `${c.name} (you)` : c.name}</span>`)
         .join('')}</div>
       <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Valuation of every company over time"></svg>
       <div class="rc-readout"></div>`,
@@ -77,7 +77,7 @@ export class RaceChart {
           d += `${pen ? 'L' : 'M'}${x(i).toFixed(1)},${this.y(v).toFixed(1)}`;
           pen = true;
         });
-        return `<path d="${d}" fill="none" stroke="${rgb(c.color)}" stroke-width="${id === 0 ? 2.5 : 2}" stroke-linejoin="round" stroke-linecap="round"/>`;
+        return `<path d="${d}" fill="none" stroke="${rgb(c.color)}" stroke-width="${id === this.game.playerId ? 2.5 : 2}" stroke-linejoin="round" stroke-linecap="round"/>`;
       })
       .join('');
     let marker = '';

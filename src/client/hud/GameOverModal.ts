@@ -41,9 +41,9 @@ function whatHappened(game: GameImpl, history: History): string {
 
 export function showGameOver(game: GameImpl, r: GameResult, onAgain: () => void, history?: History, onWatch?: () => void): void {
   const me = game.player;
-  const won = r.winnerId === 0;
+  const won = r.winnerId === game.playerId;
   const winner = r.winnerId === null ? null : game.companies[r.winnerId];
-  const who = winner?.isBot ? winner.name : 'You';
+  const who = winner && winner.id !== game.playerId ? winner.name : 'You';
   const headline = won
     ? r.reason === 'unicorn'
       ? '🦄 You built a unicorn!'
