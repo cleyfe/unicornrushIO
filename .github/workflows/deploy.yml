@@ -1,6 +1,7 @@
-# Tests, builds and deploys the game to Cloudflare Pages (unicornrush.io).
-# Pushes to main go live; pull requests get a preview URL.
-# Needs two repository secrets: CLOUDFLARE_API_TOKEN (Cloudflare Pages: Edit) and CLOUDFLARE_ACCOUNT_ID.
+# Tests, builds and deploys the game to Cloudflare Workers (static assets, unicornrush.io).
+# Pushes to main go live; pull requests upload a preview version with its own URL.
+# Needs two repository secrets: CLOUDFLARE_API_TOKEN (the "Edit Cloudflare Workers" token template)
+# and CLOUDFLARE_ACCOUNT_ID. The first deploy creates the Worker; nothing to set up by hand.
 name: Deploy
 
 on:
@@ -31,10 +32,10 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare
         if: ${{ env.CLOUDFLARE_API_TOKEN != '' }}
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=unicornrush --branch=${{ github.head_ref || github.ref_name }}
+          command: ${{ github.ref == 'refs/heads/main' && 'deploy' || 'versions upload' }}

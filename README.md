@@ -16,11 +16,12 @@ The full rules are on the in-game **How to play** page (`docs.html`), generated 
 
 ## Deploying
 
-The game is a static site, hosted on **Cloudflare Pages** at unicornrush.io.
+The game is a static site, served by **Cloudflare Workers** (static assets) at unicornrush.io.
 `.github/workflows/deploy.yml` tests and builds every push; pushes to `main` go live and pull
-requests get a preview URL. It needs two repository secrets: `CLOUDFLARE_API_TOKEN` (a token with
-*Cloudflare Pages: Edit*) and `CLOUDFLARE_ACCOUNT_ID`. Without them the workflow still builds and
-tests, and skips the deploy. Cache rules are in `public/_headers`.
+requests upload a preview version with its own URL. The first deploy creates the Worker.
+It needs two repository secrets: `CLOUDFLARE_API_TOKEN` (from the *Edit Cloudflare Workers*
+token template) and `CLOUDFLARE_ACCOUNT_ID`. Without them the workflow still builds and tests,
+and skips the deploy. Settings are in `wrangler.toml`, cache rules in `public/_headers`.
 
 ## How to win
 

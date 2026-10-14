@@ -1,4 +1,12 @@
-# Cloudflare Pages: the game is a static site built to dist/ (see .github/workflows/deploy.yml).
+# Cloudflare Workers with static assets: the game is a static site built to dist/
+# (see .github/workflows/deploy.yml). Multiplayer rooms (Durable Objects) will join this Worker later.
 name = "unicornrush"
-pages_build_output_dir = "dist"
-compatibility_date = "2026-10-01"
+compatibility_date = "2026-09-01"
+
+[assets]
+directory = "./dist"
+
+# Once unicornrush.io is on Cloudflare, uncomment to serve the game there (deploy creates the DNS record):
+# routes = [
+#   { pattern = "unicornrush.io", custom_domain = true },
+# ]

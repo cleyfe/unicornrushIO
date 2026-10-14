@@ -1,4 +1,4 @@
-# Cloudflare Pages response headers.
+# Response headers for Cloudflare static assets.
 # Built code has content hashes in its file names, so it can be cached for good.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
