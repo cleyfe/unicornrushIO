@@ -1,4 +1,5 @@
 import type { Difficulty } from '@unicornrush/engine-api/game/Game';
+import { ROOM_CODE_PATTERN } from '@unicornrush/engine-api/net/Protocol';
 import { type CityInfo, loadCityIndex } from '../cities';
 import { openDocs } from './DocsOverlay';
 
@@ -47,7 +48,12 @@ const cityCard = (c: CityInfo, active: boolean) =>
     <small>${c.area}</small>${mixBar(c.mix)}</button>`;
 
 /** Title screen: settings on the left, cities on the right. */
-export function showIntro(container: HTMLElement, onStart: (name: string, city: CityInfo, difficulty: Difficulty, rivals: number) => void): void {
+export function showIntro(
+  container: HTMLElement,
+  onStart: (name: string, city: CityInfo, difficulty: Difficulty, rivals: number) => void,
+  /** Online: `code` is a room to join, or null to create one. */
+  onOnline: (name: string, code: string | null) => void,
+): void {
   const setup = loadSetup();
   container.innerHTML = `
     <div class="overlay intro-bg"><div class="menu">
@@ -62,6 +68,13 @@ export function showIntro(container: HTMLElement, onStart: (name: string, city: 
           ${[3, 7, 11, 19].map((n) => `<button data-rivals="${n}">${n + 1}</button>`).join('')}
         </div></div>
         <button id="start" class="primary play">Play ▶</button>
+        <div class="field online"><span>Online</span>
+          <div class="online-row">
+            <button id="create-room" type="button">Create room</button>
+            <input id="room-code" maxlength="5" placeholder="Code" aria-label="Room code" autocapitalize="characters" />
+            <button id="join-room" type="button">Join</button>
+          </div>
+        </div>
         <button class="docs-link link" type="button">How to play</button>
         ${LEGAL_FOOTER}
       </aside>
@@ -119,5 +132,19 @@ export function showIntro(container: HTMLElement, onStart: (name: string, city: 
   }
   $('#start').addEventListener('click', start);
   $('.docs-link').addEventListener('click', () => void openDocs());
+  const playerName = () => {
+    setup.name = input.value.trim() || 'Your Co';
+    saveSetup(setup);
+    return setup.name;
+  };
+  const code = $<HTMLInputElement>('#room-code');
+  const join = () => {
+    const c = code.value.trim().toUpperCase();
+    if (ROOM_CODE_PATTERN.test(c)) onOnline(playerName(), c);
+    else code.focus();
+  };
+  $('#create-room').addEventListener('click', () => onOnline(playerName(), null));
+  $('#join-room').addEventListener('click', join);
+  code.addEventListener('keydown', (e) => e.key === 'Enter' && join());
   input.addEventListener('keydown', (e) => e.key === 'Enter' && start());
 }

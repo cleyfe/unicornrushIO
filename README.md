@@ -23,6 +23,23 @@ It needs two repository secrets: `CLOUDFLARE_API_TOKEN` (from the *Edit Cloudfla
 token template) and `CLOUDFLARE_ACCOUNT_ID`. Without them the workflow still builds and tests,
 and skips the deploy. Settings are in `wrangler.toml`, cache rules in `public/_headers`.
 
+## Online multiplayer
+
+Online matches use **deterministic lockstep**, like OpenFront: the server never runs the game.
+
+- `server/worker.ts` (the Worker): `POST /api/rooms` returns a room code; `/api/rooms/<code>` opens a
+  WebSocket into that room's **GameRoom Durable Object**. Static files are served before it runs.
+- `server/RoomCore.ts`: the room itself, with no Cloudflare APIs so it's unit-tested (`tests/Room.test.ts`).
+  Lobby (seats, host settings, a per-browser key to reconnect), then every 100 ms one **turn**: the
+  intents gathered since the last turn, each stamped with the sender's own company id.
+- Every client applies the same turns to the same seed (`src/client/net/NetGameRunner.ts`), so they stay
+  identical. Every 50 turns they send a state hash; a mismatch is reported as a desync. A player who
+  reconnects gets the whole match replayed.
+- Messages are typed in `packages/engine-api/src/net/Protocol.ts`.
+
+To try it locally: `npm run build && npm run dev:server` (the Worker, game included, on
+http://127.0.0.1:8787), or `npm run dev` alongside it for hot reload (Vite proxies `/api` to the Worker).
+
 ## How to win
 
 - 🦄 **Become the first unicorn**: the first company valued at **$1B** wins instantly.

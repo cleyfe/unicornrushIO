@@ -15,6 +15,7 @@ npm run fairness -- 48  # controlled experiments: seat bias, price only, AI only
 npm run fairness -- 48 paris-opera  # same, on a real city
 npm run build-city -- paris-opera   # rebuild a city from OpenStreetMap (see scripts/cities.json)
 npm run city-index                  # rebuild public/cities/index.json and thumbnails
+npm run dev:server                  # the Worker (rooms + built game) on :8787; `npm run dev` proxies /api to it
 ```
 
 Run one test file: `npx vitest run tests/Lawsuit.test.ts`.
@@ -67,6 +68,14 @@ behind), `ScrutinyExecution` (strikes, exposés, breaches for a runaway leader),
 `CompetitionAuthorityExecution`, `BotExecution`, `WinCheckExecution`.
 Intent executions: `CampaignExecution` (winning customers), `LawsuitExecution`
 (class action), and the instant ones in `CompanyActionExecutions.ts`.
+
+### Online multiplayer
+
+Deterministic lockstep: `server/RoomCore.ts` (inside the `GameRoom` Durable Object, `server/worker.ts`)
+relays intents in numbered turns, one per tick; every client applies the same turns
+(`src/client/net/NetGameRunner.ts`). So the engine must stay deterministic, and anything that
+differs per client (whose screen it is: `game.playerId`) must never affect the simulation.
+`multiplayer` is a GameRunner option shared by all clients. Protocol types: `engine-api/net/Protocol.ts`.
 
 ### Adding a new action
 

@@ -15,6 +15,9 @@ export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const ROOM_CODE_LENGTH = 5;
 export const ROOM_CODE_PATTERN = /^[A-HJ-NP-Z2-9]{5}$/;
 
+/** Most companies on one map, humans and bots together. */
+export const MAX_COMPANIES = 20;
+
 /** Every this many turns, clients report a hash of their game state to catch desyncs. */
 export const HASH_EVERY_TURNS = 50;
 

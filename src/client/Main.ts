@@ -4,7 +4,9 @@ import type { Difficulty } from '@unicornrush/engine-api/game/Game';
 import type { Wealth } from '@unicornrush/engine-api/game/GameMap';
 import { defaultCompanies } from '@unicornrush/engine-lib/configuration/Companies';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
-import type { CityInfo } from './cities';
+import type { Intent } from '@unicornrush/engine-api/Intents';
+import { ROOM_CODE_PATTERN } from '@unicornrush/engine-api/net/Protocol';
+import { type CityInfo, loadCityIndex } from './cities';
 import { ClientGameRunner } from './ClientGameRunner';
 import { ActionBar } from './hud/ActionBar';
 import { CardPicker } from './hud/CardPicker';
@@ -14,6 +16,7 @@ import { Drawer } from './hud/Drawer';
 import { el } from './hud/dom';
 import { showGameOver } from './hud/GameOverModal';
 import { showIntro } from './hud/IntroModal';
+import { showLobby } from './hud/LobbyScreen';
 import { NewsFeed } from './hud/NewsFeed';
 import { RaceBoard } from './hud/RaceBoard';
 import { toast } from './hud/Toast';
@@ -25,6 +28,8 @@ import { InputHandler } from './InputHandler';
 import { CityMapView, type MapTheme, wealthColors } from './render/CityMapView';
 import { CompanyLabels } from './render/CompanyLabels';
 import { GuardMarkers } from './render/GuardMarkers';
+import { NetGameRunner } from './net/NetGameRunner';
+import { createRoom, RoomClient } from './net/RoomClient';
 
 const app = document.getElementById('app')!;
 
@@ -34,22 +39,72 @@ async function loadCity(id: string): Promise<CityData> {
   return decodeCity(await res.json());
 }
 
-async function startGame(name: string, info: CityInfo, difficulty: Difficulty, rivals: number): Promise<void> {
+/** Loads a city for a match, showing progress; null (with an error on screen) if it fails. */
+async function loadCityFor(info: CityInfo): Promise<CityData | null> {
   app.innerHTML = `<div class="overlay intro-bg"><div class="card loading"><h2>${info.flag} ${info.city}</h2><p>Loading…</p></div></div>`;
-  let city: CityData;
   try {
-    city = await loadCity(info.id);
+    return await loadCity(info.id);
   } catch (e) {
     app.innerHTML = `<div class="overlay"><div class="card"><h2>Couldn't load the city</h2><p>${(e as Error).message}</p></div></div>`;
-    return;
+    return null;
   }
+}
 
-  const client = new ClientGameRunner(Math.floor(Math.random() * 1e9), defaultCompanies(name, false, difficulty, rivals), city);
+/** Back to the start menu. */
+function menu(): void {
+  if (/^#[A-Z0-9]{5}$/i.test(location.hash)) window.history.replaceState(null, '', location.pathname);
+  showIntro(app, startGame, goOnline);
+}
+
+/** A match against bots, run in this browser. */
+async function startGame(name: string, info: CityInfo, difficulty: Difficulty, rivals: number): Promise<void> {
+  const city = await loadCityFor(info);
+  if (!city) return;
+  play(new ClientGameRunner(Math.floor(Math.random() * 1e9), defaultCompanies(name, false, difficulty, rivals), city), info, city);
+}
+
+/** Online: create a room (code null) or join one, then wait in its lobby until the host starts. */
+async function goOnline(name: string, code: string | null): Promise<void> {
+  if (!code) {
+    try {
+      code = await createRoom();
+    } catch (e) {
+      toast((e as Error).message);
+      return;
+    }
+  }
+  window.history.replaceState(null, '', `#${code}`);
+  const room = new RoomClient(code, name);
+  showLobby(app, room, menu);
+  room.onStart = async (start, you) => {
+    room.onStart = () => {}; // a reconnect re-sends the start: the match is already running
+    // Turns can arrive while the city loads; keep them for the match.
+    const early: [number, Intent[][]][] = [];
+    room.onTurns = (from, turns) => early.push([from, turns]);
+    const info = (await loadCityIndex()).find((c) => c.id === start.cityId);
+    const city = info ? await loadCityFor(info) : null;
+    if (!info || !city) {
+      room.leave();
+      return;
+    }
+    const client = new NetGameRunner(start, city, you, room);
+    for (const [from, turns] of early) client.receive(from, turns);
+    room.onTurns = (from, turns) => client.receive(from, turns);
+    room.onDesync = () => toast('Your game fell out of sync with the other players. Reload to resync.');
+    room.onError = (text) => toast(text);
+    play(client, info, city, room);
+  };
+}
+
+/** The match screen: map, HUD and the frame loop, for a local or an online match. */
+function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: RoomClient): void {
   const game = client.game;
-  // The match starts paused; your first move (or the play button) starts the clock.
-  client.speed = 0;
-  let started = false;
+  // A local match starts paused: your first move (or the play button) starts the clock.
+  // Online, the room's clock is already running.
+  let started = client.online;
+  if (!client.online) client.speed = 0;
   const setSpeed = (s: number) => {
+    if (client.online) return;
     started = true;
     client.speed = s;
   };
@@ -58,7 +113,7 @@ async function startGame(name: string, info: CityInfo, difficulty: Difficulty, r
   };
 
   app.innerHTML = '';
-  const stage = el('div', 'stage', '');
+  const stage = el('div', client.online ? 'stage online' : 'stage', '');
   const mapEl = el('div', 'map', '');
   const tooltip = el('div', 'hovercard', '');
   stage.append(mapEl, tooltip);
@@ -159,6 +214,8 @@ async function startGame(name: string, info: CityInfo, difficulty: Difficulty, r
       else if (l.recipient === game.playerId) news.push(l);
       else if (l.recipient === undefined && !(personalSuit && l.text.startsWith('⚖️'))) news.push(l);
     }
+    // Online, a closed company doesn't end the match: watch the rest.
+    if (client.online && !game.player.alive) stage.classList.add('spectating');
     uiTimer += elapsed;
     if (uiTimer > 120 || game.result) {
       uiTimer = 0;
@@ -177,8 +234,9 @@ async function startGame(name: string, info: CityInfo, difficulty: Difficulty, r
     if (game.result) {
       detach();
       const again = () => {
+        room?.leave();
         stage.remove();
-        showIntro(app, startGame);
+        menu();
       };
       // After closing, you can watch the rest of the match.
       showGameOver(game, game.result, again, history, () => {
@@ -195,4 +253,16 @@ async function startGame(name: string, info: CityInfo, difficulty: Difficulty, r
   requestAnimationFrame(frame);
 }
 
-showIntro(app, startGame);
+// An invite link (unicornrush.io/#CODE) goes straight to that room.
+const invited = location.hash.slice(1).toUpperCase();
+if (ROOM_CODE_PATTERN.test(invited)) {
+  let name = 'Player';
+  try {
+    name = JSON.parse(localStorage.getItem('unicornrush.setup') ?? '{}').name || name;
+  } catch {
+    // Storage blocked: default name.
+  }
+  void goOnline(name, invited);
+} else {
+  menu();
+}

@@ -6,6 +6,8 @@ const pkg = (name: string) => fileURLToPath(new URL(`./packages/${name}/src`, im
 export default defineConfig({
   base: './',
   worker: { format: 'es' },
+  // `npm run dev` + `npm run dev:server`: rooms go to the local Worker.
+  server: { proxy: { '/api': { target: 'http://127.0.0.1:8787', ws: true } } },
   build: {
     rollupOptions: {
       // The game and the rules page.

@@ -12,8 +12,13 @@ export class ClientGameRunner {
   private acc = 0;
   private lastLogId = 0;
 
-  constructor(seed: number, companies: CompanySpec[], city?: CityData) {
-    this.runner = new GameRunner(seed, companies, city);
+  constructor(seed: number, companies: CompanySpec[], city?: CityData, multiplayer = false) {
+    this.runner = new GameRunner(seed, companies, city, multiplayer);
+  }
+
+  /** Online matches can't be paused or sped up. */
+  get online(): boolean {
+    return false;
   }
 
   get game(): GameImpl {

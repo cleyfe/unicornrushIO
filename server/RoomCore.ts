@@ -2,6 +2,7 @@ import type { Intent } from '@unicornrush/engine-api/Intents';
 import {
   type ClientMessage,
   HASH_EVERY_TURNS,
+  MAX_COMPANIES,
   type LobbyPlayer,
   type RoomSettings,
   type ServerMessage,
@@ -25,8 +26,6 @@ interface Player {
   sentThisTurn: number;
 }
 
-/** Most companies on one map (humans + bots). */
-export const MAX_COMPANIES = 20;
 const MAX_INTENTS_PER_TURN = 20;
 const MAX_MESSAGE_BYTES = 4096;
 const CATCH_UP_CHUNK = 2000;

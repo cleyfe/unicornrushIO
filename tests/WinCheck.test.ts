@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { multiplayerCompanies } from '@unicornrush/engine-lib/configuration/Companies';
+import { GameRunner } from '@unicornrush/engine/GameRunner';
 import { quietSetup, runDays, setup } from './util/Setup';
 
 describe('ending the game', () => {
@@ -64,5 +66,15 @@ describe('keep watching', () => {
     runDays(r, 30);
     expect(g.result).toBeNull();
     expect(g.day).toBeGreaterThan(30);
+  });
+
+  it('keeps an online match going when one human closes', () => {
+    const r = new GameRunner(7, multiplayerCompanies(['Alice', 'Bob'], 'normal', 1), undefined, true);
+    const alice = r.game.companies[0];
+    alice.cash = -1e7;
+    runDays(r, CONFIG.bankruptcyGraceDays + 1);
+    expect(alice.alive).toBe(false);
+    expect(r.game.result).toBeNull();
+    expect(r.game.log.some((l) => l.text.startsWith('Alice') && l.text.includes('closed'))).toBe(true);
   });
 });

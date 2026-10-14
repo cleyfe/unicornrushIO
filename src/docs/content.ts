@@ -162,6 +162,16 @@ const SECTIONS: Section[] = [
       <p>Owning more than ${pct(C.antitrust.actShare)} of the city's customers for ${C.antitrust.graceDays} days brings an antitrust fine and a forced sale of streets.</p>`,
   },
   {
+    id: 'online',
+    title: '🌐 Online',
+    body: `<ul>
+      <li><b>Create room</b> on the start menu, then share the link or the 5-letter code. Friends join from the menu or by opening the link.</li>
+      <li>The host picks the city, how many bots join and how strong they are, then starts. Up to 8 players and 20 companies.</li>
+      <li>The match can't be paused. If you drop out, reopen the link: you get your company back where the match is now.</li>
+      <li>If your company closes, the match goes on and you can watch the end.</li>
+    </ul>`,
+  },
+  {
     id: 'difficulty',
     title: '🤖 Difficulty',
     body: `<ul>
