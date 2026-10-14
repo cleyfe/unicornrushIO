@@ -3,11 +3,12 @@
 name = "unicornrush"
 compatibility_date = "2026-09-01"
 
-[assets]
-directory = "./dist"
-
 # Served at unicornrush.io (and www); each deploy keeps the custom domains and their DNS records attached.
+# Top-level keys must stay above the [assets] table, or TOML reads them as part of it.
 routes = [
   { pattern = "unicornrush.io", custom_domain = true },
   { pattern = "www.unicornrush.io", custom_domain = true },
 ]
+
+[assets]
+directory = "./dist"
