@@ -414,9 +414,39 @@ h1 b {
 .defence.strong {
   color: var(--pos);
 }
+.dock-team .split {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
 .dock-team input[type='range'] {
   flex: 1;
+  width: 100%;
   accent-color: var(--accent);
+}
+/* Where service reaches ×1 (all served) and ×1.5 (most defence): the band to aim for. */
+.dock-team .mark {
+  position: absolute;
+  top: -6px;
+  width: 2px;
+  height: 8px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--muted);
+  pointer-events: none;
+}
+.dock-team .mark.m15 {
+  background: var(--pos);
+}
+.dock-team .side kbd {
+  margin-left: 4px;
+  font-size: 9px;
+  color: var(--muted);
+  font-family: inherit;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  padding: 0 3px;
 }
 .dock-team .side {
   padding: 2px 6px;
@@ -442,6 +472,9 @@ h1 b {
 .capacity.bad {
   color: var(--neg);
   font-weight: 700;
+}
+.capacity.over {
+  color: var(--muted);
 }
 .dock-cmds {
   display: flex;
@@ -1885,7 +1918,8 @@ ul.what li {
     min-width: 46px;
     padding: 4px 2px;
   }
-  .cmd kbd {
+  .cmd kbd,
+  .dock-team .side kbd {
     display: none;
   }
   .cmd .lb {

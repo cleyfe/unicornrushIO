@@ -22,6 +22,8 @@ const PRICE_TIPS: Record<PriceLevel, string> = {
  * OpenFront's bar. Status on top (push, defence, team), commands below, each
  * with a hotkey. Explanations live in tooltips, not on screen.
  */
+const S_MAX_SERVICE = CONFIG.sales.maxServiceLevel;
+
 export class ActionBar {
   readonly root: HTMLElement;
   /** Keep just enough operations staff, automatically. On by default for beginners. */
@@ -52,11 +54,15 @@ export class ActionBar {
         <div class="defence" data-v="defence" title="Defence: how much harder your streets are to steal. Spare Ops staff and unspent push raise it; being overloaded lowers it."></div>
       </div>
       <div class="dock-team team" data-tip="team">
-        <span class="side ops" title="Operations staff serve customers (${S.customersPerOps} each) and keep them loyal">⚙️ Ops <b data-v="ops"></b></span>
-        <input type="range" min="0" max="100" step="5" data-input="split" aria-label="Share of staff in sales" />
-        <span class="side" title="Sales staff build push to win streets">Sales <b data-v="sales"></b> 🤝</span>
+        <span class="side ops" title="Operations staff serve customers (${S.customersPerOps} each) and keep them loyal. O: more Ops">⚙️ Ops <b data-v="ops"></b><kbd>O</kbd></span>
+        <span class="split">
+          <input type="range" min="0" max="100" step="5" data-input="split" aria-label="Share of staff in sales" />
+          <i class="mark m1" data-v="mark1" title="Service ×1: every customer served"></i>
+          <i class="mark m15" data-v="mark15" title="Service ×1.5: the most defence spare Ops can give"></i>
+        </span>
+        <span class="side" title="Sales staff build push to win streets. P: more Sales">Sales <b data-v="sales"></b> 🤝<kbd>P</kbd></span>
         <label class="auto" title="Auto: keep just enough Ops for every customer; everyone else sells. Moving the slider turns it off."><input type="checkbox" data-input="auto" checked />Auto</label>
-        <span class="capacity" data-v="capacity" title="Customers your Ops staff can serve. Unserved customers leave."></span>
+        <span class="capacity" data-v="capacity"></span>
       </div>
       <div class="dock-cmds">
         <div class="grp">
@@ -122,9 +128,22 @@ export class ActionBar {
     });
   }
 
+  /** Moves 5% of staff between Ops and Sales (O / P keys), taking over from Auto. */
+  private nudgeSplit(toSales: number): void {
+    const c = this.game.player;
+    this.autoOps = false;
+    $<HTMLInputElement>(this.root, '[data-input="auto"]').checked = false;
+    const share = Math.max(0, Math.min(1, Math.round((c.salesShare + toSales) * 20) / 20));
+    this.send({ type: 'setSalesShare', share });
+  }
+
   /** Runs the command bound to a hotkey; returns false if the key isn't one. */
   hotkey(key: string): boolean {
     const k = key.toUpperCase();
+    if (k === 'O' || k === 'P') {
+      this.nudgeSplit(k === 'O' ? -0.05 : 0.05);
+      return true;
+    }
     const target = [...this.root.querySelectorAll<HTMLButtonElement>('.cmd')].find((b) => b.querySelector('kbd')?.textContent === k);
     if (!target || target.disabled) return false;
     target.click();
@@ -163,16 +182,27 @@ export class ActionBar {
     const defEl = $(r, '[data-v="defence"]');
     defEl.textContent = `🛡 ×${def.toFixed(1)}`;
     defEl.className = `defence ${def < 0.95 ? 'weak' : def > 1.3 ? 'strong' : ''}`;
+    // Defence = service × push reserve: show both, so a big reserve can't hide a lack of Ops.
+    defEl.title = `Defence ×${def.toFixed(2)}: how much more push rivals need to steal your streets.\nService ×${Math.max(0.3, g.serviceLevel(c)).toFixed(2)} (spare Ops, up to ×${S_MAX_SERVICE}) × push reserve ×${g.retention(c).toFixed(2)} (unspent push, up to ×${CONFIG.sales.maxRetention}).`;
 
     $(r, '[data-v="ops"]').textContent = int(g.opsStaff(c));
     const trainees = g.traineeCount(c);
     $(r, '[data-v="sales"]').textContent = `${int(g.salesStaff(c))}${trainees ? ` +${trainees}` : ''}`;
     const slider = $<HTMLInputElement>(r, '[data-input="split"]');
     if (document.activeElement !== slider) slider.value = String(Math.round(c.salesShare * 100));
-    const cover = g.coverage(c);
+    // Service: Ops capacity ÷ customers. The target band is ×1 to ×1.5.
+    const service = c.customers > 0 ? g.capacity(c) / c.customers : 1;
     const cap = $(r, '[data-v="capacity"]');
-    cap.textContent = `${int(Math.min(g.capacity(c), c.customers))}/${int(c.customers)} served`;
-    cap.className = `capacity ${cover < 1 ? 'bad' : 'good'}`;
+    cap.textContent = `⚙️ ×${service.toFixed(2)}`;
+    cap.className = `capacity ${service < 1 ? 'bad' : service > S_MAX_SERVICE + 0.05 ? 'over' : 'good'}`;
+    cap.title =
+      `Service: Ops can serve ${int(g.capacity(c))} of your ${int(c.customers)} customers (${S.customersPerOps} each; trainees don't count yet).\n` +
+      `Below ×1, customers go unserved and leave. ×1 to ×${S_MAX_SERVICE}: spare Ops make your streets harder to steal. Above ×${S_MAX_SERVICE}: no extra effect.`;
+    // Slider marks where service hits ×1 and ×1.5 (the slider is the share of staff in sales).
+    const staff = Math.max(1, c.employees);
+    const markAt = (level: number) => Math.max(0, Math.min(100, 100 * (1 - (c.customers * level) / S.customersPerOps / staff)));
+    $(r, '[data-v="mark1"]').style.left = `calc(8px + (100% - 16px) * ${markAt(1) / 100})`;
+    $(r, '[data-v="mark15"]').style.left = `calc(8px + (100% - 16px) * ${markAt(S_MAX_SERVICE) / 100})`;
 
     const ad = g.adOffer(c);
     const adBtn = $<HTMLButtonElement>(r, '[data-act="advertise"]');

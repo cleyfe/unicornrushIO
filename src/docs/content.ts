@@ -69,11 +69,13 @@ const SECTIONS: Section[] = [
     title: '🛡 Defence',
     body: `<p>A rival's street costs more to steal when its owner:</p>
       <ul>
-        <li>has spare <b>Ops</b> staff (good service keeps customers loyal),</li>
-        <li>keeps <b>unspent push</b> (up to ×${C.sales.maxRetention}),</li>
+        <li>has spare <b>Ops</b> staff: service, up to ×${C.sales.maxServiceLevel},</li>
+        <li>keeps <b>unspent push</b>: push reserve, up to ×${C.sales.maxRetention},</li>
         <li>charges a price that suits the street (low on budget streets, high on rich ones),</li>
         <li>has a <b>Guard</b> on the area (×${C.guard.defenceMult}).</li>
-      </ul>`,
+      </ul>
+      <p>The 🛡 number is service × push reserve. A big push reserve can show a high 🛡 while you're short of Ops,
+      so watch the ⚙️ service number to know whether everyone is served.</p>`,
   },
   {
     id: 'team',
@@ -84,7 +86,12 @@ const SECTIONS: Section[] = [
         <li><b>💼 Sales</b>: build push to win streets.</li>
         <li><b>⚙️ Ops</b>: serve customers, ${C.staff.customersPerOps} each. Unserved customers leave.</li>
       </ul>
-      <p><b>Auto</b> keeps just enough Ops. Keeping a few more makes your streets harder to steal.</p>`,
+      <p><b>Service</b> (⚙️ in the action bar) is what your Ops can serve divided by your customers.
+      Below ×1, customers go unserved and leave. Between ×1 and ×${C.sales.maxServiceLevel}, spare Ops make your streets
+      harder to steal. Above ×${C.sales.maxServiceLevel}, extra Ops do nothing. Marks on the slider show where ×1 and
+      ×${C.sales.maxServiceLevel} are. New hires don't serve anyone until they finish training.</p>
+      <p><b>Auto</b> keeps service at about ×1.05: everyone served, as many people as possible in Sales.
+      Take over (O and P keys, or the slider) to hold ×1.2–1.5 when rivals are attacking.</p>`,
   },
   {
     id: 'price',
@@ -171,6 +178,7 @@ const SECTIONS: Section[] = [
       [
         ['Space', 'Pause / play'],
         ['H', 'Hire 10'],
+        ['O / P', 'Move 5% of staff to Ops / to Sales'],
         ['A', 'Aim an ad'],
         ['G', 'Guard'],
         ['B', 'Buy streets'],
