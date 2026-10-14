@@ -1,6 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, ROOM_CODE_PATTERN, type RoomListing, TURN_MS } from '@unicornrush/engine-api/net/Protocol';
-import { parseSoloEvent, recordEvent } from './events';
+import { parseBrowserEvent, recordEvent } from './events';
 import { type Conn, RoomCore } from './RoomCore';
 
 interface Env {
@@ -21,7 +21,7 @@ const directory = (env: Env) => env.DIRECTORY.get(env.DIRECTORY.idFromName('main
  *   GET  /api/rooms          → open games waiting for players (RoomListing[])
  *   POST /api/rooms          → { code }: a new room
  *   GET  /api/rooms/<code>   → WebSocket into that room's GameRoom
- *   POST /api/events         → an anonymous single-player event for the stats
+ *   POST /api/events         → an anonymous visit or single-player event for the stats
  */
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -29,9 +29,11 @@ export default {
     if (url.pathname === '/api/events' && request.method === 'POST') {
       const text = await request.text();
       if (text.length > 1000) return new Response(null, { status: 413 });
+      // Automated browsers (previews, crawlers that run scripts) aren't visitors.
+      if (/bot|crawl|spider|headless|lighthouse/i.test(request.headers.get('User-Agent') ?? '')) return new Response(null, { status: 204 });
       let event = null;
       try {
-        event = parseSoloEvent(JSON.parse(text));
+        event = parseBrowserEvent(JSON.parse(text));
       } catch {
         // Not JSON.
       }

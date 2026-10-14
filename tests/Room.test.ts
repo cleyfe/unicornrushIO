@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Intent } from '@unicornrush/engine-api/Intents';
 import type { GameEvent, RoomListing, ServerMessage } from '@unicornrush/engine-api/net/Protocol';
-import { parseSoloEvent } from '../server/events';
+import { parseBrowserEvent } from '../server/events';
 import { GameRunner } from '@unicornrush/engine/GameRunner';
 import { type Conn, RoomCore } from '../server/RoomCore';
 
@@ -194,8 +194,8 @@ describe('online rooms', () => {
     expect(JSON.stringify(events)).not.toMatch(/Alice|Bob|ka|kb/); // no names, no keys
   });
 
-  it('only accepts known single-player events from browsers', () => {
-    expect(parseSoloEvent({ type: 'solo_finished', city: 'geneva', difficulty: 'easy', bots: 3, day: 300.5, reason: 'unicorn', winner: 'human' })).toEqual({
+  it('only accepts visits and known single-player events from browsers', () => {
+    expect(parseBrowserEvent({ type: 'solo_finished', city: 'geneva', difficulty: 'easy', bots: 3, day: 300.5, reason: 'unicorn', winner: 'human' })).toEqual({
       type: 'solo_finished',
       mode: 'solo',
       city: 'geneva',
@@ -206,8 +206,10 @@ describe('online rooms', () => {
       reason: 'unicorn',
       winner: 'human',
     });
-    expect(parseSoloEvent({ type: 'match_started' })).toBeNull();
-    expect(parseSoloEvent({ type: 'solo_started', city: '<script>' })?.city).toBeUndefined();
-    expect(parseSoloEvent('nope')).toBeNull();
+    expect(parseBrowserEvent({ type: 'match_started' })).toBeNull();
+    expect(parseBrowserEvent({ type: 'solo_started', city: '<script>' })?.city).toBeUndefined();
+    expect(parseBrowserEvent('nope')).toBeNull();
+    expect(parseBrowserEvent({ type: 'visit', reason: 'invite', city: 'x' })).toEqual({ type: 'visit', mode: 'web', reason: 'invite' });
+    expect(parseBrowserEvent({ type: 'visit', reason: 'evil' })?.reason).toBe('home');
   });
 });

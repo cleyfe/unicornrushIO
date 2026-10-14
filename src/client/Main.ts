@@ -29,7 +29,7 @@ import { CityMapView, type MapTheme, wealthColors } from './render/CityMapView';
 import { CompanyLabels } from './render/CompanyLabels';
 import { GuardMarkers } from './render/GuardMarkers';
 import { NetGameRunner } from './net/NetGameRunner';
-import { trackSolo } from './net/Analytics';
+import { trackSolo, trackVisit } from './net/Analytics';
 import { createRoom, RoomClient } from './net/RoomClient';
 
 const app = document.getElementById('app')!;
@@ -274,6 +274,7 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
 
 // An invite link (unicornrush.io/#CODE) goes straight to that room.
 const invited = location.hash.slice(1).toUpperCase();
+trackVisit(ROOM_CODE_PATTERN.test(invited) ? 'invite' : 'home');
 if (ROOM_CODE_PATTERN.test(invited)) {
   let name = 'Player';
   try {

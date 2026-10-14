@@ -53,10 +53,10 @@ export interface LobbyPlayer {
 
 // ---------- analytics ----------
 
-/** An anonymous gameplay event for the stats page: no player ids, no cookies. */
+/** An anonymous event for the stats page: no player ids, no cookies. A `visit` is one page load of the game. */
 export interface GameEvent {
-  type: 'room_created' | 'match_started' | 'match_finished' | 'solo_started' | 'solo_finished';
-  mode: 'online' | 'solo';
+  type: 'visit' | 'room_created' | 'match_started' | 'match_finished' | 'solo_started' | 'solo_finished';
+  mode: 'online' | 'solo' | 'web';
   room?: string;
   city?: string;
   difficulty?: string;
@@ -64,6 +64,7 @@ export interface GameEvent {
   bots?: number;
   /** Game day the match ended on. */
   day?: number;
+  /** How a match ended; for a visit, how it arrived: 'home' or 'invite' (a room link). */
   reason?: string;
   /** Whether a human or a bot won. */
   winner?: 'human' | 'bot' | 'none';

@@ -46,14 +46,19 @@ export async function recordEvent(db: EventsDb, e: GameEvent, country?: string):
 }
 
 const SOLO_TYPES = new Set(['solo_started', 'solo_finished']);
+const ENTRIES = new Set(['home', 'invite']);
 const WORD = /^[a-z0-9-]{1,40}$/;
 const int = (v: unknown, max: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.min(max, Math.floor(v))) : undefined);
 const word = (v: unknown) => (typeof v === 'string' && WORD.test(v) ? v : undefined);
 
-/** A single-player event sent by the browser (those matches never touch the server otherwise). Only known fields pass. */
-export function parseSoloEvent(body: unknown): GameEvent | null {
+/**
+ * An event sent by the browser: a visit, or a single-player match (those never touch the server
+ * otherwise). Only known fields pass.
+ */
+export function parseBrowserEvent(body: unknown): GameEvent | null {
   if (!body || typeof body !== 'object') return null;
   const b = body as Record<string, unknown>;
+  if (b.type === 'visit') return { type: 'visit', mode: 'web', reason: typeof b.reason === 'string' && ENTRIES.has(b.reason) ? b.reason : 'home' };
   if (typeof b.type !== 'string' || !SOLO_TYPES.has(b.type)) return null;
   return {
     type: b.type as GameEvent['type'],
