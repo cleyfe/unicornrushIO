@@ -1,5 +1,5 @@
 import type { Difficulty } from '@unicornrush/engine-api/game/Game';
-import { ROOM_CODE_PATTERN } from '@unicornrush/engine-api/net/Protocol';
+import { ROOM_CODE_PATTERN, type RoomListing } from '@unicornrush/engine-api/net/Protocol';
 import { type CityInfo, loadCityIndex } from '../cities';
 import { openDocs } from './DocsOverlay';
 
@@ -7,6 +7,8 @@ const SOURCE_URL = 'https://github.com/cleyfe/unicornrushIO';
 
 /** Copyright notice and links required by the license terms (AGPL §13 source link). */
 export const LEGAL_FOOTER = `<p class="legal">© UnicornRush and Contributors · <a href="${SOURCE_URL}" target="_blank" rel="noopener">Source (AGPL)</a> · <a href="terms-of-service.html">Terms</a> · <a href="privacy-policy.html">Privacy</a> · Maps © OpenStreetMap contributors</p>`;
+
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 const WEALTH_LABELS = ['Budget', 'Middle', 'Upscale', 'Luxury'];
 const STORAGE_KEY = 'unicornrush.setup';
@@ -74,6 +76,7 @@ export function showIntro(
             <input id="room-code" maxlength="5" placeholder="Code" aria-label="Room code" autocapitalize="characters" />
             <button id="join-room" type="button">Join</button>
           </div>
+          <div class="open-games" data-v="open-games" hidden></div>
         </div>
         <button class="docs-link link" type="button">How to play</button>
         ${LEGAL_FOOTER}
@@ -146,5 +149,34 @@ export function showIntro(
   $('#create-room').addEventListener('click', () => onOnline(playerName(), null));
   $('#join-room').addEventListener('click', join);
   code.addEventListener('keydown', (e) => e.key === 'Enter' && join());
+
+  // Open games: rooms waiting for players, refreshed while the menu is up.
+  const openGames = $('[data-v="open-games"]');
+  openGames.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-room]');
+    if (b) onOnline(playerName(), b.dataset.room!);
+  });
+  const refresh = async () => {
+    if (!openGames.isConnected) return;
+    try {
+      const [rooms, index] = await Promise.all([fetch('api/rooms').then((r) => (r.ok ? (r.json() as Promise<RoomListing[]>) : [])), loadCityIndex()]);
+      const city = (id: string) => index.find((c) => c.id === id);
+      openGames.hidden = false;
+      openGames.innerHTML = rooms.length
+        ? rooms
+            .slice(0, 6)
+            .map(
+              (r) =>
+                `<button class="open-game" data-room="${r.code}"><span><b>${esc(r.host)}</b> · ${city(r.cityId)?.flag ?? ''} ${city(r.cityId)?.city ?? ''}<small>${r.players}/${r.maxPlayers} players${r.bots ? ` · ${r.bots} bots` : ''}</small></span><span class="join">Join</span></button>`,
+            )
+            .join('')
+        : '<p class="muted">No open games right now. Create one!</p>';
+    } catch {
+      // No server (offline build): just the local game.
+      openGames.hidden = true;
+    }
+    window.setTimeout(refresh, 5000);
+  };
+  void refresh();
   input.addEventListener('keydown', (e) => e.key === 'Enter' && start());
 }

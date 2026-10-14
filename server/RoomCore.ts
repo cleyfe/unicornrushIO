@@ -4,6 +4,7 @@ import {
   HASH_EVERY_TURNS,
   MAX_COMPANIES,
   type LobbyPlayer,
+  type RoomListing,
   type RoomSettings,
   type ServerMessage,
   type StartInfo,
@@ -43,7 +44,7 @@ const DIFFICULTIES = new Set(['easy', 'normal', 'hard']);
 export class RoomCore {
   private players: Player[] = [];
   private conns = new Map<Conn, Player | null>();
-  private settings: RoomSettings = { cityId: 'paris-opera', difficulty: 'normal', bots: 3 };
+  private settings: RoomSettings = { cityId: 'paris-opera', difficulty: 'normal', bots: 3, listed: true };
   private info: StartInfo | null = null;
   private turns: Intent[][] = [];
   private pending: Intent[] = [];
@@ -56,6 +57,8 @@ export class RoomCore {
     /** Starts calling `tick` every turn; returns a function that stops it. */
     private startTimer: (tick: () => void) => () => void,
     private random: () => number = () => crypto.getRandomValues(new Uint32Array(1))[0],
+    /** Tells the open-games list about this room: its listing, or null to remove it. */
+    private onListing: (listing: RoomListing | null) => void = () => {},
   ) {}
 
   get started(): boolean {
@@ -160,6 +163,7 @@ export class RoomCore {
     if (typeof s.cityId === 'string' && CITY_ID.test(s.cityId)) this.settings.cityId = s.cityId;
     if (DIFFICULTIES.has(s.difficulty)) this.settings.difficulty = s.difficulty;
     if (Number.isFinite(s.bots)) this.settings.bots = Math.max(0, Math.min(MAX_RIVALS, Math.floor(s.bots)));
+    if (typeof s.listed === 'boolean') this.settings.listed = s.listed;
     this.broadcastLobby();
   }
 
@@ -168,6 +172,26 @@ export class RoomCore {
     for (const x of this.players) {
       x.conn?.send({ t: 'lobby', code: this.code, you: x.seat, host: 0, players, settings: this.settings });
     }
+    this.publish();
+  }
+
+  /** Lists the room in the main menu while it waits for players; unlists it once started, empty, full or private. */
+  private publish(): void {
+    const open = !this.started && this.players.length > 0 && this.players.length < MAX_HUMANS && this.settings.listed;
+    this.onListing(
+      open
+        ? {
+            code: this.code,
+            host: this.players[0].name,
+            players: this.players.length,
+            maxPlayers: MAX_HUMANS,
+            cityId: this.settings.cityId,
+            bots: this.settings.bots,
+            difficulty: this.settings.difficulty,
+            updated: Date.now(),
+          }
+        : null,
+    );
   }
 
   // ---------- match ----------
@@ -182,6 +206,7 @@ export class RoomCore {
       companies: multiplayerCompanies(humans, this.settings.difficulty, bots),
     };
     for (const x of this.players) this.sendMatch(x);
+    this.publish();
     this.stopTimer = this.startTimer(() => this.tick());
   }
 

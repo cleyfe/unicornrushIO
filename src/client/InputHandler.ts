@@ -194,14 +194,6 @@ function describeGuard(g: GameImpl, seg: number): string {
 }
 
 /** The parts of a defence worth naming in the hover card. */
-const DEFENCE_PARTS = [
-  ['service', 'service'],
-  ['loyalty', 'loyal customers'],
-  ['reserve', 'push reserve'],
-  ['priceGap', 'your price'],
-  ['guard', 'guarded'],
-] as const;
-
 /**
  * Roughly how many streets a click on `seg` wins: the campaign keeps taking
  * streets of the same owner around it until its budget runs out.
@@ -242,8 +234,7 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
   // Rivals' streets: how well defended, in one line.
   if (o >= 0 && o !== g.playerId) {
     const s = g.streetCost(me, o, seg);
-    const why = DEFENCE_PARTS.filter(([k]) => s[k] > 1.1).map(([, label]) => label);
-    lines.push(`<div class="hc-cost">🛡 ×${s.defence.toFixed(1)}${why.length ? ` · ${why.join(', ')}` : ''}</div>`);
+    lines.push(`<div class="hc-cost">🛡 ×${s.defence.toFixed(1)}${s.guard > 1 ? ' · guarded' : ''}</div>`);
   }
   if (o === 0 && g.isGuarded(seg, 0)) lines.push(`<div class="hc-cost">🛡 Guarded · ${Math.ceil(g.guardUntil[seg] - g.day)}d</div>`);
   for (const e of g.localEvents.filter((ev) => ev.streets.includes(seg))) {

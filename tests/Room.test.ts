@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Intent } from '@unicornrush/engine-api/Intents';
-import type { ServerMessage } from '@unicornrush/engine-api/net/Protocol';
+import type { RoomListing, ServerMessage } from '@unicornrush/engine-api/net/Protocol';
 import { GameRunner } from '@unicornrush/engine/GameRunner';
 import { type Conn, RoomCore } from '../server/RoomCore';
 
@@ -23,11 +23,17 @@ function client(room: RoomCore) {
 
 function room() {
   let ticking = false;
-  const r = new RoomCore('ABCDE', () => {
-    ticking = true;
-    return () => (ticking = false);
-  }, () => 12345);
-  return { r, ticking: () => ticking };
+  const listings: (RoomListing | null)[] = [];
+  const r = new RoomCore(
+    'ABCDE',
+    () => {
+      ticking = true;
+      return () => (ticking = false);
+    },
+    () => 12345,
+    (l) => listings.push(l),
+  );
+  return { r, ticking: () => ticking, listing: () => listings.at(-1) };
 }
 
 describe('online rooms', () => {
@@ -42,7 +48,7 @@ describe('online rooms', () => {
     b.say({ t: 'start' });
     expect(r.started).toBe(false);
     a.say({ t: 'settings', settings: { cityId: 'geneva', difficulty: 'hard', bots: 1 } });
-    expect(b.last('lobby')!.settings).toEqual({ cityId: 'geneva', difficulty: 'hard', bots: 1 });
+    expect(b.last('lobby')!.settings).toEqual({ cityId: 'geneva', difficulty: 'hard', bots: 1, listed: true });
     a.say({ t: 'start' });
     expect(ticking()).toBe(true);
     const start = b.last('start')!;
@@ -150,5 +156,23 @@ describe('online rooms', () => {
     expect(runners[0].stateHash()).toBe(runners[1].stateHash());
     expect(runners[0].game.companies[1].price).toBe('low');
     expect(runners[0].game.multiplayer).toBe(true);
+  });
+
+  it('lists a waiting room in open games until it starts, empties or goes private', () => {
+    const { r, listing } = room();
+    const a = client(r);
+    a.say({ t: 'join', name: 'Alice', key: 'ka' });
+    expect(listing()).toMatchObject({ code: 'ABCDE', host: 'Alice', players: 1, cityId: 'paris-opera' });
+    a.say({ t: 'settings', settings: { cityId: 'rome', difficulty: 'easy', bots: 2, listed: false } });
+    expect(listing()).toBeNull();
+    a.say({ t: 'settings', settings: { cityId: 'rome', difficulty: 'easy', bots: 2, listed: true } });
+    expect(listing()).toMatchObject({ cityId: 'rome', bots: 2 });
+    a.say({ t: 'start' });
+    expect(listing()).toBeNull();
+    const { r: r2, listing: l2 } = room();
+    const b = client(r2);
+    b.say({ t: 'join', name: 'Bob', key: 'kb' });
+    r2.disconnect(b.conn);
+    expect(l2()).toBeNull();
   });
 });

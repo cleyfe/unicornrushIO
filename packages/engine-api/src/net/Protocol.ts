@@ -27,6 +27,21 @@ export interface RoomSettings {
   difficulty: Difficulty;
   /** Bot rivals added after the human players. */
   bots: number;
+  /** Listed in the main menu's open games (otherwise join by code or link only). */
+  listed: boolean;
+}
+
+/** An open game in the main menu: a room still in its lobby. */
+export interface RoomListing {
+  code: string;
+  host: string;
+  players: number;
+  maxPlayers: number;
+  cityId: string;
+  bots: number;
+  difficulty: Difficulty;
+  /** When the room last changed (ms since epoch); old entries expire. */
+  updated: number;
 }
 
 export interface LobbyPlayer {

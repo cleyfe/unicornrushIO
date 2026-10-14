@@ -363,13 +363,18 @@ export class CityMapView {
 
   /** Moves the camera to the player's territory. */
   focusOnPlayer(animate = true): void {
+    this.focusOn(this.game.playerId, animate);
+  }
+
+  /** Fits the map to a company's streets. */
+  focusOn(companyId: number, animate = true): void {
     const g = this.game;
     let w = Infinity;
     let s = Infinity;
     let e = -Infinity;
     let n = -Infinity;
     for (let i = 0; i < g.owner.length; i++) {
-      if (g.owner[i] !== g.playerId) continue;
+      if (g.owner[i] !== companyId) continue;
       for (const [lon, lat] of this.city.segments.coords[i]) {
         w = Math.min(w, lon);
         e = Math.max(e, lon);

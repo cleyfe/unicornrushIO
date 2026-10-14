@@ -325,6 +325,12 @@ h1 b {
 .race li.me .race-name {
   font-weight: 700;
 }
+.race li[data-company] {
+  cursor: pointer;
+}
+.race li[data-company]:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
 .race li.dead {
   opacity: 0.4;
   text-decoration: line-through;
@@ -2068,4 +2074,42 @@ ul.what li {
 /* Online matches run on the room's clock: no pause. */
 .stage.online .speed {
   display: none;
+}
+
+.open-games {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.open-games .muted {
+  margin: 2px 0 0;
+  font-size: 12px;
+  text-align: center;
+}
+.open-game {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+.open-game small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}
+.open-game .join {
+  color: var(--accent);
+  font-weight: 600;
+}
+.lobby .listed {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
 }

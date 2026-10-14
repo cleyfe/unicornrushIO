@@ -16,6 +16,7 @@ export class TopBar {
     private onZone: (street: number) => void = () => {},
     private theme: 'light' | 'dark' = 'light',
     onTheme: (theme: 'light' | 'dark') => void = () => {},
+    onHome: () => void = () => {},
   ) {
     this.root = el(
       'header',
@@ -30,12 +31,14 @@ export class TopBar {
         <button data-speed="0" aria-label="Pause">⏸</button><button data-speed="1" aria-label="Play">▶</button>
       </div>
       <button class="theme-btn" aria-label="Switch between the day and night map"></button>
+      <button class="help-btn home-btn" aria-label="Main menu" title="Main menu">🏠</button>
       <button class="help-btn" aria-label="How to play">?</button>`,
     );
     this.root.querySelectorAll<HTMLButtonElement>('[data-speed]').forEach((b) =>
       b.addEventListener('click', () => this.onSpeed(Number(b.dataset.speed))),
     );
-    $(this.root, '.help-btn').addEventListener('click', onHelp);
+    $(this.root, '.help-btn:not(.home-btn)').addEventListener('click', onHelp);
+    $(this.root, '.home-btn').addEventListener('click', onHome);
     const themeBtn = $<HTMLButtonElement>(this.root, '.theme-btn');
     const showTheme = () => {
       themeBtn.textContent = this.theme === 'light' ? '🌙' : '☀️';

@@ -135,6 +135,18 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
   const guards = new GuardMarkers(game, view.map, (s) => view.zoneCenter(s));
   const history = new History(game);
   const drawer = new Drawer(game, (i) => client.send(i), history);
+  // Back to the main menu, from the 🏠 button or the results.
+  let left = false;
+  const leave = () => {
+    const ongoing = !game.result && game.player.alive;
+    if (ongoing && !window.confirm(client.online ? 'Leave this match? You can come back with the room link.' : 'Leave this match? It will be lost.')) return;
+    left = true;
+    detach();
+    room?.leave();
+    stage.remove();
+    document.querySelectorAll('body > .overlay, body > .results-pill, body > .docs-overlay').forEach((e) => e.remove());
+    menu();
+  };
   // Drawers don't pause the game: a multiplayer match can't stop for one player either.
   const top = new TopBar(
     game,
@@ -155,9 +167,10 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
         // Storage blocked: the choice lasts for this match only.
       }
     },
+    leave,
   );
   const you = new YouCard(game, () => view.focusOnPlayer(), (i) => client.send(i));
-  const race = new RaceBoard(game);
+  const race = new RaceBoard(game, (id) => view.focusOn(id));
   const actions = new ActionBar(game, (i) => client.send(i), (d) => drawer.toggle(d));
   const cards = new CardPicker(game, (i) => client.send(i));
   const news = new NewsFeed(() => drawer.toggle('news'));
@@ -195,6 +208,7 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
   let drawnVersion = -1;
   let drawnGuards = -1;
   const frame = (now: number) => {
+    if (left) return;
     const elapsed = now - last;
     last = now;
     client.advance(elapsed);
@@ -233,11 +247,7 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
     }
     if (game.result) {
       detach();
-      const again = () => {
-        room?.leave();
-        stage.remove();
-        menu();
-      };
+      const again = leave;
       // After closing, you can watch the rest of the match.
       showGameOver(game, game.result, again, history, () => {
         game.keepWatching();

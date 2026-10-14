@@ -7,8 +7,17 @@ import { $, el, rgb, unicornProgress } from './dom';
 export class RaceBoard {
   readonly root: HTMLElement;
 
-  constructor(private game: GameImpl) {
+  constructor(
+    private game: GameImpl,
+    /** Clicking a company shows it on the map. */
+    onLocate: (companyId: number) => void = () => {},
+  ) {
     this.root = el('section', 'race glass', `<h3>Race to $1B 🦄</h3><ol data-v="rows"></ol>`);
+    // On press, not click: the rows redraw several times a second, which can swallow a click.
+    this.root.addEventListener('pointerdown', (e) => {
+      const row = (e.target as HTMLElement).closest<HTMLElement>('[data-company]');
+      if (row) onLocate(Number(row.dataset.company));
+    });
   }
 
   update(): void {
@@ -21,7 +30,7 @@ export class RaceBoard {
       .map((c) => {
         const v = g.valuation(c).total;
         const margin = c.pnl.revenue > 0 ? c.pnl.profit / c.pnl.revenue : 0;
-        return `<li class="${c.alive ? '' : 'dead'} ${c.id === g.playerId ? 'me' : ''}" title="${c.name}: ${CONFIG.prices[c.price].label} prices · margin ${pct(margin)} · ${c.tiles} streets · defence ×${g.defence(c).toFixed(1)}">
+        return `<li data-company="${c.id}" class="${c.alive ? '' : 'dead'} ${c.id === g.playerId ? 'me' : ''}" title="Click to find ${c.name} on the map.  ${CONFIG.prices[c.price].label} prices · margin ${pct(margin)} · ${c.tiles} streets · defence ×${g.defence(c).toFixed(1)}">
           <div class="race-name"><b class="race-rank">${ranked.indexOf(c) + 1}</b><i style="background:${rgb(c.color)}"></i>${c.id === g.playerId ? `${c.name} (you)` : c.name}<span>${c.alive ? money(v) : 'closed'}</span></div>
           <div class="race-sub">${c.alive ? `<span class="${c.pnl.profit >= 0 ? 'pos' : 'neg'}">${c.pnl.profit >= 0 ? '+' : ''}${money(c.pnl.profit)}/day</span>` : ''}</div>
           <div class="race-bar"><div style="width:${pct(c.alive ? unicornProgress(v) : 0)};background:${rgb(c.color)}"></div></div>

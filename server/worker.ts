@@ -1,21 +1,31 @@
 import { DurableObject } from 'cloudflare:workers';
-import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, ROOM_CODE_PATTERN, TURN_MS } from '@unicornrush/engine-api/net/Protocol';
+import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, ROOM_CODE_PATTERN, type RoomListing, TURN_MS } from '@unicornrush/engine-api/net/Protocol';
 import { type Conn, RoomCore } from './RoomCore';
 
 interface Env {
   ROOMS: DurableObjectNamespace<GameRoom>;
+  DIRECTORY: DurableObjectNamespace<RoomDirectory>;
   ASSETS: Fetcher;
 }
+
+/** Open games in a lobby are listed for at most this long without news from their room. */
+const LISTING_TTL_MS = 30 * 60 * 1000;
+
+const directory = (env: Env) => env.DIRECTORY.get(env.DIRECTORY.idFromName('main'));
 
 /**
  * The game's server. Static files (the game itself) are served by Cloudflare
  * before this code runs; it only handles /api:
+ *   GET  /api/rooms          → open games waiting for players (RoomListing[])
  *   POST /api/rooms          → { code }: a new room
  *   GET  /api/rooms/<code>   → WebSocket into that room's GameRoom
  */
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    if (url.pathname === '/api/rooms' && request.method === 'GET') {
+      return Response.json(await directory(env).list(), { headers: { 'Cache-Control': 'no-store' } });
+    }
     if (url.pathname === '/api/rooms' && request.method === 'POST') {
       for (let attempt = 0; attempt < 5; attempt++) {
         const code = newRoomCode();
@@ -56,10 +66,18 @@ export class GameRoom extends DurableObject<Env> {
 
   async fetch(request: Request): Promise<Response> {
     const code = request.headers.get('X-Room-Code') ?? '';
-    this.core ??= new RoomCore(code, (tick) => {
-      const id = setInterval(tick, TURN_MS);
-      return () => clearInterval(id);
-    });
+    this.core ??= new RoomCore(
+      code,
+      (tick) => {
+        const id = setInterval(tick, TURN_MS);
+        return () => clearInterval(id);
+      },
+      undefined,
+      (listing) => {
+        const d = directory(this.env);
+        this.ctx.waitUntil((listing ? d.set(listing) : d.remove(code)).catch(() => {}));
+      },
+    );
     const core = this.core;
     const [client, server] = Object.values(new WebSocketPair());
     server.accept();
@@ -92,5 +110,25 @@ export class GameRoom extends DurableObject<Env> {
     server.addEventListener('close', onClose);
     server.addEventListener('error', onClose);
     return new Response(null, { status: 101, webSocket: client });
+  }
+}
+
+/** The open games list: rooms waiting in their lobby report here; the main menu reads it. */
+export class RoomDirectory extends DurableObject<Env> {
+  async set(listing: RoomListing): Promise<void> {
+    await this.ctx.storage.put(listing.code, listing);
+  }
+
+  async remove(code: string): Promise<void> {
+    await this.ctx.storage.delete(code);
+  }
+
+  /** Open games, newest first; forgets rooms that haven't reported for a while. */
+  async list(): Promise<RoomListing[]> {
+    const now = Date.now();
+    const all = [...(await this.ctx.storage.list<RoomListing>()).values()];
+    const stale = all.filter((l) => now - l.updated > LISTING_TTL_MS).map((l) => l.code);
+    if (stale.length) await this.ctx.storage.delete(stale);
+    return all.filter((l) => now - l.updated <= LISTING_TTL_MS).sort((a, b) => b.updated - a.updated).slice(0, 50);
   }
 }

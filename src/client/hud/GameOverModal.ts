@@ -95,7 +95,7 @@ export function showGameOver(game: GameImpl, r: GameResult, onAgain: () => void,
     <table class="final"><tr><th>Company</th><th>Final value</th><th>Peak value</th><th>Peak streets</th></tr>${rows}</table>
     ${!me.alive && history ? whatHappened(game, history) : ''}
     ${lessons.length ? `<h3>Takeaways</h3><ul>${lessons.slice(0, 2).map((l) => `<li>${l}</li>`).join('')}</ul>` : ''}
-    <div class="buttons"><button class="primary" id="again" disabled>Play again</button><button id="explore">🗺 Explore map</button>${r.reason === 'playerBankrupt' && onWatch ? '<button id="watch">👀 Keep watching</button>' : ''}</div>
+    <div class="buttons"><button class="primary" id="again" disabled>🏠 Main menu</button><button id="explore">🗺 Explore map</button>${r.reason === 'playerBankrupt' && onWatch ? '<button id="watch">👀 Keep watching</button>' : ''}</div>
   </div>`;
   document.body.append(overlay);
   // A short delay so a click meant for the map doesn't dismiss the results.

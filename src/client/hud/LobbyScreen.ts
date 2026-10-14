@@ -33,6 +33,7 @@ export function showLobby(container: HTMLElement, room: RoomClient, onLeave: () 
       <div class="lobby-settings">
         <label class="field"><span>City</span><select id="lobby-city" data-host></select></label>
         <label class="field"><span>Bots</span><select id="lobby-bots" data-host></select></label>
+        <label class="listed"><input type="checkbox" id="lobby-listed" data-host /> Listed in open games</label>
         <div class="field"><span>Bot level</span><div class="seg difficulty">
           ${(['easy', 'normal', 'hard'] as const).map((d) => `<button data-difficulty="${d}" data-host>${d[0].toUpperCase() + d.slice(1)}</button>`).join('')}
         </div></div>
@@ -63,6 +64,7 @@ export function showLobby(container: HTMLElement, room: RoomClient, onLeave: () 
       citySel.innerHTML = cities.map((c) => `<option value="${c.id}">${c.flag} ${c.city} · ${c.area}</option>`).join('');
     }
     citySel.value = settings.cityId;
+    $<HTMLInputElement>('#lobby-listed').checked = settings.listed;
     const maxBots = MAX_COMPANIES - players.length;
     botsSel.innerHTML = Array.from({ length: maxBots + 1 }, (_, n) => `<option value="${n}">${n}</option>`).join('');
     botsSel.value = String(Math.min(settings.bots, maxBots));
@@ -97,6 +99,7 @@ export function showLobby(container: HTMLElement, room: RoomClient, onLeave: () 
 
   citySel.addEventListener('change', () => send({ cityId: citySel.value }));
   botsSel.addEventListener('change', () => send({ bots: Number(botsSel.value) }));
+  $<HTMLInputElement>('#lobby-listed').addEventListener('change', (e) => send({ listed: (e.target as HTMLInputElement).checked }));
   container.querySelectorAll<HTMLButtonElement>('[data-difficulty]').forEach((b) =>
     b.addEventListener('click', () => send({ difficulty: b.dataset.difficulty as Difficulty })),
   );
