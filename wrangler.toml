@@ -6,7 +6,8 @@ compatibility_date = "2026-09-01"
 [assets]
 directory = "./dist"
 
-# Once unicornrush.io is on Cloudflare, uncomment to serve the game there (deploy creates the DNS record):
-# routes = [
-#   { pattern = "unicornrush.io", custom_domain = true },
-# ]
+# Served at unicornrush.io (and www); each deploy keeps the custom domains and their DNS records attached.
+routes = [
+  { pattern = "unicornrush.io", custom_domain = true },
+  { pattern = "www.unicornrush.io", custom_domain = true },
+]
