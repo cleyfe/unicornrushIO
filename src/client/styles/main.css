@@ -358,7 +358,7 @@ h1 b {
   bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(860px, calc(100vw - 24px));
+  width: min(980px, calc(100vw - 24px));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -485,7 +485,23 @@ h1 b {
 .dock-cmds {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 14px;
+}
+/* A thin line between groups: team, actions, price, panels. */
+.dock-cmds .grp + .grp {
+  padding-left: 14px;
+  border-left: 1px solid var(--line-strong);
+}
+@media (max-width: 1000px) {
+  .dock-cmds {
+    gap: 8px;
+  }
+  .dock-cmds .grp + .grp {
+    padding-left: 8px;
+  }
+  .cmd {
+    min-width: 46px;
+  }
 }
 .dock-cmds .grp {
   display: flex;
