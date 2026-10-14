@@ -97,7 +97,7 @@ export class CompanyExecution implements Execution {
     let soldUnits = 0;
     for (let t = 0; t < 4; t++) {
       const v = game.volume(c, t);
-      soldSpend += c.tierSpend[t] * v;
+      soldSpend += (c.tierSpend[t] + c.tierLoyalSpend[t]) * v;
       soldUnits += c.tierCustomers[t] * v;
     }
     const p = {

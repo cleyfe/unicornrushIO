@@ -44,9 +44,9 @@ export const CONFIG = {
   // Revenue per customer per day, before the street's wealth multiplier.
   prices: {
   // volume: price elasticity of demand. Cheaper prices make customers buy more.
-    low: { revenue: 28, volume: 1.4, push: 1.2, loyalty: 1.25, label: 'Low' },
-    medium: { revenue: 40, volume: 1.0, push: 1.0, loyalty: 1.0, label: 'Medium' },
-    high: { revenue: 55, volume: 0.8, push: 0.9, loyalty: 0.9, label: 'High' },
+    low: { revenue: 25, volume: 1.4, push: 1.2, loyalty: 1.25, label: 'Low' },
+    medium: { revenue: 35, volume: 1.0, push: 1.0, loyalty: 1.0, label: 'Medium' },
+    high: { revenue: 48, volume: 0.8, push: 0.9, loyalty: 0.9, label: 'High' },
   } satisfies Record<PriceLevel, { revenue: number; volume: number; push: number; loyalty: number; label: string }>,
 
   variableCostPerCustomer: 5, // per customer per day
@@ -182,6 +182,10 @@ export const CONFIG = {
     breachRevenueDays: 5, // fine for a data breach
   },
 
+  // Regulars: customers spend more the longer their street stays with the same company,
+  // up to `maxBonus` extra after `fullDays`. A street that changes hands starts over.
+  loyalty: { maxBonus: 0.3, fullDays: 100 },
+
   // Things happening in one part of the city, announced in advance.
   localEvents: {
     firstDay: 60,
@@ -217,7 +221,7 @@ export const CONFIG = {
   // hireBase: hires per day on top of growth; humanCostMult: how much costlier a human
   // player's streets look to the bot (easy bots rarely take yours).
   difficulty: {
-    easy: { reserveMult: 4, repDays: 120, growth: 0.05, extraPushReserve: 0.2, leaderFocus: false, expandEveryDays: 3, salesMult: 0.4, serviceBonus: 0.5, streetJudgement: 1, aggressionMult: 1, advanced: false, dealAppetite: 0, hireBase: 1, humanCostMult: 2 },
+    easy: { reserveMult: 4, repDays: 120, growth: 0.05, extraPushReserve: 0.2, leaderFocus: false, expandEveryDays: 3, salesMult: 0.4, serviceBonus: 0.5, streetJudgement: 1, aggressionMult: 1, advanced: false, dealAppetite: 0, hireBase: 1, humanCostMult: 2.5 },
     normal: { reserveMult: 2, repDays: 45, growth: 0.35, extraPushReserve: 0.1, leaderFocus: true, expandEveryDays: 1, salesMult: 1, serviceBonus: 0, streetJudgement: 1, aggressionMult: 1, advanced: true, dealAppetite: 0.05, hireBase: 3, humanCostMult: 1 },
     hard: { reserveMult: 1, repDays: 20, growth: 0.5, extraPushReserve: 0, leaderFocus: true, expandEveryDays: 1, salesMult: 1, serviceBonus: 0.1, streetJudgement: 1, aggressionMult: 1, advanced: true, dealAppetite: 0.05, hireBase: 3, humanCostMult: 1 },
   },

@@ -51,7 +51,10 @@ const SECTIONS: Section[] = [
         ['Wealth', 'Spend', 'Cost to win', 'Price sensitivity'],
         C.wealth.map((w) => [w.label, `×${w.spend}`, `×${w.pushCost}`, `×${w.priceSensitivity}`]),
       )}
-      <p>Every city has its own mix of wealth, so the best price differs from city to city.</p>`,
+      <p>Every city has its own mix of wealth, so the best price differs from city to city.</p>
+      <p><b>⭐ Regulars:</b> customers spend more the longer their street stays yours, up to
+      +${pct(C.loyalty.maxBonus)} after ${C.loyalty.fullDays} days. A street that changes hands starts over,
+      so holding ground pays and taking a rival's oldest streets hurts them most.</p>`,
   },
   {
     id: 'push',

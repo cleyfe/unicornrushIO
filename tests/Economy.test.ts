@@ -7,12 +7,12 @@ describe('profit and loss', () => {
     const r = quietSetup();
     const me = r.game.player;
     act(r, { type: 'setSalesShare', companyId: 0, share: 0 }); // no churn, so profit stays constant
-    runDays(r, 1);
+    runDays(r, 1.2);
     const before = me.cash;
-    runDays(r, 1);
+    runDays(r, 0.5); // within one day, so regulars' bonus (updated daily) doesn't change
     const p = me.pnl;
     expect(p.profit).toBeCloseTo(p.revenue - p.variableCost - p.salaries - p.interest);
-    expect(me.cash - before).toBeCloseTo(p.profit, 0);
+    expect(me.cash - before).toBeCloseTo(p.profit * 0.5, 0);
   });
 
   it('charges salary for trainees who do not work yet', () => {

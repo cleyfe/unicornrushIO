@@ -82,6 +82,8 @@ export interface Company {
   /** Customers and spend per wealth level, for price elasticity that depends on wealth. */
   tierCustomers: number[];
   tierSpend: number[];
+  /** Extra spend per wealth level from regulars (streets held a long time). */
+  tierLoyalSpend: number[];
   border: Set<number>;
 
   pnl: Pnl; // per day, latest

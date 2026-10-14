@@ -226,8 +226,10 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
   const me = g.player;
   const street = city.segments.names[seg] || 'Unnamed street';
   const vol = g.volume(me, level);
+  // Regulars spend more, but only for whoever holds the street now: a new owner starts over.
+  const loyal = g.loyalty(seg);
   const perDay =
-    vol * (g.map.spend[seg] * CONFIG.prices[me.price].revenue * g.revenueMult() - g.map.demand[seg] * CONFIG.variableCostPerCustomer * g.variableCostMult(me));
+    vol * (g.map.spend[seg] * (1 + (o === g.playerId ? loyal : 0)) * CONFIG.prices[me.price].revenue * g.revenueMult() - g.map.demand[seg] * CONFIG.variableCostPerCustomer * g.variableCostMult(me));
   const customers = Math.max(1, Math.round(g.map.demand[seg]));
   const owner = o === NEUTRAL ? 'Untapped' : o === g.playerId ? 'Yours' : `<i style="background:rgb(${g.companies[o].color.join(',')})"></i>${g.companies[o].name}`;
   const lines: string[] = [];
@@ -236,6 +238,7 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
     const s = g.streetCost(me, o, seg);
     lines.push(`<div class="hc-cost">🛡 ×${s.defence.toFixed(1)}${s.guard > 1 ? ' · guarded' : ''}</div>`);
   }
+  if (loyal >= 0.01) lines.push(`<div class="hc-cost" title="Customers who stay spend more, up to +${Math.round(CONFIG.loyalty.maxBonus * 100)}% after ${CONFIG.loyalty.fullDays} days. A new owner starts over.">⭐ Regulars +${Math.round(loyal * 100)}%</div>`);
   if (o === 0 && g.isGuarded(seg, 0)) lines.push(`<div class="hc-cost">🛡 Guarded · ${Math.ceil(g.guardUntil[seg] - g.day)}d</div>`);
   for (const e of g.localEvents.filter((ev) => ev.streets.includes(seg))) {
     const info = LOCAL_EVENT_INFO[e.kind];

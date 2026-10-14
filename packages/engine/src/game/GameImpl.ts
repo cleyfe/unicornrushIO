@@ -56,6 +56,8 @@ export class GameImpl {
   guardPosts: GuardPost[] = [];
   /** Streets bought in a deal can't be bought back with cash until this day. */
   readonly dealLockUntil: Float32Array;
+  /** The day each street joined its current owner (regulars spend more). */
+  readonly ownedSince: Float32Array;
 
   /** Evidence for lawsuits: streets (and their spend) attacker took from victim, decaying over time. */
   private takenStreets = new Map<string, number>();
@@ -77,6 +79,7 @@ export class GameImpl {
     this.guardOwner = new Int16Array(this.map.size).fill(NEUTRAL);
     this.guardUntil = new Float32Array(this.map.size);
     this.dealLockUntil = new Float32Array(this.map.size);
+    this.ownedSince = new Float32Array(this.map.size);
     specs.forEach((s, id) => this.companies.push(newCompany(id, s)));
     this.multiplayer = multiplayer;
     this.placeSpawns();
@@ -91,7 +94,10 @@ export class GameImpl {
   executeNextTick(): void {
     if (this.result) return;
     this.tick++;
-    if (this.isNewDay()) this.decayEvidence();
+    if (this.isNewDay()) {
+      this.decayEvidence();
+      this.refreshLoyalty();
+    }
     this.startPending();
     for (const e of this.executions) if (e.isActive()) e.tick(this);
     this.executions = this.executions.filter((e) => e.isActive());
@@ -419,6 +425,7 @@ export class GameImpl {
       c.spend += ds;
       c.tierCustomers[w] += dd;
       c.tierSpend[w] += ds;
+      c.tierLoyalSpend[w] += ds * this.loyalty(t);
     }
   }
 
@@ -584,12 +591,30 @@ export class GameImpl {
     this.result = { winnerId, reason, day: this.day };
   }
 
+  /** Extra spend share of a street's regulars: grows from 0 when it changes hands to `maxBonus`. */
+  loyalty(tile: number): number {
+    const L = CONFIG.loyalty;
+    if (this.owner[tile] < 0) return 0;
+    return L.maxBonus * Math.min(1, (this.day - this.ownedSince[tile]) / L.fullDays);
+  }
+
+  /** Recounts every company's extra spend from regulars (once a day, as streets age). */
+  private refreshLoyalty(): void {
+    for (const c of this.companies) c.tierLoyalSpend.fill(0);
+    for (let t = 0; t < this.owner.length; t++) {
+      const o = this.owner[t];
+      if (o >= 0) this.companies[o].tierLoyalSpend[this.map.wealth[t]] += this.map.spend[t] * this.loyalty(t);
+    }
+  }
+
   setOwner(tile: number, newOwner: number): void {
     const old = this.owner[tile];
     if (old === newOwner) return;
     const d = this.map.demand[tile];
     if (old >= 0) {
       const oc = this.companies[old];
+      const w = this.map.wealth[tile];
+      oc.tierLoyalSpend[w] = Math.max(0, oc.tierLoyalSpend[w] - this.map.spend[tile] * this.loyalty(tile));
       oc.tiles--;
       oc.customers -= d;
       oc.spend -= this.map.spend[tile];
@@ -598,6 +623,7 @@ export class GameImpl {
       oc.border.delete(tile);
     }
     this.owner[tile] = newOwner;
+    this.ownedSince[tile] = this.day;
     if (newOwner >= 0) {
       const nc = this.companies[newOwner];
       nc.tiles++;
@@ -791,6 +817,7 @@ function newCompany(id: number, s: CompanySpec): Company {
     spend: 0,
     tierCustomers: [0, 0, 0, 0],
     tierSpend: [0, 0, 0, 0],
+    tierLoyalSpend: [0, 0, 0, 0],
     border: new Set(),
     pnl: emptyPnl(),
     oneOff: { hiring: 0, severance: 0, legalFees: 0, fines: 0, damages: 0, advertising: 0, guards: 0, streetDeals: 0, poaching: 0 },

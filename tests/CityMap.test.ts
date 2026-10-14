@@ -89,7 +89,8 @@ describe('wealth economics', () => {
     act(r, { type: 'setSalesShare', companyId: 0, share: 0 }); // serve everyone
     runDays(r, 1);
     const p = me.pnl;
-    expect(p.revenue).toBeCloseTo(me.spend * CONFIG.prices[me.price].revenue, 0);
+    const loyal = me.tierLoyalSpend.reduce((a, b) => a + b, 0); // regulars' extra spend
+    expect(p.revenue).toBeCloseTo((me.spend + loyal) * CONFIG.prices[me.price].revenue, 0);
     expect(p.variableCost).toBeCloseTo(me.customers * CONFIG.variableCostPerCustomer, 0);
   });
 
