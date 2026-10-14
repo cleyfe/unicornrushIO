@@ -1,10 +1,12 @@
 import { DurableObject } from 'cloudflare:workers';
 import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, ROOM_CODE_PATTERN, type RoomListing, TURN_MS } from '@unicornrush/engine-api/net/Protocol';
+import { parseSoloEvent, recordEvent } from './events';
 import { type Conn, RoomCore } from './RoomCore';
 
 interface Env {
   ROOMS: DurableObjectNamespace<GameRoom>;
   DIRECTORY: DurableObjectNamespace<RoomDirectory>;
+  EVENTS: D1Database;
   ASSETS: Fetcher;
 }
 
@@ -19,10 +21,24 @@ const directory = (env: Env) => env.DIRECTORY.get(env.DIRECTORY.idFromName('main
  *   GET  /api/rooms          → open games waiting for players (RoomListing[])
  *   POST /api/rooms          → { code }: a new room
  *   GET  /api/rooms/<code>   → WebSocket into that room's GameRoom
+ *   POST /api/events         → an anonymous single-player event for the stats
  */
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    if (url.pathname === '/api/events' && request.method === 'POST') {
+      const text = await request.text();
+      if (text.length > 1000) return new Response(null, { status: 413 });
+      let event = null;
+      try {
+        event = parseSoloEvent(JSON.parse(text));
+      } catch {
+        // Not JSON.
+      }
+      if (!event) return new Response(null, { status: 400 });
+      ctx.waitUntil(recordEvent(env.EVENTS, event, request.cf?.country as string | undefined).catch(() => {}));
+      return new Response(null, { status: 204 });
+    }
     if (url.pathname === '/api/rooms' && request.method === 'GET') {
       return Response.json(await directory(env).list(), { headers: { 'Cache-Control': 'no-store' } });
     }
@@ -58,6 +74,8 @@ function newRoomCode(): string {
 export class GameRoom extends DurableObject<Env> {
   private core: RoomCore | null = null;
   private players = 0;
+  /** The room creator's country, for the stats. */
+  private country: string | undefined;
 
   /** How many players are connected (0 for a fresh or abandoned room). */
   async info(): Promise<{ players: number }> {
@@ -77,7 +95,9 @@ export class GameRoom extends DurableObject<Env> {
         const d = directory(this.env);
         this.ctx.waitUntil((listing ? d.set(listing) : d.remove(code)).catch(() => {}));
       },
+      (event) => this.ctx.waitUntil(recordEvent(this.env.EVENTS, event, this.country).catch(() => {})),
     );
+    this.country ??= request.cf?.country as string | undefined;
     const core = this.core;
     const [client, server] = Object.values(new WebSocketPair());
     server.accept();

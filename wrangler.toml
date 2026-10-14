@@ -19,6 +19,12 @@ routes = [
 directory = "./dist"
 binding = "ASSETS"
 
+# Anonymous gameplay events (server/events.ts), read by the private stats page.
+# Created on the first deploy.
+[[d1_databases]]
+binding = "EVENTS"
+database_name = "unicornrush-events"
+
 [[durable_objects.bindings]]
 name = "ROOMS"
 class_name = "GameRoom"

@@ -29,6 +29,7 @@ import { CityMapView, type MapTheme, wealthColors } from './render/CityMapView';
 import { CompanyLabels } from './render/CompanyLabels';
 import { GuardMarkers } from './render/GuardMarkers';
 import { NetGameRunner } from './net/NetGameRunner';
+import { trackSolo } from './net/Analytics';
 import { createRoom, RoomClient } from './net/RoomClient';
 
 const app = document.getElementById('app')!;
@@ -60,6 +61,7 @@ function menu(): void {
 async function startGame(name: string, info: CityInfo, difficulty: Difficulty, rivals: number): Promise<void> {
   const city = await loadCityFor(info);
   if (!city) return;
+  trackSolo({ type: 'solo_started', city: info.id, difficulty, bots: rivals });
   play(new ClientGameRunner(Math.floor(Math.random() * 1e9), defaultCompanies(name, false, difficulty, rivals), city), info, city);
 }
 
@@ -137,6 +139,7 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
   const drawer = new Drawer(game, (i) => client.send(i), history);
   // Back to the main menu, from the 🏠 button or the results.
   let left = false;
+  let reported = false;
   const leave = () => {
     const ongoing = !game.result && game.player.alive;
     if (ongoing && !window.confirm(client.online ? 'Leave this match? You can come back with the room link.' : 'Leave this match? It will be lost.')) return;
@@ -247,6 +250,12 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
     }
     if (game.result) {
       detach();
+      // Stats: how the match ended (anonymous), once, even if you keep watching.
+      const r = game.result;
+      const winner = r.winnerId === null ? 'none' : game.companies[r.winnerId].isBot ? 'bot' : 'human';
+      if (room && !reported) room.send({ t: 'over', day: Math.floor(r.day), reason: r.reason, winner });
+      else if (!reported) trackSolo({ type: 'solo_finished', city: info.id, difficulty: game.player.difficulty, bots: game.companies.length - 1, day: Math.floor(r.day), reason: r.reason, winner });
+      reported = true;
       const again = leave;
       // After closing, you can watch the rest of the match.
       showGameOver(game, game.result, again, history, () => {

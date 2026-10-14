@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Intent } from '@unicornrush/engine-api/Intents';
-import type { RoomListing, ServerMessage } from '@unicornrush/engine-api/net/Protocol';
+import type { GameEvent, RoomListing, ServerMessage } from '@unicornrush/engine-api/net/Protocol';
+import { parseSoloEvent } from '../server/events';
 import { GameRunner } from '@unicornrush/engine/GameRunner';
 import { type Conn, RoomCore } from '../server/RoomCore';
 
@@ -24,6 +25,7 @@ function client(room: RoomCore) {
 function room() {
   let ticking = false;
   const listings: (RoomListing | null)[] = [];
+  const events: GameEvent[] = [];
   const r = new RoomCore(
     'ABCDE',
     () => {
@@ -32,8 +34,9 @@ function room() {
     },
     () => 12345,
     (l) => listings.push(l),
+    (e) => events.push(e),
   );
-  return { r, ticking: () => ticking, listing: () => listings.at(-1) };
+  return { r, ticking: () => ticking, listing: () => listings.at(-1), events };
 }
 
 describe('online rooms', () => {
@@ -174,5 +177,37 @@ describe('online rooms', () => {
     b.say({ t: 'join', name: 'Bob', key: 'kb' });
     r2.disconnect(b.conn);
     expect(l2()).toBeNull();
+  });
+
+  it('records anonymous stats: room created, match started, match finished once', () => {
+    const { r, events } = room();
+    const a = client(r);
+    const b = client(r);
+    a.say({ t: 'join', name: 'Alice', key: 'ka' });
+    b.say({ t: 'join', name: 'Bob', key: 'kb' });
+    a.say({ t: 'start' });
+    a.say({ t: 'over', day: 412.7, reason: 'unicorn', winner: 'human' });
+    b.say({ t: 'over', day: 412.7, reason: 'unicorn', winner: 'human' });
+    expect(events.map((e) => e.type)).toEqual(['room_created', 'match_started', 'match_finished']);
+    expect(events[1]).toMatchObject({ mode: 'online', humans: 2, bots: 3, city: 'paris-opera' });
+    expect(events[2]).toMatchObject({ day: 412, reason: 'unicorn', winner: 'human' });
+    expect(JSON.stringify(events)).not.toMatch(/Alice|Bob|ka|kb/); // no names, no keys
+  });
+
+  it('only accepts known single-player events from browsers', () => {
+    expect(parseSoloEvent({ type: 'solo_finished', city: 'geneva', difficulty: 'easy', bots: 3, day: 300.5, reason: 'unicorn', winner: 'human' })).toEqual({
+      type: 'solo_finished',
+      mode: 'solo',
+      city: 'geneva',
+      difficulty: 'easy',
+      humans: 1,
+      bots: 3,
+      day: 300,
+      reason: 'unicorn',
+      winner: 'human',
+    });
+    expect(parseSoloEvent({ type: 'match_started' })).toBeNull();
+    expect(parseSoloEvent({ type: 'solo_started', city: '<script>' })?.city).toBeUndefined();
+    expect(parseSoloEvent('nope')).toBeNull();
   });
 });

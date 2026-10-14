@@ -1,6 +1,7 @@
 import type { Intent } from '@unicornrush/engine-api/Intents';
 import {
   type ClientMessage,
+  type GameEvent,
   HASH_EVERY_TURNS,
   MAX_COMPANIES,
   type LobbyPlayer,
@@ -59,7 +60,12 @@ export class RoomCore {
     private random: () => number = () => crypto.getRandomValues(new Uint32Array(1))[0],
     /** Tells the open-games list about this room: its listing, or null to remove it. */
     private onListing: (listing: RoomListing | null) => void = () => {},
+    /** Anonymous events for the stats page. */
+    private onEvent: (event: GameEvent) => void = () => {},
   ) {}
+
+  private created = false;
+  private finished = false;
 
   get started(): boolean {
     return this.info !== null;
@@ -109,6 +115,8 @@ export class RoomCore {
         return this.intent(p, msg.intent);
       case 'hash':
         return this.hash(p, msg.turn, msg.hash);
+      case 'over':
+        return this.over(msg);
     }
   }
 
@@ -135,6 +143,10 @@ export class RoomCore {
       if (this.players.length >= MAX_HUMANS) return this.reject(conn, `This room is full (${MAX_HUMANS} players).`);
       p = { key, name, seat: this.players.length, conn: null, sentThisTurn: 0 };
       this.players.push(p);
+      if (!this.created) {
+        this.created = true;
+        this.onEvent({ type: 'room_created', mode: 'online', room: this.code });
+      }
     }
     // A second tab with the same key takes the seat over.
     if (p.conn && p.conn !== conn) p.conn.close(4000, 'Opened elsewhere');
@@ -207,6 +219,15 @@ export class RoomCore {
     };
     for (const x of this.players) this.sendMatch(x);
     this.publish();
+    this.onEvent({
+      type: 'match_started',
+      mode: 'online',
+      room: this.code,
+      city: this.info.cityId,
+      difficulty: this.settings.difficulty,
+      humans: humans.length,
+      bots,
+    });
     this.stopTimer = this.startTimer(() => this.tick());
   }
 
@@ -237,6 +258,23 @@ export class RoomCore {
     }
     // Keep only recent checkpoints.
     for (const t of this.hashes.keys()) if (t < turn - HASH_EVERY_TURNS * 10) this.hashes.delete(t);
+  }
+
+  /** A client saw the match end: record it once. */
+  private over(msg: Extract<ClientMessage, { t: 'over' }>): void {
+    if (!this.started || this.finished) return;
+    this.finished = true;
+    const winner = msg.winner === 'human' || msg.winner === 'bot' ? msg.winner : 'none';
+    this.onEvent({
+      type: 'match_finished',
+      mode: 'online',
+      room: this.code,
+      city: this.info?.cityId,
+      humans: this.players.length,
+      day: Number.isFinite(msg.day) ? Math.floor(msg.day) : undefined,
+      reason: typeof msg.reason === 'string' ? msg.reason.slice(0, 20) : undefined,
+      winner,
+    });
   }
 
   private pause(): void {

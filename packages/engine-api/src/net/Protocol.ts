@@ -51,6 +51,24 @@ export interface LobbyPlayer {
   connected: boolean;
 }
 
+// ---------- analytics ----------
+
+/** An anonymous gameplay event for the stats page: no player ids, no cookies. */
+export interface GameEvent {
+  type: 'room_created' | 'match_started' | 'match_finished' | 'solo_started' | 'solo_finished';
+  mode: 'online' | 'solo';
+  room?: string;
+  city?: string;
+  difficulty?: string;
+  humans?: number;
+  bots?: number;
+  /** Game day the match ended on. */
+  day?: number;
+  reason?: string;
+  /** Whether a human or a bot won. */
+  winner?: 'human' | 'bot' | 'none';
+}
+
 // ---------- client → server ----------
 
 export type ClientMessage =
@@ -62,7 +80,9 @@ export type ClientMessage =
   | { t: 'start' }
   /** The server overwrites `companyId` with the sender's seat. */
   | { t: 'intent'; intent: Intent }
-  | { t: 'hash'; turn: number; hash: number };
+  | { t: 'hash'; turn: number; hash: number }
+  /** The match ended on this client (for the stats; the first report counts). */
+  | { t: 'over'; day: number; reason: string; winner: 'human' | 'bot' | 'none' };
 
 // ---------- server → client ----------
 
