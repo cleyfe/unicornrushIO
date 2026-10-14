@@ -1814,7 +1814,11 @@ td i {
 }
 
 /* Watching the end of the match after closing: no controls, just the map and the race. */
-.stage.spectating .action-bar,
+.stage.spectating .action-bar {
+  width: auto;
+}
+.stage.spectating .action-bar > :not(.dock-cmds),
+.stage.spectating .dock-cmds > .grp:not(.view),
 .stage.spectating .you-card,
 .stage.spectating .card-picker {
   display: none;
@@ -2128,4 +2132,8 @@ ul.what li {
   gap: 8px;
   font-size: 13px;
   color: var(--muted);
+}
+.stage.spectating .dock-cmds .grp.view {
+  padding-left: 0;
+  border-left: 0;
 }

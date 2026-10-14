@@ -81,7 +81,7 @@ export class ActionBar {
         <div class="grp price">
           ${PRICE_LEVELS.map((p, i) => cmd(`data-price="${p}"`, '$'.repeat(i + 1), P[p].label, PRICE_KEYS[p], PRICE_TIPS[p])).join('')}
         </div>
-        <div class="grp">
+        <div class="grp view">
           ${cmd('data-open="finances"', '🏦', 'Money', 'F', 'Profit & loss, valuation, bank loans')}
           ${cmd('data-open="race"', '📈', 'Race', 'R', "Everyone's valuation over time")}
           ${cmd('data-open="news"', '📰', 'News', 'N', 'Everything that happened this match')}

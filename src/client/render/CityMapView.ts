@@ -106,8 +106,9 @@ export class CityMapView {
     city.buildings.segment.forEach((s, b) => this.buildingsOf[s].push(b));
 
     const [w, s, e, nth] = city.bounds;
-    const padX = (e - w) * 0.25;
-    const padY = (nth - s) * 0.25;
+    // Room around the city so you can zoom out to see all of it, with a margin.
+    const padX = e - w;
+    const padY = nth - s;
     this.map = new maplibregl.Map({
       container,
       style: THEMES[theme].style,
@@ -119,6 +120,9 @@ export class CityMapView {
       dragRotate: false,
       pitchWithRotate: false,
     });
+    // Zoom out until the whole city fits with room to spare around the panels, whatever its size and the screen's.
+    const fit = this.map.cameraForBounds([w, s, e, nth]);
+    if (fit?.zoom !== undefined) this.map.setMinZoom(fit.zoom - 1.5);
     this.map.addControl(
       new maplibregl.AttributionControl({ compact: true, customAttribution: `Game map: ${city.attribution}` }),
     );
