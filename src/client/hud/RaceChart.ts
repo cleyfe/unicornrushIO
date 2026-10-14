@@ -9,18 +9,20 @@ const L = 52; // room for axis labels
 const R = 10;
 const T = 10;
 const B = 22;
-const LO = 1e5; // the axis runs from $100K…
-const HI = 1e9; // …to the unicorn line, on a log scale (each step ×10)
+const UNICORN = 1e9;
+/** Axis tops to choose from: the smallest that fits the leader, up to the unicorn line. */
+const TOPS = [1e7, 2e7, 5e7, 1e8, 2e8, 5e8, UNICORN];
 
 /**
- * Everyone's valuation over time, one line per company in its colour.
- * Log scale, so the early race is readable and $1B is the top line.
+ * Everyone's valuation over time, one line per company in its colour, on a
+ * linear scale from $0. The top grows with the leader until it's the $1B line.
  */
 export class RaceChart {
   readonly root: HTMLElement;
   private svg: SVGSVGElement;
   private readout: HTMLElement;
   private hoverIndex = -1;
+  private top = TOPS[0];
 
   constructor(
     private game: GameImpl,
@@ -51,7 +53,7 @@ export class RaceChart {
   }
 
   private y(v: number): number {
-    const k = (Math.log10(Math.min(HI, Math.max(LO, v))) - Math.log10(LO)) / (Math.log10(HI) - Math.log10(LO));
+    const k = Math.min(this.top, Math.max(0, v)) / this.top;
     return T + (1 - k) * (H - T - B);
   }
 
@@ -59,13 +61,18 @@ export class RaceChart {
     const rows = this.history.race;
     const n = rows.length;
     const x = (i: number) => L + (n < 2 ? 0 : (i / (n - 1)) * (W - L - R));
-    const grid = [1e5, 1e6, 1e7, 1e8, 1e9]
-      .map((v) => `<line class="rc-grid${v === HI ? ' unicorn' : ''}" x1="${L}" x2="${W - R}" y1="${this.y(v)}" y2="${this.y(v)}"/><text class="rc-axis" x="${L - 6}" y="${this.y(v) + 4}" text-anchor="end">${v === HI ? '🦄 $1B' : money(v)}</text>`)
+    let max = 0;
+    for (const row of rows) for (const v of row.values) if (v !== null && v > max) max = v;
+    this.top = TOPS.find((t) => t >= max * 1.05) ?? UNICORN;
+    const grid = [0, 0.25, 0.5, 0.75, 1]
+      .map((f) => f * this.top)
+      .map((v) => `<line class="rc-grid${v === UNICORN ? ' unicorn' : ''}" x1="${L}" x2="${W - R}" y1="${this.y(v)}" y2="${this.y(v)}"/><text class="rc-axis" x="${L - 6}" y="${this.y(v) + 4}" text-anchor="end">${v === UNICORN ? '🦄 $1B' : v === 0 ? '$0' : money(v)}</text>`)
       .join('');
     const lastDay = n ? rows[n - 1].day : 0;
     const days = `<text class="rc-axis" x="${L}" y="${H - 6}">day 0</text><text class="rc-axis" x="${W - R}" y="${H - 6}" text-anchor="end">day ${lastDay}</text>`;
     // The player's line goes on top.
-    const order = this.game.companies.map((c) => c.id).sort((a, b) => (a === 0 ? 1 : b === 0 ? -1 : a - b));
+    const me = this.game.playerId;
+    const order = this.game.companies.map((c) => c.id).sort((a, b) => (a === me ? 1 : b === me ? -1 : a - b));
     const lines = order
       .map((id) => {
         const c = this.game.companies[id];

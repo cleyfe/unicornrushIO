@@ -219,5 +219,18 @@
    0.08
   ],
   "streets": 1818
+ },
+ {
+  "id": "paris",
+  "flag": "🇫🇷",
+  "city": "Paris",
+  "area": "Centre (large)",
+  "mix": [
+   0.28,
+   0.35,
+   0.22,
+   0.15
+  ],
+  "streets": 10709
  }
 ]

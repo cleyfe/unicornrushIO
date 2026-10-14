@@ -15,6 +15,7 @@ const ONE_OFF_LABELS: Record<string, string> = {
   advertising: 'Ads',
   guards: 'Guards',
   streetDeals: 'Street deals',
+  poaching: 'Poaching',
 };
 
 /** "What happened": how cash, profit and streets moved over the player's last 60 days, and why. */

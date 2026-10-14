@@ -6,7 +6,7 @@ import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import { $, el } from './dom';
 
 type WithoutCompany<T> = T extends unknown ? Omit<T, 'companyId'> : never;
-export type Panel = 'finances' | 'lawsuit' | 'race' | 'news';
+export type Panel = 'finances' | 'lawsuit' | 'poach' | 'race' | 'news';
 
 const S = CONFIG.staff;
 const P = CONFIG.prices;
@@ -75,6 +75,7 @@ export class ActionBar {
           ${cmd('data-act="advertise"', '📢', 'Ads', 'A', 'Ad campaign: aim it at a street and it wins streets toward it until its budget runs out.')}
           ${cmd('data-act="guard"', '🛡', 'Guard', 'G', `Post an account team on a neighbourhood: click one of your streets. Your streets within ${CONFIG.guard.radius} m cost rivals ×${CONFIG.guard.defenceMult} to steal for ${CONFIG.guard.days} days.`)}
           ${cmd('data-open="lawsuit"', '⚖️', 'Sue', 'S', 'Sue a rival for unfair competition')}
+          ${cmd('data-open="poach"', '🕵️', 'Poach', 'T', `Hire away part of any rival's sales team, wherever they are (${money(CONFIG.poach.costPerPerson)} per person)`)}
           ${cmd('data-act="buy"', '🏢', 'Buy', 'B', `Buy a block of a rival's streets next to yours, instantly: up to ${CONFIG.streetDeal.blockSize} streets. Dearer than ads; they're then under contract for ${CONFIG.streetDeal.lockDays} days.`)}
         </div>
         <div class="grp price">

@@ -4,6 +4,7 @@ import {
   AdvertiseExecution,
   BorrowExecution,
   BuyStreetsExecution,
+  PoachExecution,
   FireExecution,
   GuardExecution,
   HireExecution,
@@ -28,6 +29,8 @@ export function createExecution(intent: Intent): Execution {
       return new SetSalesShareExecution(intent.companyId, intent.share);
     case 'setCampaignShare':
       return new SetCampaignShareExecution(intent.companyId, intent.share);
+    case 'poach':
+      return new PoachExecution(intent.companyId, intent.targetId);
     case 'buyStreets':
       return new BuyStreetsExecution(intent.companyId, intent.tile);
     case 'setPrice':

@@ -17,6 +17,7 @@ import type {
 import type { CityData } from '@unicornrush/engine-api/game/City';
 import { NEUTRAL, Wealth, type GameMap } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
+import { money } from '@unicornrush/engine-lib/Format';
 import { generateGridCity, mapFromCity, neighbors } from '@unicornrush/engine-lib/game/GameMap';
 import { PseudoRandom } from '@unicornrush/engine-lib/PseudoRandom';
 import type { Execution } from '../execution/Execution';
@@ -143,6 +144,34 @@ export class GameImpl {
 
   opsStaff(c: Company): number {
     return c.employees - this.salesStaff(c);
+  }
+
+  /** Days until `c` can poach again. */
+  poachWait(c: Company): number {
+    return Math.max(0, c.lastPoachDay + CONFIG.poach.cooldownDays - this.day);
+  }
+
+  /** What poaching from `target` would give `c`: people, cost, and why it can't happen now, if so. */
+  poachOffer(c: Company, target: Company): { people: number; cost: number; blocked: string } {
+    const P = CONFIG.poach;
+    const sales = this.salesStaff(target);
+    // At least one person from any real sales team, so it's an option from the start.
+    const people = Math.min(P.maxPeople, sales, Math.max(sales >= P.minTeam ? 1 : 0, Math.round((P.share * sales) / Math.max(1, this.defence(target)))));
+    const cost = people * P.costPerPerson;
+    const wait = this.poachWait(c);
+    const immune = target.poachImmuneUntil - this.day;
+    const blocked = !target.alive || target.id === c.id
+      ? 'Pick a rival'
+      : wait > 0
+        ? `Your recruiters are busy for ${Math.ceil(wait)} days`
+        : immune > 0
+          ? `${target.name} just gave retention bonuses (${Math.ceil(immune)} days)`
+          : people < 1
+            ? `${target.name}'s sales team is too small or too loyal`
+            : c.cash < cost
+              ? `Costs ${money(cost)}`
+              : '';
+    return { people, cost, blocked };
   }
 
   traineeCount(c: Company): number {
@@ -755,6 +784,8 @@ function newCompany(id: number, s: CompanySpec): Company {
     adHeat: 0,
     dealHeat: 0,
     lastAdDay: -Infinity,
+    lastPoachDay: -Infinity,
+    poachImmuneUntil: 0,
     tiles: 0,
     customers: 0,
     spend: 0,
@@ -762,7 +793,7 @@ function newCompany(id: number, s: CompanySpec): Company {
     tierSpend: [0, 0, 0, 0],
     border: new Set(),
     pnl: emptyPnl(),
-    oneOff: { hiring: 0, severance: 0, legalFees: 0, fines: 0, damages: 0, advertising: 0, guards: 0, streetDeals: 0 },
+    oneOff: { hiring: 0, severance: 0, legalFees: 0, fines: 0, damages: 0, advertising: 0, guards: 0, streetDeals: 0, poaching: 0 },
     avgProfit: 0,
     churnCarry: 0,
     negativeCashDays: 0,

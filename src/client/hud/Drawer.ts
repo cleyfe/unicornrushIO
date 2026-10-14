@@ -7,7 +7,7 @@ import { $, el } from './dom';
 import { RaceChart } from './RaceChart';
 import { Sparkline } from './Sparkline';
 
-export type DrawerKind = 'finances' | 'lawsuit' | 'race' | 'news';
+export type DrawerKind = 'finances' | 'lawsuit' | 'poach' | 'race' | 'news';
 
 /** A panel that slides in over the map for less frequent decisions. */
 export class Drawer {
@@ -35,9 +35,10 @@ export class Drawer {
         this.update();
         return;
       }
-      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-sue], [data-bank]');
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-sue], [data-bank], [data-poach]');
       if (!b || b.disabled) return;
       if (b.dataset.sue) send({ type: 'lawsuit', targetId: Number(b.dataset.sue) });
+      else if (b.dataset.poach) send({ type: 'poach', targetId: Number(b.dataset.poach) });
       else send({ type: b.dataset.bank });
     });
   }
@@ -46,7 +47,7 @@ export class Drawer {
     if (this.kind === kind) return this.close();
     this.kind = kind;
     this.root.hidden = false;
-    const html = { finances: this.financesHtml, lawsuit: this.lawsuitHtml, race: this.raceHtml, news: this.newsHtml }[kind].call(this);
+    const html = { finances: this.financesHtml, lawsuit: this.lawsuitHtml, poach: this.poachHtml, race: this.raceHtml, news: this.newsHtml }[kind].call(this);
     this.root.innerHTML = `<button class="close" aria-label="Close">✕</button>${html}`;
     this.root.classList.toggle('wide', kind === 'race');
     $(this.root, '.close').addEventListener('click', () => this.close());
@@ -88,6 +89,17 @@ export class Drawer {
         <button data-bank="borrow" title="${pct(b.interestPerYear)} a year. Credit limit: ${b.maxDebtRevenueDays} days of revenue.">Borrow ${money(b.loanChunk)}</button>
         <button data-bank="repay" class="ghost">Repay ${money(b.loanChunk)}</button>
       </div>`;
+  }
+
+  private poachHtml(): string {
+    const P = CONFIG.poach;
+    return `<h2>🕵️ Poach</h2>
+      <p class="fee-line">Hire away part of a rival's sales team, wherever they are. They join you trained, and take their push with them. ${money(P.costPerPerson)} per person · once every ${P.cooldownDays} days.</p>
+      <table class="cases-table">
+        <tr><th>Rival</th><th title="Their sales staff">Sales</th><th title="The more defended they are (service × push reserve), the fewer leave">🛡</th><th>You'd get</th><th>Cost</th><th></th></tr>
+        <tbody data-v="poachRows"></tbody>
+      </table>
+      <p class="note" data-v="poachNote"></p>`;
   }
 
   private lawsuitHtml(): string {
@@ -162,6 +174,26 @@ export class Drawer {
     }
     if (this.kind === 'race') {
       if (g.tick % 10 === 0) this.raceChart.draw();
+      return;
+    }
+    if (this.kind === 'poach') {
+      const rows = g.companies
+        .filter((r) => r.alive && r.id !== c.id)
+        .map((r) => ({ r, offer: g.poachOffer(c, r) }))
+        .sort((a, b) => g.valuation(b.r).total - g.valuation(a.r).total)
+        .map(
+          ({ r, offer }) => `<tr><td><i style="background:rgb(${r.color.join(',')})"></i>${r.name}</td>
+            <td>${g.salesStaff(r)}</td><td>×${g.defence(r).toFixed(1)}</td><td>${offer.people} people</td><td>${money(offer.cost)}</td>
+            <td><button class="sue-btn" data-poach="${r.id}" ${offer.blocked ? 'disabled' : ''} title="${offer.blocked || `Poach ${offer.people} of ${r.name}'s sales staff for ${money(offer.cost)}`}">Poach</button></td></tr>`,
+        )
+        .join('');
+      const body = $(this.root, '[data-v="poachRows"]');
+      if (body.dataset.html !== rows) {
+        body.dataset.html = rows;
+        body.innerHTML = rows;
+      }
+      const wait = g.poachWait(c);
+      this.set('poachNote', wait > 0 ? `Your recruiters are busy for ${Math.ceil(wait)} more days.` : '');
       return;
     }
     const L = CONFIG.lawsuit;

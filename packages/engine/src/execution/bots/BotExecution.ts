@@ -125,6 +125,19 @@ export class BotExecution implements Execution {
       }
     }
 
+    // 3a'. Now and then, poach sales staff from a runaway leader, wherever it is.
+    if (advanced && g.rng.chance(level.dealAppetite)) {
+      const leader = g.leaderId();
+      const L = leader === null || leader === id ? null : g.companies[leader];
+      if (L && g.valuation(L).total > g.valuation(c).total * 1.3) {
+        const offer = g.poachOffer(c, L);
+        if (!offer.blocked && cash > offer.cost * 3 + reserve * 2) {
+          this.act(g, { type: 'poach', companyId: id, targetId: L.id });
+          cash -= offer.cost;
+        }
+      }
+    }
+
     // 3b. Guard the front line against a rival that keeps taking our streets.
     const front = advanced ? this.frontToGuard(g) : -1;
     if (front >= 0) {

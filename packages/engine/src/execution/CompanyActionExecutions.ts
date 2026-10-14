@@ -230,3 +230,36 @@ export class RelocateExecution extends InstantExecution {
     if (error) game.message(this.companyId, error);
   }
 }
+
+/** Hires away part of a rival's sales team: they join you trained, into Sales, and take their share of the rival's push. */
+export class PoachExecution extends InstantExecution {
+  constructor(
+    private companyId: number,
+    private targetId: number,
+  ) {
+    super();
+  }
+  protected apply(game: GameImpl): void {
+    const c = game.companies[this.companyId];
+    const t = game.companies[this.targetId];
+    if (!c.alive || !t) return;
+    const offer = game.poachOffer(c, t);
+    if (offer.blocked) return game.message(c.id, `Can't poach: ${offer.blocked}.`);
+    const n = offer.people;
+    // The target loses sales staff only: its operations team stays as it was.
+    const tSales = game.salesStaff(t);
+    t.push *= 1 - n / Math.max(1, tSales);
+    t.employees -= n;
+    t.salesShare = t.employees > 0 ? Math.max(0, Math.min(1, (tSales - n) / t.employees)) : 0;
+    const cSales = game.salesStaff(c);
+    c.employees += n;
+    c.salesShare = Math.min(1, (cSales + n) / c.employees);
+    c.cash -= offer.cost;
+    c.oneOff.poaching -= offer.cost;
+    c.lastPoachDay = game.day;
+    t.poachImmuneUntil = game.day + CONFIG.poach.immunityDays;
+    if (!c.isBot) game.message(c.id, `🕵️ ${n} of ${t.name}'s sales staff join you, trained and ready, for ${money(offer.cost)}.`, 'good');
+    if (!t.isBot) game.message(t.id, `🕵️ ${c.name} poached ${n} of your sales staff.`, 'bad');
+    game.news(`🕵️ ${c.name} poached ${n} of ${t.name}'s sales staff.`, 'info');
+  }
+}

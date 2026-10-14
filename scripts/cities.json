@@ -1424,5 +1424,165 @@
         "weight": 1
       }
     ]
+  },
+  "paris": {
+    "flag": "🇫🇷",
+    "city": "Paris",
+    "area": "Centre (large)",
+    "name": "Paris · Centre",
+    "bbox": [
+      48.84,
+      2.285,
+      48.888,
+      2.38
+    ],
+    "wealthShares": [
+      0.28,
+      0.35,
+      0.22,
+      0.15
+    ],
+    "wealthHints": [
+      {
+        "name": "Golden Triangle & Champs-Élysées",
+        "lat": 48.869,
+        "lon": 2.304,
+        "radius": 700,
+        "weight": 3
+      },
+      {
+        "name": "Parc Monceau",
+        "lat": 48.8796,
+        "lon": 2.3089,
+        "radius": 650,
+        "weight": 2.5
+      },
+      {
+        "name": "Faubourg Saint-Honoré & Madeleine",
+        "lat": 48.8705,
+        "lon": 2.319,
+        "radius": 600,
+        "weight": 2.5
+      },
+      {
+        "name": "Place Vendôme & Rue de la Paix",
+        "lat": 48.868,
+        "lon": 2.33,
+        "radius": 400,
+        "weight": 3
+      },
+      {
+        "name": "7th: Invalides & Rue du Bac",
+        "lat": 48.856,
+        "lon": 2.315,
+        "radius": 900,
+        "weight": 3
+      },
+      {
+        "name": "Saint-Germain-des-Prés",
+        "lat": 48.8535,
+        "lon": 2.3335,
+        "radius": 600,
+        "weight": 3
+      },
+      {
+        "name": "Luxembourg & Odéon",
+        "lat": 48.848,
+        "lon": 2.338,
+        "radius": 500,
+        "weight": 2
+      },
+      {
+        "name": "Île Saint-Louis",
+        "lat": 48.8517,
+        "lon": 2.3567,
+        "radius": 300,
+        "weight": 2.5
+      },
+      {
+        "name": "Le Marais",
+        "lat": 48.859,
+        "lon": 2.36,
+        "radius": 600,
+        "weight": 1.5
+      },
+      {
+        "name": "Palais-Royal & Louvre",
+        "lat": 48.863,
+        "lon": 2.337,
+        "radius": 500,
+        "weight": 1.5
+      },
+      {
+        "name": "Trocadéro edge",
+        "lat": 48.863,
+        "lon": 2.29,
+        "radius": 500,
+        "weight": 2.5
+      },
+      {
+        "name": "Quartier Latin",
+        "lat": 48.847,
+        "lon": 2.346,
+        "radius": 500,
+        "weight": 0.5
+      },
+      {
+        "name": "Barbès & Goutte d'Or",
+        "lat": 48.885,
+        "lon": 2.353,
+        "radius": 700,
+        "weight": -3
+      },
+      {
+        "name": "Gare du Nord & Gare de l'Est",
+        "lat": 48.879,
+        "lon": 2.358,
+        "radius": 600,
+        "weight": -2
+      },
+      {
+        "name": "Strasbourg-Saint-Denis",
+        "lat": 48.87,
+        "lon": 2.355,
+        "radius": 500,
+        "weight": -1.5
+      },
+      {
+        "name": "Pigalle",
+        "lat": 48.882,
+        "lon": 2.337,
+        "radius": 400,
+        "weight": -1
+      },
+      {
+        "name": "République & Oberkampf",
+        "lat": 48.866,
+        "lon": 2.37,
+        "radius": 700,
+        "weight": -1
+      },
+      {
+        "name": "Château d'Eau",
+        "lat": 48.872,
+        "lon": 2.356,
+        "radius": 400,
+        "weight": -2
+      },
+      {
+        "name": "Gare Saint-Lazare",
+        "lat": 48.876,
+        "lon": 2.325,
+        "radius": 400,
+        "weight": -0.5
+      },
+      {
+        "name": "Sentier",
+        "lat": 48.868,
+        "lon": 2.348,
+        "radius": 400,
+        "weight": -0.5
+      }
+    ]
   }
 }

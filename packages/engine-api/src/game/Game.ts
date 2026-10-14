@@ -21,6 +21,7 @@ export interface OneOffFlows {
   advertising: number; // ad purchases (negative)
   guards: number; // neighbourhood account teams (negative)
   streetDeals: number; // streets bought in deals (negative)
+  poaching: number; // signing bonuses for poached staff (negative)
   damages: number; // lawsuit damages received (+) or paid (−)
 }
 
@@ -70,6 +71,10 @@ export interface Company {
   dealHeat: number;
   /** Day the last ad campaign was bought (the agency needs a break between campaigns). */
   lastAdDay: number;
+  /** Day of this company's last poach (cooldown). */
+  lastPoachDay: number;
+  /** Can't be poached before this day. */
+  poachImmuneUntil: number;
 
   tiles: number;
   customers: number; // customers on owned streets

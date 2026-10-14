@@ -123,6 +123,18 @@ export const CONFIG = {
 
   // Guard: a dedicated account team for one neighbourhood. Your streets around
   // the chosen one cost rivals more push to steal, for a while.
+  // Poaching: hire away part of a rival's sales team, anywhere on the map. The
+  // share falls with the target's defence (service × push reserve); the people
+  // join you trained, into Sales, and take their share of the target's push.
+  poach: {
+    share: 0.12, // of the target's sales staff, divided by its defence
+    maxPeople: 60,
+    minTeam: 5, // a sales team this big always loses at least one person
+    costPerPerson: 3_000, // signing bonus
+    cooldownDays: 45, // between two poaches by the same company
+    immunityDays: 20, // a poached company can't be poached again for this long
+  },
+
   guard: {
     radius: 250, // metres
     days: 60,
