@@ -2,6 +2,9 @@
 # (see .github/workflows/deploy.yml). Multiplayer rooms (Durable Objects) will join this Worker later.
 name = "unicornrush"
 compatibility_date = "2026-09-01"
+# The game lives on unicornrush.io; pull requests still get preview links.
+workers_dev = false
+preview_urls = true
 
 # Served at unicornrush.io (and www); each deploy keeps the custom domains and their DNS records attached.
 # Top-level keys must stay above the [assets] table, or TOML reads them as part of it.
