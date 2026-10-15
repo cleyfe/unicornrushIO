@@ -66,10 +66,8 @@ export class ActionBar {
       </div>
       <div class="dock-cmds">
         <div class="grp">
-          ${cmd('data-hire="1"', '👥', '+1', '', `Hire 1: ${money(S.hireCost)} now, ${money(S.salaryPerDay)}/day. Trains ${S.trainingDays} days.`)}
-          ${cmd('data-hire="10"', '👥', '+10', 'H', `Hire 10: ${money(S.hireCost * 10)} now, ${money(S.salaryPerDay * 10)}/day. Trains ${S.trainingDays} days.`)}
-          ${cmd('data-hire="100"', '👥', '+100', '', `Hire 100: ${money(S.hireCost * 100)} now, ${money(S.salaryPerDay * 100)}/day.`)}
-          ${cmd('data-fire="10"', '👋', '−10', '', `Let 10 people go: ${money(S.fireCost * 10)} severance, saves ${money(S.salaryPerDay * 10)}/day.`)}
+          ${cmd('data-hire="10"', '👥', 'Hire 10', 'H', `Hire 10: ${money(S.hireCost * 10)} now, ${money(S.salaryPerDay * 10)}/day. Trains ${S.trainingDays} days.`)}
+          ${cmd('data-fire="10"', '👋', 'Fire 10', 'J', `Let 10 people go: ${money(S.fireCost * 10)} severance, saves ${money(S.salaryPerDay * 10)}/day.`)}
         </div>
         <div class="grp">
           ${cmd('data-act="advertise"', '📢', 'Ads', 'A', 'Ad campaign: aim it at a street and it wins streets toward it until its budget runs out.')}
@@ -79,7 +77,10 @@ export class ActionBar {
           ${cmd('data-act="buy"', '🏢', 'Buy', 'B', `Buy a block of a rival's streets next to yours, instantly: up to ${CONFIG.streetDeal.blockSize} streets. Dearer than ads; they're then under contract for ${CONFIG.streetDeal.lockDays} days.`)}
         </div>
         <div class="grp price">
-          ${PRICE_LEVELS.map((p, i) => cmd(`data-price="${p}"`, '$'.repeat(i + 1), P[p].label, PRICE_KEYS[p], PRICE_TIPS[p])).join('')}
+          <div class="price-switch" title="Your price (Q / W / E). A change takes a few days to reach every shop.">
+            <div class="seg">${PRICE_LEVELS.map((p, i) => `<button data-price="${p}" title="${PRICE_TIPS[p]} Key: ${PRICE_KEYS[p]}">${'$'.repeat(i + 1)}</button>`).join('')}</div>
+            <span class="lb" data-v="priceLabel"></span>
+          </div>
         </div>
         <div class="grp view">
           ${cmd('data-open="finances"', '🏦', 'Money', 'F', 'Profit & loss, valuation, bank loans')}
@@ -145,6 +146,11 @@ export class ActionBar {
       this.nudgeSplit(k === 'O' ? -0.05 : 0.05);
       return true;
     }
+    const price = PRICE_LEVELS.find((p) => PRICE_KEYS[p] === k);
+    if (price) {
+      this.send({ type: 'setPrice', price });
+      return true;
+    }
     const target = [...this.root.querySelectorAll<HTMLButtonElement>('.cmd')].find((b) => b.querySelector('kbd')?.textContent === k);
     if (!target || target.disabled) return false;
     target.click();
@@ -184,7 +190,7 @@ export class ActionBar {
     defEl.textContent = `🛡 ×${def.toFixed(1)}`;
     defEl.className = `defence ${def < 0.95 ? 'weak' : def > 1.3 ? 'strong' : ''}`;
     // Defence = service × push reserve: show both, so a big reserve can't hide a lack of Ops.
-    defEl.title = `Defence ×${def.toFixed(2)}: how much more push rivals need to steal your streets.\nService ×${Math.max(0.3, g.serviceLevel(c)).toFixed(2)} (spare Ops, up to ×${S_MAX_SERVICE}) × push reserve ×${g.retention(c).toFixed(2)} (unspent push, up to ×${CONFIG.sales.maxRetention}).`;
+    defEl.title = `Defence ×${def.toFixed(2)}: how much more push rivals need to steal your streets.\nService ×${g.serviceDefence(c).toFixed(2)} (spare Ops, up to ×${S_MAX_SERVICE}; overloaded drags it down fast) × push reserve ×${g.retention(c).toFixed(2)} (unspent push, up to ×${CONFIG.sales.maxRetention}).`;
 
     $(r, '[data-v="ops"]').textContent = int(g.opsStaff(c));
     const trainees = g.traineeCount(c);
@@ -198,7 +204,7 @@ export class ActionBar {
     cap.className = `capacity ${service < 1 ? 'bad' : service > S_MAX_SERVICE + 0.05 ? 'over' : 'good'}`;
     cap.title =
       `Service: Ops can serve ${int(g.capacity(c))} of your ${int(c.customers)} customers (${S.customersPerOps} each; trainees don't count yet).\n` +
-      `Below ×1, customers go unserved and leave. ×1 to ×${S_MAX_SERVICE}: spare Ops make your streets harder to steal. Above ×${S_MAX_SERVICE}: no extra effect.`;
+      `Below ×1, unserved customers don't pay and your streets get easy to steal. ×1 to ×${S_MAX_SERVICE}: spare Ops make your streets harder to steal. Above ×${S_MAX_SERVICE}: no extra effect.`;
     // Slider marks where service hits ×1 and ×1.5 (the slider is the share of staff in sales).
     const staff = Math.max(1, c.employees);
     const markAt = (level: number) => Math.max(0, Math.min(100, 100 * (1 - (c.customers * level) / S.customersPerOps / staff)));
@@ -216,10 +222,11 @@ export class ActionBar {
     r.querySelectorAll<HTMLButtonElement>('[data-price]').forEach((b) => {
       const p = b.dataset.price as PriceLevel;
       b.classList.toggle('active', p === c.price);
-      const pending = c.pendingPrice?.price === p;
-      b.classList.toggle('pending', pending);
-      b.querySelector('.lb')!.textContent = pending ? `in ${Math.ceil(c.pendingPrice!.day - g.day)}d` : P[p].label;
+      b.classList.toggle('pending', c.pendingPrice?.price === p);
     });
+    const label = $(r, '[data-v="priceLabel"]');
+    label.textContent = c.pendingPrice ? `${P[c.pendingPrice.price].label} in ${Math.ceil(c.pendingPrice.day - g.day)}d` : P[c.price].label;
+    label.classList.toggle('pending', !!c.pendingPrice);
 
     this.cues();
   }

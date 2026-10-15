@@ -1955,8 +1955,9 @@ ul.what li {
   .dock-cmds .grp:nth-child(1) .cmd {
     order: 3;
   }
-  .dock-cmds .grp.price .cmd {
+  .dock-cmds .grp.price .price-switch {
     order: 4;
+    grid-column: span 3;
   }
   .cmd {
     min-width: 0;
@@ -2251,3 +2252,46 @@ ul.what li {
 .attack-legend .a3 { background: #eab308; }
 .attack-legend .a4 { background: #f97316; }
 .attack-legend .a5 { background: #dc2626; }
+
+/* One switch for the price: $ · $$ · $$$ with the current level (or the pending change) below. */
+.price-switch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 50px;
+}
+.price-switch .seg {
+  display: flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.price-switch .seg button {
+  border: 0;
+  border-radius: 0;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gold);
+  background: rgba(255, 255, 255, 0.05);
+  min-width: 0;
+}
+.price-switch .seg button + button {
+  border-left: 1px solid var(--line-strong);
+}
+.price-switch .seg button.active {
+  background: var(--accent);
+  color: #fff;
+}
+.price-switch .seg button.pending {
+  box-shadow: inset 0 0 0 2px var(--warn);
+}
+.price-switch .lb {
+  font-size: 11px;
+  color: var(--muted);
+}
+.price-switch .lb.pending {
+  color: var(--warn);
+}
