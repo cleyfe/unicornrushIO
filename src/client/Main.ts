@@ -28,6 +28,7 @@ import { InputHandler } from './InputHandler';
 import { CityMapView, type MapTheme, wealthColors } from './render/CityMapView';
 import { CompanyLabels } from './render/CompanyLabels';
 import { GuardMarkers } from './render/GuardMarkers';
+import { ActionRing } from './hud/ActionRing';
 import { NetGameRunner } from './net/NetGameRunner';
 import { trackSolo, trackVisit } from './net/Analytics';
 import { createRoom, RoomClient } from './net/RoomClient';
@@ -177,7 +178,8 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
   const actions = new ActionBar(game, (i) => client.send(i), (d) => drawer.toggle(d));
   const cards = new CardPicker(game, (i) => client.send(i));
   const news = new NewsFeed(() => drawer.toggle('news'));
-  const coach = new Coach(game);
+  const ring = new ActionRing(game, city, view.map, (s) => view.zoneCenter(s), (i) => client.send(i));
+  const coach = new Coach(game, () => ring.used);
   const legendHtml = () =>
     '<summary>🗺 Key</summary>' +
     CONFIG.wealth
@@ -190,9 +192,10 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
   const legend = el('details', 'wealth-legend glass', legendHtml());
   const paused = el('div', 'paused-badge', 'Click a glowing street to start · elsewhere to move');
   const guardBanner = el('div', 'guard-banner', '');
-  stage.append(guards.root, labels.root, top.root, you.root, race.root, legend, actions.root, cards.root, news.root, drawer.root, coach.root, paused, guardBanner);
+  stage.append(guards.root, labels.root, top.root, you.root, race.root, legend, actions.root, cards.root, news.root, drawer.root, coach.root, paused, guardBanner, ring.root);
   const input = new InputHandler(client, view, city, tooltip, setSpeed, firstMove, () => started);
   const detach = input.attach();
+  input.ring = ring;
   actions.onAim = (mode) => input.toggleMode(mode);
   const banners = {
     ad: '📢 Aim at a street · Esc',
@@ -233,6 +236,7 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
     }
     labels.update(now);
     guards.update();
+    ring.update();
     history.update();
     const fresh = client.newLogEntries();
     // When a lawsuit involves you, show your personal message instead of the public one.

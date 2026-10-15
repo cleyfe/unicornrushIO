@@ -43,7 +43,10 @@ export class Coach {
   private startEmployees: number;
   private steps: Step[];
 
-  constructor(private game: GameImpl) {
+  constructor(
+    private game: GameImpl,
+    private ringUsed: () => boolean = () => false,
+  ) {
     this.root = el('div', 'coach', '');
     this.root.hidden = true;
     this.startTiles = game.player.tiles;
@@ -71,9 +74,16 @@ export class Coach {
         done: (g) => g.player.employees + g.traineeCount(g.player) > this.startEmployees,
       },
       {
+        id: 'ring',
+        anchor: '.action-bar .push',
+        text: `🎯 <b>${matchMedia('(pointer: coarse)').matches ? 'Hold' : 'Right-click'}</b> any street for actions: Ads, Guard, Sue, Poach, Buy.`,
+        when: (g) => g.day > 20,
+        done: () => this.ringUsed(),
+      },
+      {
         id: 'ads',
         anchor: '.action-bar .push',
-        text: '📢 Idle cash? Try <b>Ads</b>.',
+        text: `📢 Idle cash? ${matchMedia('(pointer: coarse)').matches ? 'Hold' : 'Right-click'} a street for <b>Ads</b>.`,
         when: (g) => g.day > 90 && g.player.cash > g.adOffer(g.player).cost * 3,
         done: (g) => g.player.oneOff.advertising < 0,
       },

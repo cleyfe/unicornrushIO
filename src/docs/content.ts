@@ -199,6 +199,7 @@ const SECTIONS: Section[] = [
         ['Space (hold)', 'Attack view: rival streets from green (cheap to take) to red (well defended)'],
         ['H / J', 'Hire 10 / let 10 go'],
         ['O / P', 'Move 5% of staff to Ops / to Sales'],
+        ['Right-click / hold a street', 'Action ring: Ads, Guard, Sue, Poach, Buy, aimed at that street'],
         ['A', 'Aim an ad'],
         ['G', 'Guard: set your front'],
         ['B', 'Buy streets'],

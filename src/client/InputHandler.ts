@@ -1,4 +1,4 @@
-import type { MapMouseEvent } from 'maplibre-gl';
+import type { MapMouseEvent, Point } from 'maplibre-gl';
 import type { CityData } from '@unicornrush/engine-api/game/City';
 import { NEUTRAL } from '@unicornrush/engine-api/game/GameMap';
 import { CONFIG } from '@unicornrush/engine-lib/configuration/Config';
@@ -23,6 +23,10 @@ export class InputHandler {
   /** Command hotkeys (letters); returns true if the key was used. */
   onHotkey: (key: string) => boolean = () => false;
   onEscape: () => void = () => {};
+  /** The contextual action ring: opened on a street by right-click or a long press. */
+  ring: { readonly isOpen: boolean; open(seg: number): void; close(): void } | null = null;
+  /** Ignore the click that ends a long press. */
+  private suppressClickUntil = 0;
   /** Shows or hides the attack view's legend. */
   onAttackView: (on: boolean) => void = () => {};
   private attackView = false;
@@ -44,6 +48,9 @@ export class InputHandler {
   attach(): () => void {
     const map = this.view.map;
     map.on('click', (e: MapMouseEvent) => {
+      if (performance.now() < this.suppressClickUntil) return;
+      // With the ring open, a click elsewhere just closes it.
+      if (this.ring?.isOpen) return this.ring.close();
       const seg = this.view.segmentAt(e.point);
       if (seg < 0) return;
       if (this.mode === 'guard') {
@@ -85,6 +92,50 @@ export class InputHandler {
       ripple.addEventListener('animationend', () => ripple.remove());
     });
     map.getContainer().append(this.cursorChip);
+    // Right-click a street: the action ring.
+    map.on('contextmenu', (e: MapMouseEvent) => {
+      e.preventDefault();
+      const seg = this.view.segmentAt(e.point);
+      if (seg >= 0 && this.ring) {
+        this.setMode('expand');
+        this.ring.open(seg);
+      }
+    });
+    // Touch: hold a street for half a second.
+    let hold: { timer: number; x: number; y: number } | null = null;
+    const cancelHold = () => {
+      if (hold) window.clearTimeout(hold.timer);
+      hold = null;
+    };
+    const canvas = map.getCanvasContainer();
+    canvas.addEventListener('touchstart', (ev) => {
+      cancelHold();
+      if (ev.touches.length !== 1) return;
+      const box = canvas.getBoundingClientRect();
+      const x = ev.touches[0].clientX - box.left;
+      const y = ev.touches[0].clientY - box.top;
+      hold = {
+        x,
+        y,
+        timer: window.setTimeout(() => {
+          hold = null;
+          const seg = this.view.segmentAt({ x, y } as Point);
+          if (seg < 0 || !this.ring) return;
+          this.suppressClickUntil = performance.now() + 700;
+          this.setMode('expand');
+          this.ring.open(seg);
+          navigator.vibrate?.(15);
+        }, 480),
+      };
+    }, { passive: true });
+    canvas.addEventListener('touchmove', (ev) => {
+      if (!hold) return;
+      const box = canvas.getBoundingClientRect();
+      const t = ev.touches[0];
+      if (Math.hypot(t.clientX - box.left - hold.x, t.clientY - box.top - hold.y) > 10) cancelHold();
+    }, { passive: true });
+    canvas.addEventListener('touchend', cancelHold);
+    canvas.addEventListener('touchcancel', cancelHold);
     map.on('mousemove', (e: MapMouseEvent) => {
       this.cursorAt = e.point;
       const seg = this.view.segmentAt(e.point);
@@ -125,7 +176,8 @@ export class InputHandler {
         ev.preventDefault();
         this.onSpeedKey(this.client.speed === 0 ? 1 : 0);
       } else if (ev.key === 'Escape') {
-        if (this.mode !== 'expand') this.setMode('expand');
+        if (this.ring?.isOpen) this.ring.close();
+        else if (this.mode !== 'expand') this.setMode('expand');
         else this.onEscape();
       } else if (ev.key.length === 1 && this.onHotkey(ev.key)) {
         ev.preventDefault();
@@ -302,6 +354,7 @@ export function describeSegment(g: GameImpl, city: CityData, seg: number, reacha
       lines.push(`<div class="hc-action ok">✓ Click · ≈${est} street${est === 1 ? '' : 's'} · ${Math.floor(budget)} push</div>`);
     } else lines.push(`<div class="hc-action wait">Needs ${Math.ceil(cost)} push (you commit ${Math.floor(budget)})</div>`);
   }
+  if (o !== NEUTRAL && matchMedia('(pointer: fine)').matches) lines.push('<div class="hc-hint">Right-click: actions</div>');
   return `<div class="hc-title">${street} <span class="w${level}" title="${CONFIG.wealth[level].label}: customers spend ×${CONFIG.wealth[level].spend}">${'$'.repeat(level + 1)}</span></div>
     <div class="hc-row"><span>${owner} · ${customers} customer${customers === 1 ? '' : 's'}</span><span class="pos">${o === g.playerId ? '' : '≈ '}+${money(perDay)}/day</span></div>
     ${lines.join('')}`;

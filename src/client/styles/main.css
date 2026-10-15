@@ -1937,7 +1937,7 @@ ul.what li {
   .stage > .action-bar {
     gap: 6px;
   }
-  /* Every command on screen, no scrolling: actions and panels on top, staff and prices below. */
+  /* Every command on screen, no scrolling. */
   .dock-cmds {
     display: grid;
     grid-template-columns: repeat(8, minmax(0, 1fr));
@@ -1946,17 +1946,8 @@ ul.what li {
   .dock-cmds .grp {
     display: contents;
   }
-  .dock-cmds .grp:nth-child(2) .cmd {
-    order: 1;
-  }
-  .dock-cmds .grp.view .cmd {
-    order: 2;
-  }
-  .dock-cmds .grp:nth-child(1) .cmd {
-    order: 3;
-  }
+  /* One row: Hire, Fire, price, panels (actions are in the ring on the map). */
   .dock-cmds .grp.price .price-switch {
-    order: 4;
     grid-column: span 3;
   }
   .cmd {
@@ -2294,4 +2285,126 @@ ul.what li {
 }
 .price-switch .lb.pending {
   color: var(--warn);
+}
+
+/* ---------- action ring (right-click / hold a street) ---------- */
+
+.action-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 45;
+  --r: 58px;
+}
+.action-ring[hidden] {
+  display: none;
+}
+.action-ring .pin {
+  position: absolute;
+  left: -9px;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.45);
+  pointer-events: none;
+}
+.action-ring .ring-btn {
+  position: absolute;
+  left: -22px;
+  top: -22px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  background: var(--glass-strong);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  transform: rotate(var(--a)) translateX(var(--r)) rotate(calc(-1 * var(--a)));
+  animation: ring-in 0.14s ease-out;
+}
+.action-ring .ring-btn:hover:not(.off) {
+  background: #1e3a64;
+  border-color: var(--accent);
+}
+.action-ring .ring-btn.off {
+  opacity: 0.35;
+}
+.action-ring .ring-btn.armed {
+  border-color: var(--warn);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.4);
+}
+.action-ring .ring-btn kbd {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  font: 600 8px system-ui;
+  color: var(--muted);
+}
+@keyframes ring-in {
+  from {
+    transform: rotate(var(--a)) translateX(10px) rotate(calc(-1 * var(--a)));
+    opacity: 0;
+  }
+}
+.action-ring .ring-label {
+  position: absolute;
+  left: calc(var(--r) + 34px);
+  top: -22px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+  max-width: 300px;
+  pointer-events: none;
+}
+.action-ring .ring-label span {
+  white-space: normal;
+}
+.action-ring .ring-label .muted {
+  color: var(--muted);
+}
+@media (min-width: 601px) {
+  .action-ring.flip .ring-label {
+    left: auto;
+    right: calc(var(--r) + 34px);
+  }
+}
+.hc-hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+@media (max-width: 600px) {
+  .action-ring {
+    --r: 62px;
+  }
+  .action-ring .ring-btn {
+    width: 48px;
+    height: 48px;
+    left: -24px;
+    top: -24px;
+  }
+  .action-ring .ring-btn kbd {
+    display: none;
+  }
+  /* Below the ring, centred, so it stays on screen. */
+  .action-ring .ring-label {
+    left: 50%;
+    top: calc(var(--r) + 34px);
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 260px;
+    white-space: normal;
+    text-align: center;
+  }
 }

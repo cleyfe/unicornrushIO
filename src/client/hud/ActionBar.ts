@@ -69,13 +69,6 @@ export class ActionBar {
           ${cmd('data-hire="10"', '👥', 'Hire 10', 'H', `Hire 10: ${money(S.hireCost * 10)} now, ${money(S.salaryPerDay * 10)}/day. Trains ${S.trainingDays} days.`)}
           ${cmd('data-fire="10"', '👋', 'Fire 10', 'J', `Let 10 people go: ${money(S.fireCost * 10)} severance, saves ${money(S.salaryPerDay * 10)}/day.`)}
         </div>
-        <div class="grp">
-          ${cmd('data-act="advertise"', '📢', 'Ads', 'A', 'Ad campaign: aim it at a street and it wins streets toward it until its budget runs out.')}
-          ${cmd('data-act="guard"', '🛡', 'Guard', 'G', `Set your front: click one of your streets. Your streets within ${CONFIG.guard.radius} m get ${Math.round(CONFIG.guard.reserveShare * 100)}% of your push reserve's defence. Free; you can move it every ${CONFIG.guard.moveCooldownDays} days.`)}
-          ${cmd('data-open="lawsuit"', '⚖️', 'Sue', 'S', 'Sue a rival for unfair competition')}
-          ${cmd('data-open="poach"', '🕵️', 'Poach', 'T', `Hire away part of any rival's sales team, wherever they are (${money(CONFIG.poach.costPerPerson)} per person)`)}
-          ${cmd('data-act="buy"', '🏢', 'Buy', 'B', `Buy a block of a rival's streets next to yours, instantly: up to ${CONFIG.streetDeal.blockSize} streets. Dearer than ads; they're then under contract for ${CONFIG.streetDeal.lockDays} days.`)}
-        </div>
         <div class="grp price">
           <div class="price-switch" title="Your price (Q / W / E). A change takes a few days to reach every shop.">
             <div class="seg">${PRICE_LEVELS.map((p, i) => `<button data-price="${p}" title="${PRICE_TIPS[p]} Key: ${PRICE_KEYS[p]}">${'$'.repeat(i + 1)}</button>`).join('')}</div>
@@ -123,9 +116,6 @@ export class ActionBar {
       if (d.price) this.send({ type: 'setPrice', price: d.price as PriceLevel });
       else if (d.hire) this.send({ type: 'hire', count: Number(d.hire) });
       else if (d.fire) this.send({ type: 'fire', count: Number(d.fire) });
-      else if (d.act === 'advertise') this.onAim('ad');
-      else if (d.act === 'guard') this.onAim('guard');
-      else if (d.act === 'buy') this.onAim('buy');
       else if (d.open) this.open(d.open as Panel);
     });
   }
@@ -144,6 +134,16 @@ export class ActionBar {
     const k = key.toUpperCase();
     if (k === 'O' || k === 'P') {
       this.nudgeSplit(k === 'O' ? -0.05 : 0.05);
+      return true;
+    }
+    // Actions live in the ring on the map (right-click a street); their keys still work.
+    const aim = ({ A: 'ad', G: 'guard', B: 'buy' } as const)[k as 'A' | 'G' | 'B'];
+    if (aim) {
+      this.onAim(aim);
+      return true;
+    }
+    if (k === 'S' || k === 'T') {
+      this.open(k === 'S' ? 'lawsuit' : 'poach');
       return true;
     }
     const price = PRICE_LEVELS.find((p) => PRICE_KEYS[p] === k);
@@ -211,12 +211,6 @@ export class ActionBar {
     $(r, '[data-v="mark1"]').style.left = `calc(8px + (100% - 16px) * ${markAt(1) / 100})`;
     $(r, '[data-v="mark15"]').style.left = `calc(8px + (100% - 16px) * ${markAt(S_MAX_SERVICE) / 100})`;
 
-    const ad = g.adOffer(c);
-    const adBtn = $<HTMLButtonElement>(r, '[data-act="advertise"]');
-    const adWait = g.adWait(c);
-    adBtn.querySelector('.lb')!.textContent = adWait > 0 ? `in ${Math.ceil(adWait)}d` : money(ad.cost);
-    adBtn.title = `Ad campaign: ${ad.push} push for ${money(ad.cost)}. Click, then aim at a street: it wins streets toward it until the budget runs out. Each recent ad adds ${money(CONFIG.sales.adStepCost)} to the next one; the extra fades over a few weeks.`;
-    adBtn.disabled = c.cash < ad.cost || adWait > 0;
     r.querySelectorAll<HTMLButtonElement>('[data-hire]').forEach((b) => (b.disabled = c.cash < Number(b.dataset.hire) * S.hireCost));
 
     r.querySelectorAll<HTMLButtonElement>('[data-price]').forEach((b) => {
