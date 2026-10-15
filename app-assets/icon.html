@@ -1,32 +1,19 @@
-<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;width:1024px;height:1024px;overflow:hidden;background:#0b111a}</style></head><body>
-<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
- <defs>
-  <radialGradient id="bg" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="#33246e"/><stop offset=".55" stop-color="#161b3d"/><stop offset="1" stop-color="#0b111a"/></radialGradient>
-  <linearGradient id="horn" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#8b5cf6"/><stop offset=".55" stop-color="#ec4899"/><stop offset="1" stop-color="#fbbf24"/></linearGradient>
-  <clipPath id="cone"><path d="M432 860 L512 150 L592 860 Z"/></clipPath>
-  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="28"/></filter>
- </defs>
- <rect width="1024" height="1024" fill="url(#bg)"/>
- <g stroke-linecap="round" fill="none">
-  <path d="M-30 820 L1054 690" stroke="#3b82f6" stroke-width="20" opacity=".85"/>
-  <path d="M90 1054 L300 560 L470 -30" stroke="#3b82f6" stroke-width="14" opacity=".45"/>
-  <path d="M640 1054 L800 620 L1054 520" stroke="#ec4899" stroke-width="20" opacity=".8"/>
-  <path d="M-30 940 L420 870" stroke="#8b5cf6" stroke-width="12" opacity=".7"/>
-  <path d="M850 1054 L930 790" stroke="#fbbf24" stroke-width="12" opacity=".7"/>
-  <path d="M-30 300 L260 380 L520 330" stroke="#2c3f60" stroke-width="9"/>
-  <path d="M720 -30 L780 250 L1054 290" stroke="#2c3f60" stroke-width="9"/>
+<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;width:1024px;height:1024px;overflow:hidden}
+.bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%, #3b2a7a 0%, #1a1f4a 45%, #0b111a 100%)}
+svg.streets{position:absolute;inset:0}
+/* The unicorn: Noto Emoji (Google, Apache License 2.0), noto-unicorn.svg. */
+img.u{position:absolute;left:192px;top:150px;width:640px;height:640px;filter:drop-shadow(0 24px 40px rgba(0,0,0,.55))}
+</style></head><body><div class="bg"></div>
+<svg class="streets" width="1024" height="1024" viewBox="0 0 1024 1024">
+ <g stroke-linecap="round" fill="none" opacity=".9">
+  <path d="M-20 760 L1044 640" stroke="#3b82f6" stroke-width="22"/>
+  <path d="M120 1044 L300 560 L520 -20" stroke="#3b82f6" stroke-width="16" opacity=".7"/>
+  <path d="M600 1044 L760 600 L1044 470" stroke="#ec4899" stroke-width="22"/>
+  <path d="M-20 900 L460 820" stroke="#8b5cf6" stroke-width="14" opacity=".8"/>
+  <path d="M820 1044 L900 760" stroke="#fbbf24" stroke-width="14" opacity=".8"/>
+  <path d="M-20 300 L280 380 L560 330" stroke="#334a6e" stroke-width="10"/>
+  <path d="M700 -20 L760 260 L1044 300" stroke="#334a6e" stroke-width="10"/>
  </g>
- <g transform="rotate(18 512 520)">
-  <path d="M432 860 L512 150 L592 860 Z" fill="#ec4899" opacity=".55" filter="url(#glow)"/>
-  <path d="M432 860 L512 150 L592 860 Z" fill="url(#horn)"/>
-  <g clip-path="url(#cone)" stroke="#ffffff" stroke-opacity=".55" stroke-width="22">
-   <path d="M380 800 L650 730"/><path d="M380 690 L650 620"/><path d="M380 580 L650 510"/><path d="M380 470 L650 400"/><path d="M380 360 L650 290"/><path d="M380 250 L650 180"/>
-  </g>
-  <ellipse cx="512" cy="862" rx="96" ry="26" fill="#f5d0fe"/>
- </g>
- <g fill="#fff7d6">
-  <path d="M760 250 l14 44 44 14 -44 14 -14 44 -14 -44 -44 -14 44 -14z"/>
-  <path d="M265 330 l9 28 28 9 -28 9 -9 28 -9 -28 -28 -9 28 -9z" opacity=".85"/>
-  <path d="M810 470 l6 18 18 6 -18 6 -6 18 -6 -18 -18 -6 18 -6z" opacity=".75"/>
- </g>
-</svg></body></html>
+</svg>
+<img class="u" src="noto-unicorn.svg" alt=""></body></html>

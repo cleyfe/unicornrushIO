@@ -23,6 +23,14 @@ ODbL too. The game shows "© OpenStreetMap contributors" on the map.
 The base map is served by OpenFreeMap (https://openfreemap.org), using
 OpenMapTiles and OpenStreetMap data, and is credited on the map as well.
 
+## Unicorn artwork: Noto Emoji (Apache 2.0)
+
+The unicorn in the app icon and splash screen (`app-assets/noto-unicorn.svg`) is the
+🦄 emoji from Google's Noto Emoji, © Google LLC, used under the Apache License,
+Version 2.0: https://www.apache.org/licenses/LICENSE-2.0 (source:
+https://github.com/googlefonts/noto-emoji). The game also shows 🦄 as text, drawn
+by each device's own emoji font.
+
 ## Not covered
 
 - The "UnicornRush" name, the "unicornrush.io" domain, and logos are not
