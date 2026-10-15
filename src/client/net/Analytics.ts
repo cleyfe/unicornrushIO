@@ -1,9 +1,10 @@
 import type { GameEvent } from '@unicornrush/engine-api/net/Protocol';
+import { apiUrl, inApp } from './api';
 
 /** Sends an anonymous event for the stats. Fire and forget: never blocks or breaks the game. */
 function send(event: Omit<GameEvent, 'mode'>): void {
   try {
-    void fetch('api/events', {
+    void fetch(apiUrl('api/events'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(event),
@@ -17,5 +18,5 @@ function send(event: Omit<GameEvent, 'mode'>): void {
 /** A single-player match started or finished. */
 export const trackSolo = (event: Omit<GameEvent, 'mode'>): void => send(event);
 
-/** One page load of the game, from the home page or a room invite link. */
-export const trackVisit = (entry: 'home' | 'invite'): void => send({ type: 'visit', reason: entry });
+/** One page load of the game, from the home page or a room invite link (or the iOS app starting). */
+export const trackVisit = (entry: 'home' | 'invite'): void => send({ type: 'visit', reason: inApp ? 'app' : entry });

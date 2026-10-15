@@ -31,6 +31,7 @@ import { GuardMarkers } from './render/GuardMarkers';
 import { ActionRing } from './hud/ActionRing';
 import { NetGameRunner } from './net/NetGameRunner';
 import { trackSolo, trackVisit } from './net/Analytics';
+import { haptic, initNative } from './native';
 import { createRoom, RoomClient } from './net/RoomClient';
 
 const app = document.getElementById('app')!;
@@ -242,6 +243,7 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
     // When a lawsuit involves you, show your personal message instead of the public one.
     const personalSuit = fresh.some((l) => l.recipient === game.playerId && l.text.startsWith('⚖️'));
     for (const l of fresh) {
+      if (l.recipient === game.playerId && l.tone === 'bad' && l.text.startsWith('You lost streets')) haptic('warning');
       if (l.recipient === game.playerId && l.tone === 'error') toast(l.text);
       else if (l.recipient === game.playerId) news.push(l);
       else if (l.recipient === undefined && !(personalSuit && l.text.startsWith('⚖️'))) news.push(l);
@@ -270,6 +272,7 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
       const winner = r.winnerId === null ? 'none' : game.companies[r.winnerId].isBot ? 'bot' : 'human';
       if (room && !reported) room.send({ t: 'over', day: Math.floor(r.day), reason: r.reason, winner });
       else if (!reported) trackSolo({ type: 'solo_finished', city: info.id, difficulty: game.player.difficulty, bots: game.companies.length - 1, day: Math.floor(r.day), reason: r.reason, winner });
+      if (!reported) haptic(r.winnerId === game.playerId ? 'success' : 'error');
       reported = true;
       const again = leave;
       // After closing, you can watch the rest of the match.
@@ -290,6 +293,7 @@ function play(client: ClientGameRunner, info: CityInfo, city: CityData, room?: R
 // An invite link (unicornrush.io/#CODE) goes straight to that room.
 const invited = location.hash.slice(1).toUpperCase();
 trackVisit(ROOM_CODE_PATTERN.test(invited) ? 'invite' : 'home');
+initNative();
 if (ROOM_CODE_PATTERN.test(invited)) {
   let name = 'Player';
   try {

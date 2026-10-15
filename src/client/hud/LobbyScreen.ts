@@ -1,3 +1,4 @@
+import { gameUrl } from '../net/api';
 import type { Difficulty } from '@unicornrush/engine-api/game/Game';
 import { type LobbyPlayer, MAX_COMPANIES, type RoomSettings } from '@unicornrush/engine-api/net/Protocol';
 import { MAX_HUMANS, multiplayerCompanies } from '@unicornrush/engine-lib/configuration/Companies';
@@ -14,7 +15,7 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 export function showLobby(container: HTMLElement, room: RoomClient, onLeave: () => void): void {
   let cities: CityInfo[] = [];
   let last: { you: number; host: number; players: LobbyPlayer[]; settings: RoomSettings } | null = null;
-  const invite = `${location.origin}${location.pathname}#${room.code}`;
+  const invite = `${gameUrl()}#${room.code}`;
 
   container.innerHTML = `
     <div class="overlay intro-bg"><div class="card lobby">

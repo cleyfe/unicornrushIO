@@ -23,49 +23,70 @@ const directory = (env: Env) => env.DIRECTORY.get(env.DIRECTORY.idFromName('main
  *   GET  /api/rooms/<code>   → WebSocket into that room's GameRoom
  *   POST /api/events         → an anonymous visit or single-player event for the stats
  */
+/** The iOS app runs the game from this origin and calls the API across origins. */
+const APP_ORIGINS = new Set(['capacitor://localhost']);
+
+/** Lets the iOS app read API responses (rooms, stats); the website itself needs nothing. */
+function withCors(request: Request, response: Response): Response {
+  const origin = request.headers.get('Origin');
+  if (!origin || !APP_ORIGINS.has(origin) || response.status === 101) return response;
+  const r = new Response(response.body, response);
+  r.headers.set('Access-Control-Allow-Origin', origin);
+  r.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  r.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+  r.headers.set('Access-Control-Max-Age', '86400');
+  r.headers.append('Vary', 'Origin');
+  return r;
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
-    if (url.pathname === '/api/events' && request.method === 'POST') {
-      const text = await request.text();
-      if (text.length > 1000) return new Response(null, { status: 413 });
-      // Automated browsers (previews, crawlers that run scripts) aren't visitors.
-      if (/bot|crawl|spider|headless|lighthouse/i.test(request.headers.get('User-Agent') ?? '')) return new Response(null, { status: 204 });
-      let event = null;
-      try {
-        event = parseBrowserEvent(JSON.parse(text));
-      } catch {
-        // Not JSON.
-      }
-      if (!event) return new Response(null, { status: 400 });
-      ctx.waitUntil(recordEvent(env.EVENTS, event, request.cf?.country as string | undefined).catch(() => {}));
-      return new Response(null, { status: 204 });
-    }
-    if (url.pathname === '/api/rooms' && request.method === 'GET') {
-      return Response.json(await directory(env).list(), { headers: { 'Cache-Control': 'no-store' } });
-    }
-    if (url.pathname === '/api/rooms' && request.method === 'POST') {
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const code = newRoomCode();
-        // Skip codes whose room is still in use.
-        const info = await env.ROOMS.get(env.ROOMS.idFromName(code)).info();
-        if (info.players === 0) return Response.json({ code });
-      }
-      return Response.json({ error: 'No free room code, try again.' }, { status: 503 });
-    }
-    const match = url.pathname.match(/^\/api\/rooms\/([A-Za-z0-9]+)$/);
-    if (match) {
-      const code = match[1].toUpperCase();
-      if (!ROOM_CODE_PATTERN.test(code)) return new Response('Unknown room', { status: 404 });
-      if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected a WebSocket', { status: 426 });
-      const headers = new Headers(request.headers);
-      headers.set('X-Room-Code', code);
-      return env.ROOMS.get(env.ROOMS.idFromName(code)).fetch(new Request(request, { headers }));
-    }
-    if (url.pathname.startsWith('/api/')) return new Response('Not found', { status: 404 });
-    return env.ASSETS.fetch(request);
+    if (request.method === 'OPTIONS') return withCors(request, new Response(null, { status: 204 }));
+    return withCors(request, await handle(request, env, ctx));
   },
 } satisfies ExportedHandler<Env>;
+
+async function handle(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  const url = new URL(request.url);
+  if (url.pathname === '/api/events' && request.method === 'POST') {
+    const text = await request.text();
+    if (text.length > 1000) return new Response(null, { status: 413 });
+    // Automated browsers (previews, crawlers that run scripts) aren't visitors.
+    if (/bot|crawl|spider|headless|lighthouse/i.test(request.headers.get('User-Agent') ?? '')) return new Response(null, { status: 204 });
+    let event = null;
+    try {
+      event = parseBrowserEvent(JSON.parse(text));
+    } catch {
+      // Not JSON.
+    }
+    if (!event) return new Response(null, { status: 400 });
+    ctx.waitUntil(recordEvent(env.EVENTS, event, request.cf?.country as string | undefined).catch(() => {}));
+    return new Response(null, { status: 204 });
+  }
+  if (url.pathname === '/api/rooms' && request.method === 'GET') {
+    return Response.json(await directory(env).list(), { headers: { 'Cache-Control': 'no-store' } });
+  }
+  if (url.pathname === '/api/rooms' && request.method === 'POST') {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = newRoomCode();
+      // Skip codes whose room is still in use.
+      const info = await env.ROOMS.get(env.ROOMS.idFromName(code)).info();
+      if (info.players === 0) return Response.json({ code });
+    }
+    return Response.json({ error: 'No free room code, try again.' }, { status: 503 });
+  }
+  const match = url.pathname.match(/^\/api\/rooms\/([A-Za-z0-9]+)$/);
+  if (match) {
+    const code = match[1].toUpperCase();
+    if (!ROOM_CODE_PATTERN.test(code)) return new Response('Unknown room', { status: 404 });
+    if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected a WebSocket', { status: 426 });
+    const headers = new Headers(request.headers);
+    headers.set('X-Room-Code', code);
+    return env.ROOMS.get(env.ROOMS.idFromName(code)).fetch(new Request(request, { headers }));
+  }
+  if (url.pathname.startsWith('/api/')) return new Response('Not found', { status: 404 });
+  return env.ASSETS.fetch(request);
+}
 
 function newRoomCode(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(ROOM_CODE_LENGTH));

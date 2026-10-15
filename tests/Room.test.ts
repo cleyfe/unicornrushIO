@@ -211,5 +211,6 @@ describe('online rooms', () => {
     expect(parseBrowserEvent('nope')).toBeNull();
     expect(parseBrowserEvent({ type: 'visit', reason: 'invite', city: 'x' })).toEqual({ type: 'visit', mode: 'web', reason: 'invite' });
     expect(parseBrowserEvent({ type: 'visit', reason: 'evil' })?.reason).toBe('home');
+    expect(parseBrowserEvent({ type: 'visit', reason: 'app' })?.reason).toBe('app');
   });
 });

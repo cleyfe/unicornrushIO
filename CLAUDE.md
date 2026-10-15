@@ -16,6 +16,7 @@ npm run fairness -- 48 paris-opera  # same, on a real city
 npm run build-city -- paris-opera   # rebuild a city from OpenStreetMap (see scripts/cities.json)
 npm run city-index                  # rebuild public/cities/index.json and thumbnails
 npm run dev:server                  # the Worker (rooms + built game) on :8787; `npm run dev` proxies /api to it
+npm run build && npx cap sync ios    # copy the built game into the iPhone app (ios/); CI builds it, see docs/APP_STORE.md
 ```
 
 Run one test file: `npx vitest run tests/Lawsuit.test.ts`.

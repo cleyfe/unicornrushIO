@@ -1,11 +1,12 @@
 import type { Intent } from '@unicornrush/engine-api/Intents';
 import type { ClientMessage, RoomSettings, ServerMessage, StartInfo } from '@unicornrush/engine-api/net/Protocol';
+import { SITE, apiUrl, inApp } from './api';
 
 type Lobby = Extract<ServerMessage, { t: 'lobby' }>;
 
 /** Creates a room on the server and returns its code. */
 export async function createRoom(): Promise<string> {
-  const res = await fetch('api/rooms', { method: 'POST' });
+  const res = await fetch(apiUrl('api/rooms'), { method: 'POST' });
   if (!res.ok) throw new Error(`Couldn't create a room (${res.status}).`);
   return ((await res.json()) as { code: string }).code;
 }
@@ -49,7 +50,7 @@ export class RoomClient {
   }
 
   private connect(): void {
-    const url = new URL(`api/rooms/${this.code}`, location.href);
+    const url = new URL(`api/rooms/${this.code}`, inApp ? SITE : location.href);
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(url);
     this.ws = ws;

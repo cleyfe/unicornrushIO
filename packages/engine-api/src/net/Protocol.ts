@@ -64,7 +64,7 @@ export interface GameEvent {
   bots?: number;
   /** Game day the match ended on. */
   day?: number;
-  /** How a match ended; for a visit, how it arrived: 'home' or 'invite' (a room link). */
+  /** How a match ended; for a visit, how it arrived: 'home', 'invite' (a room link) or 'app' (the iOS app). */
   reason?: string;
   /** Whether a human or a bot won. */
   winner?: 'human' | 'bot' | 'none';

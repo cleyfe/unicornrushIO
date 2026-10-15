@@ -17,6 +17,7 @@
     "dev:server": "wrangler dev --port 8787"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
     "@cloudflare/workers-types": "5.20261006.1",
     "@types/node": "^22.20.5",
     "typescript": "^5.6.3",
@@ -26,6 +27,10 @@
     "wrangler": "4.150.0"
   },
   "dependencies": {
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.5.3",
+    "@capacitor/status-bar": "^8.0.4",
     "maplibre-gl": "6.11.2"
   }
 }

@@ -96,9 +96,10 @@ small {
 
 /* ---------- stage ---------- */
 
+/* The game stays inside the safe area (clear of the iPhone notch and home bar); the page background fills the rest. */
 .stage {
   position: fixed;
-  inset: 0;
+  inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 .map {
   /* MapLibre makes its container position: relative, so size it explicitly. */
@@ -1109,7 +1110,7 @@ table {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
   z-index: 30;
 }
 .overlay[hidden] {

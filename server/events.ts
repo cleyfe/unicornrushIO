@@ -46,7 +46,7 @@ export async function recordEvent(db: EventsDb, e: GameEvent, country?: string):
 }
 
 const SOLO_TYPES = new Set(['solo_started', 'solo_finished']);
-const ENTRIES = new Set(['home', 'invite']);
+const ENTRIES = new Set(['home', 'invite', 'app']);
 const WORD = /^[a-z0-9-]{1,40}$/;
 const int = (v: unknown, max: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.min(max, Math.floor(v))) : undefined);
 const word = (v: unknown) => (typeof v === 'string' && WORD.test(v) ? v : undefined);

@@ -6,6 +6,7 @@ import { LOCAL_EVENT_INFO } from '@unicornrush/engine-lib/configuration/MarketEv
 import { money } from '@unicornrush/engine-lib/Format';
 import type { GameImpl } from '@unicornrush/engine/game/GameImpl';
 import type { ClientGameRunner } from './ClientGameRunner';
+import { haptic } from './native';
 import type { CityMapView } from './render/CityMapView';
 
 export type ClickMode = 'expand' | 'ad' | 'guard' | 'buy';
@@ -82,6 +83,7 @@ export class InputHandler {
         return;
       }
       this.client.send({ type: 'campaign', companyId: this.client.game.playerId, tile: seg });
+      haptic('light');
       this.onFirstMove();
       // A ripple where you clicked: instant feedback before the street changes hands.
       const ripple = document.createElement('div');
@@ -98,6 +100,7 @@ export class InputHandler {
       const seg = this.view.segmentAt(e.point);
       if (seg >= 0 && this.ring) {
         this.setMode('expand');
+        this.hideHover();
         this.ring.open(seg);
       }
     });
@@ -123,8 +126,9 @@ export class InputHandler {
           if (seg < 0 || !this.ring) return;
           this.suppressClickUntil = performance.now() + 700;
           this.setMode('expand');
+          this.hideHover();
           this.ring.open(seg);
-          navigator.vibrate?.(15);
+          haptic('medium');
         }, 480),
       };
     }, { passive: true });
@@ -137,6 +141,8 @@ export class InputHandler {
     canvas.addEventListener('touchend', cancelHold);
     canvas.addEventListener('touchcancel', cancelHold);
     map.on('mousemove', (e: MapMouseEvent) => {
+      // The ring is up (or a long press just ended): no hover card on top of it.
+      if (this.ring?.isOpen || performance.now() < this.suppressClickUntil) return this.hideHover();
       this.cursorAt = e.point;
       const seg = this.view.segmentAt(e.point);
       map.getCanvas().style.cursor = seg >= 0 ? 'pointer' : '';
@@ -150,10 +156,16 @@ export class InputHandler {
       this.refreshHover();
       const w = this.tooltip.offsetWidth || 260;
       const box = map.getContainer().getBoundingClientRect();
-      const x = e.point.x + 16 + w > box.width ? e.point.x - w - 16 : e.point.x + 16;
+      // Right of the cursor, or left of it near the edge, but always on screen (phones are narrow).
+      const x = Math.max(8, Math.min(box.width - w - 8, e.point.x + 16 + w > box.width ? e.point.x - w - 16 : e.point.x + 16));
       this.tooltip.style.left = `${x}px`;
       this.tooltip.style.top = `${Math.min(e.point.y + 16, box.height - 140)}px`;
       this.tooltip.style.display = 'block';
+      // Touch screens have no "mouse leaves": let the card go after a moment.
+      if (this.touch) {
+        window.clearTimeout(this.hoverTimer);
+        this.hoverTimer = window.setTimeout(() => this.hideHover(), 3000);
+      }
     });
     map.on('mouseout', () => {
       this.cursorAt = null;
@@ -198,6 +210,16 @@ export class InputHandler {
       this.cursorChip.remove();
       window.removeEventListener('click', blurButtons, true);
     };
+  }
+
+  private touch = matchMedia('(pointer: coarse)').matches;
+  private hoverTimer = 0;
+
+  private hideHover(): void {
+    this.hoverSeg = -1;
+    this.tooltip.style.display = 'none';
+    this.cursorChip.style.display = 'none';
+    this.view.setHover(-1);
   }
 
   private setAttackView(on: boolean): void {

@@ -1,3 +1,4 @@
+import { apiUrl } from '../net/api';
 import type { Difficulty } from '@unicornrush/engine-api/game/Game';
 import { ROOM_CODE_PATTERN, type RoomListing } from '@unicornrush/engine-api/net/Protocol';
 import { type CityInfo, loadCityIndex } from '../cities';
@@ -159,7 +160,7 @@ export function showIntro(
   const refresh = async () => {
     if (!openGames.isConnected) return;
     try {
-      const [rooms, index] = await Promise.all([fetch('api/rooms').then((r) => (r.ok ? (r.json() as Promise<RoomListing[]>) : [])), loadCityIndex()]);
+      const [rooms, index] = await Promise.all([fetch(apiUrl('api/rooms')).then((r) => (r.ok ? (r.json() as Promise<RoomListing[]>) : [])), loadCityIndex()]);
       const city = (id: string) => index.find((c) => c.id === id);
       openGames.hidden = false;
       openGames.innerHTML = rooms.length
