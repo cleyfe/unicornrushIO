@@ -1,7 +1,10 @@
 // App Store signing for CI, through the App Store Connect API (no Mac keychain or devices needed):
 //   node scripts/ios-signing.mjs create <dir>   → a distribution certificate (key + CSR made here) and
 //                                                an App Store profile for io.unicornrush.app, written to <dir>
-//   node scripts/ios-signing.mjs cleanup <dir>  → revokes that certificate and deletes the profile
+//   node scripts/ios-signing.mjs prune <dir>    → after a successful upload: revokes every OTHER distribution
+//                                                certificate and CI profile. The new one must stay valid: TestFlight
+//                                                builds can't be installed once their certificate is revoked.
+//   node scripts/ios-signing.mjs cleanup <dir>  → after a failed run: revokes this run's certificate and profile
 // Env: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH (the .p8 file). Run on the build machine (needs openssl).
 import { execFileSync } from 'node:child_process';
 import { sign } from 'node:crypto';
@@ -72,6 +75,22 @@ if (cmd === 'create') {
   await api('DELETE', `/profiles/${ids.profile}`).catch((e) => console.error(e.message));
   await api('DELETE', `/certificates/${ids.certificate}`).catch((e) => console.error(e.message));
   console.log('Revoked the CI certificate and deleted its profile.');
+} else if (cmd === 'prune') {
+  // Keeps the team under Apple's limit of distribution certificates. Note: this revokes ANY other
+  // distribution certificate on the team, including one made by hand in Xcode.
+  const keep = JSON.parse(readFileSync(join(dir, 'ids.json'), 'utf8'));
+  const certs = await api('GET', '/certificates?filter[certificateType]=DISTRIBUTION&limit=200');
+  for (const c of certs.data) {
+    if (c.id === keep.certificate) continue;
+    await api('DELETE', `/certificates/${c.id}`).catch((e) => console.error(e.message));
+    console.log(`Revoked older distribution certificate ${c.attributes.serialNumber ?? c.id}.`);
+  }
+  const profiles = await api('GET', '/profiles?filter[profileType]=IOS_APP_STORE&limit=200');
+  for (const pr of profiles.data) {
+    if (pr.id === keep.profile || !pr.attributes.name.startsWith('UnicornRush CI ')) continue;
+    await api('DELETE', `/profiles/${pr.id}`).catch((e) => console.error(e.message));
+  }
+  console.log('Kept this build\'s certificate; older CI certificates and profiles removed.');
 } else {
   throw new Error(`unknown command ${cmd}`);
 }

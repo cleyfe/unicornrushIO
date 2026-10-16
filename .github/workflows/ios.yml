@@ -7,7 +7,9 @@
 #   ASC_ISSUER_ID       the Issuer ID shown on the same page
 #   ASC_KEY_P8          the contents of the downloaded AuthKey_XXXX.p8 file
 # Signing: each run creates a distribution certificate and App Store profile through the API
-# (scripts/ios-signing.mjs), signs with them in a throwaway keychain, and revokes them at the end.
+# (scripts/ios-signing.mjs) and signs with them in a throwaway keychain. After a successful upload the
+# new certificate is kept (TestFlight builds stop installing if theirs is revoked) and older ones are
+# revoked; a failed run revokes its own. Apple emails you each time a certificate is revoked.
 name: iOS app
 
 on:
@@ -98,8 +100,12 @@ jobs:
             -exportOptionsPlist "$P" -exportPath "$RUNNER_TEMP/export" \
             -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
           echo "Uploaded. The build appears in App Store Connect → TestFlight after Apple processes it (5–30 minutes)." >> "$GITHUB_STEP_SUMMARY"
-      - name: Revoke the CI certificate
-        if: always() && steps.sign.outcome != 'skipped'
-        run: |
-          [ -f "$RUNNER_TEMP/signing/ids.json" ] && node scripts/ios-signing.mjs cleanup "$RUNNER_TEMP/signing" || true
-          security delete-keychain "$RUNNER_TEMP/ci.keychain-db" 2>/dev/null || true
+      - name: Keep this certificate, revoke older ones
+        if: success()
+        run: node scripts/ios-signing.mjs prune "$RUNNER_TEMP/signing"
+      - name: Revoke this run's certificate (failed run)
+        if: failure() && steps.sign.outcome == 'success'
+        run: node scripts/ios-signing.mjs cleanup "$RUNNER_TEMP/signing" || true
+      - name: Delete the keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/ci.keychain-db" 2>/dev/null || true

@@ -49,6 +49,12 @@ Actions → **iOS app** → Run workflow → version (e.g. `1.0`) → Run. Or pu
 The build shows up in App Store Connect → **TestFlight** after Apple processes it
 (5–30 minutes). Add yourself as an internal tester and install it with the TestFlight app.
 
+Signing is automatic: each run makes a new distribution certificate through the API, keeps it
+(a TestFlight build can't be installed once its certificate is revoked) and revokes the older
+ones, so Apple emails "your certificate has been revoked" after each build. That's expected.
+Note that it revokes **every** other distribution certificate on the team, including one made
+by hand in Xcode.
+
 ## Submitting for review
 
 In App Store Connect → the app → the iOS version page:
