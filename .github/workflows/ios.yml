@@ -6,7 +6,8 @@
 #   ASC_KEY_ID          App Store Connect API key ID (Users and Access → Integrations → App Store Connect API)
 #   ASC_ISSUER_ID       the Issuer ID shown on the same page
 #   ASC_KEY_P8          the contents of the downloaded AuthKey_XXXX.p8 file
-# The key needs the Admin role: Xcode's cloud signing creates the certificate and profile itself.
+# Signing: each run creates a distribution certificate and App Store profile through the API
+# (scripts/ios-signing.mjs), signs with them in a throwaway keychain, and revokes them at the end.
 name: iOS app
 
 on:
@@ -25,10 +26,19 @@ concurrency:
 
 jobs:
   testflight:
-    runs-on: macos-15
+    # Apple requires the iOS 26 SDK (Xcode 26) for uploads.
+    runs-on: macos-26
     timeout-minutes: 45
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      TEAM: ${{ secrets.APPLE_TEAM_ID }}
     steps:
       - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - run: xcodebuild -version
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
@@ -42,10 +52,10 @@ jobs:
       - name: App Store Connect API key
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
         run: |
-          mkdir -p "$RUNNER_TEMP/keys"
-          printf '%s' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8"
+          mkdir -p "$RUNNER_TEMP/keys" "$RUNNER_TEMP/signing"
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8"
+          echo "ASC_KEY_PATH=$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8" >> "$GITHUB_ENV"
       - name: Version and build number
         id: v
         run: |
@@ -53,26 +63,43 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
           echo "build=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
           echo "Version $v, build ${{ github.run_number }}" >> "$GITHUB_STEP_SUMMARY"
-      - name: Archive
-        env:
-          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Signing certificate and profile
+        id: sign
         run: |
+          S="$RUNNER_TEMP/signing"
+          node scripts/ios-signing.mjs create "$S" | tee "$S/out.txt"
+          name=$(sed -n 's/^name=//p' "$S/out.txt"); uuid=$(sed -n 's/^uuid=//p' "$S/out.txt")
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          for d in "$HOME/Library/MobileDevice/Provisioning Profiles" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            mkdir -p "$d" && cp "$S/profile.mobileprovision" "$d/$uuid.mobileprovision"
+          done
+          KC="$RUNNER_TEMP/ci.keychain-db"
+          security create-keychain -p ci "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p ci "$KC"
+          security import "$S/cert.p12" -P ci -A -t cert -f pkcs12 -k "$KC"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k ci "$KC" > /dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          security find-identity -v -p codesigning "$KC"
+      - name: Archive
+        run: |
+          set -o pipefail
           xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
-            DEVELOPMENT_TEAM="$TEAM" MARKETING_VERSION="${{ steps.v.outputs.version }}" CURRENT_PROJECT_VERSION="${{ steps.v.outputs.build }}" \
-            CODE_SIGNING_ALLOWED=NO \
-            archive | tail -n 40
-          test -d "$RUNNER_TEMP/App.xcarchive"
-      - name: Sign and upload to TestFlight
-        env:
-          TEAM: ${{ secrets.APPLE_TEAM_ID }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+            DEVELOPMENT_TEAM="$TEAM" UR_PROFILE="${{ steps.sign.outputs.name }}" \
+            MARKETING_VERSION="${{ steps.v.outputs.version }}" CURRENT_PROJECT_VERSION="${{ steps.v.outputs.build }}" \
+            archive | tail -n 60
+      - name: Upload to TestFlight
         run: |
-          /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM" ios/ExportOptions.plist
+          P=ios/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM" "$P"
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" -c "Add :provisioningProfiles:io.unicornrush.app string ${{ steps.sign.outputs.name }}" "$P"
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
-            -exportOptionsPlist ios/ExportOptions.plist -exportPath "$RUNNER_TEMP/export" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+            -exportOptionsPlist "$P" -exportPath "$RUNNER_TEMP/export" \
+            -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
           echo "Uploaded. The build appears in App Store Connect → TestFlight after Apple processes it (5–30 minutes)." >> "$GITHUB_STEP_SUMMARY"
+      - name: Revoke the CI certificate
+        if: always() && steps.sign.outcome != 'skipped'
+        run: |
+          [ -f "$RUNNER_TEMP/signing/ids.json" ] && node scripts/ios-signing.mjs cleanup "$RUNNER_TEMP/signing" || true
+          security delete-keychain "$RUNNER_TEMP/ci.keychain-db" 2>/dev/null || true

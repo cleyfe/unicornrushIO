@@ -2,13 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Sign for the App Store with Apple's cloud signing, then upload straight to App Store Connect (TestFlight). -->
+	<!-- App Store export, signed with the certificate and profile the CI creates (scripts/ios-signing.mjs),
+	     then uploaded straight to App Store Connect (TestFlight). teamID and provisioningProfiles are added by the workflow. -->
 	<key>method</key>
 	<string>app-store-connect</string>
 	<key>destination</key>
 	<string>upload</string>
 	<key>signingStyle</key>
-	<string>automatic</string>
+	<string>manual</string>
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
 	<key>manageAppVersionAndBuildNumber</key>
 	<false/>
 	<key>uploadSymbols</key>
